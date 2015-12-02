@@ -65,6 +65,8 @@ namespace UnityStandardAssets.ImageEffects
 
         private int m_SampleIndex;
 
+        [Range(0, 80)] public float K = 1.0f;
+
         public TemporalType temporalType = TemporalType.Off;
         [Range(0, 1)] public float temporalAccumulationWeight = 0.3f;
 
@@ -381,6 +383,7 @@ namespace UnityStandardAssets.ImageEffects
             smaaMaterial.SetTexture("edgesTex", rtEdges);
             smaaMaterial.SetTexture("blendTex", rtWeights);
 
+            smaaMaterial.SetFloat("K", K);
             smaaMaterial.SetFloat("_TemporalAccum", temporalAccumulationWeight);
 
             // clear

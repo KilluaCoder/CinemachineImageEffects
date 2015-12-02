@@ -256,10 +256,7 @@ namespace UnityStandardAssets.ImageEffects
                 return m_TonemapMaterial;
             }
         }
-
-        private RenderTexture m_RtDebug = null;
-        private RenderTextureFormat m_RtFormat = RenderTextureFormat.ARGBHalf;
-
+        
         private int m_UserLutDim = 16;
         private Color[] m_UserLutData;
 

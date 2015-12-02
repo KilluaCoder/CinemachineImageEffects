@@ -573,37 +573,37 @@ SamplerState PointSampler { Filter = MIN_MAG_MIP_POINT; AddressU = Clamp; Addres
 
 float2 SMAA_FlipY(float2 baseUv, float2 coord)
 {
-	float2 offset = coord - baseUv;
+    float2 offset = coord - baseUv;
 #if SMAA_FLIP_Y
-	float scaleY = -1.0f;
+    float scaleY = -1.0f;
 #else
-	float scaleY = 1.0f;
+    float scaleY = 1.0f;
 #endif
 
-	return baseUv + offset*float2(1,scaleY);
+    return baseUv + offset*float2(1,scaleY);
 }
 
 
 float4 SMAASampleLevelZeroPoint_Flip(SMAATexture2D tex, float2 coord)
 {
 #if SMAA_FLIP_Y
-	coord.y = 1.0f - coord.y;
+    coord.y = 1.0f - coord.y;
 #endif
-	return SMAASampleLevelZeroPoint_Direct(tex,coord);
+    return SMAASampleLevelZeroPoint_Direct(tex,coord);
 }
 
 float4 SMAASampleLevelZero_Flip(SMAATexture2D tex, float2 coord)
 {
 #if SMAA_FLIP_Y
-	coord.y = 1.0f - coord.y;
+    coord.y = 1.0f - coord.y;
 #endif
-	return SMAASampleLevelZero_Direct(tex,coord);
+    return SMAASampleLevelZero_Direct(tex,coord);
 }
 
 float2 SMAA_SampleArea_Unity(SMAATexture2D areaTex, float2 texcoord)
 {
     #if SMAA_HLSL_3 == 1
-	// converted the search tex from RA to RGBA, with actual data in RG
+    // converted the search tex from RA to RGBA, with actual data in RG
     return SMAASampleLevelZero_Flip(areaTex, texcoord).rg;
     //return SMAASampleLevelZero_Flip(areaTex, texcoord).ra;
     #else
@@ -613,28 +613,28 @@ float2 SMAA_SampleArea_Unity(SMAATexture2D areaTex, float2 texcoord)
 
 float4 SMAASampleLevelZeroOffset_Unity(float2 baseUv, SMAATexture2D tex, float2 coord, float2 offset)
 {
-	return SMAASampleLevelZeroOffset(tex,SMAA_FlipY(baseUv,coord),offset);
+    return SMAASampleLevelZeroOffset(tex,SMAA_FlipY(baseUv,coord),offset);
 }
 
 float4 SMAASampleOffset_Unity(float2 baseUv, SMAATexture2D tex, float2 coord, float2 offset)
 {
-	return SMAASampleOffset(tex,SMAA_FlipY(baseUv,coord),offset);
+    return SMAASampleOffset(tex,SMAA_FlipY(baseUv,coord),offset);
 }
 
 float4 SMAASampleLevelZero_Unity(float2 baseUv, SMAATexture2D tex, float2 coord)
 {
-	return SMAASampleLevelZero_Direct(tex,SMAA_FlipY(baseUv,coord));
+    return SMAASampleLevelZero_Direct(tex,SMAA_FlipY(baseUv,coord));
 }
 
 
 float4 SMAASampleLevelZeroPoint_Unity(float2 baseUv, SMAATexture2D tex, float2 coord)
 {
-	return SMAASampleLevelZeroPoint_Direct(tex,SMAA_FlipY(baseUv,coord));
+    return SMAASampleLevelZeroPoint_Direct(tex,SMAA_FlipY(baseUv,coord));
 }
 
 float4 SMAASample_Unity(float2 baseUv, SMAATexture2D tex, float2 coord)
 {
-	return SMAASample(tex,SMAA_FlipY(baseUv,coord));
+    return SMAASample(tex,SMAA_FlipY(baseUv,coord));
 }
 
 float SMAASampleDepth_Unity(float2 baseUv, SMAATexture2D tex, float2 coord)
@@ -644,7 +644,7 @@ float SMAASampleDepth_Unity(float2 baseUv, SMAATexture2D tex, float2 coord)
 
 float4 SMAASamplePoint_Unity(float2 baseUv, SMAATexture2D tex, float2 coord)
 {
-	return SMAASamplePoint(tex,SMAA_FlipY(baseUv,coord));
+    return SMAASamplePoint(tex,SMAA_FlipY(baseUv,coord));
 }
 
 //-----------------------------------------------------------------------------
@@ -877,7 +877,7 @@ float4 SMAAColorEdgeDetectionPS(float2 texcoord,
     if (dot(edges, float2(1.0, 1.0)) == 0.0)
         discard;
 
-	//return float4(1,0,0,1);
+    //return float4(1,0,0,1);
 
     // Calculate right and bottom deltas:
     float3 Cright = SMAASample_Unity(texcoord, colorTex, offset[1].xy).rgb;
@@ -977,8 +977,8 @@ float2 SMAAAreaDiag(SMAATexture2D areaTex, float2 dist, float2 e, float offset) 
 
     // Do it!
     #if SMAA_HLSL_3 == 1
-	return SMAASampleLevelZero_Flip(areaTex, texcoord).rg;
-	//return SMAASampleLevelZero_Flip(areaTex, texcoord).ra;
+    return SMAASampleLevelZero_Flip(areaTex, texcoord).rg;
+    //return SMAASampleLevelZero_Flip(areaTex, texcoord).ra;
     #else
     return SMAASampleLevelZero_Flip(areaTex, texcoord).rg;
     #endif
@@ -1147,8 +1147,8 @@ float2 SMAAArea(SMAATexture2D areaTex, float2 dist, float e1, float e2, float of
 
     // Do it!
     #if SMAA_HLSL_3 == 1
-	return SMAASampleLevelZero_Flip(areaTex, texcoord).rg;
-	//return SMAASampleLevelZero_Flip(areaTex, texcoord).ra;
+    return SMAASampleLevelZero_Flip(areaTex, texcoord).rg;
+    //return SMAASampleLevelZero_Flip(areaTex, texcoord).ra;
     #else
     return SMAASampleLevelZero_Flip(areaTex, texcoord).rg;
     #endif
@@ -1200,9 +1200,9 @@ float4 SMAABlendingWeightCalculationPS(float2 texcoord,
                                        SMAATexture2D searchTex,
                                        int4 subsampleIndices) { // Just pass zero for SMAA 1x, see @SUBSAMPLE_INDICES.
 
-	float2 baseUv = texcoord;
+    float2 baseUv = texcoord;
 
-	float4 weights = float4(0.0, 0.0, 0.0, 0.0);
+    float4 weights = float4(0.0, 0.0, 0.0, 0.0);
 
     float2 e = SMAASample_Unity(baseUv, edgesTex, texcoord).rg;
 
@@ -1305,7 +1305,7 @@ float4 SMAANeighborhoodBlendingPS(float2 texcoord,
                                   SMAATexture2D colorTex,
                                   SMAATexture2D blendTex) {
 
-	float2 baseUv = texcoord;
+    float2 baseUv = texcoord;
 
     // Fetch the blending weights for current pixel:
     float4 a;
@@ -1335,9 +1335,9 @@ float4 SMAANeighborhoodBlendingPS(float2 texcoord,
 
 
         #if SMAA_REPROJECTION == 1
-		// unity: This code path is untested, and probably does not work yet.
+        // unity: This code path is untested, and probably does not work yet.
 
-		// Fetch the opposite color and lerp by hand:
+        // Fetch the opposite color and lerp by hand:
         float4 C = SMAASampleLevelZero_Unity(baseUv, colorTex, texcoord);
         texcoord += sign(offset) * SMAA_PIXEL_SIZE;
         float4 Cop = SMAASampleLevelZero_Unity(baseUv, colorTex, texcoord);
@@ -1379,7 +1379,7 @@ float4 SMAAResolvePS(float2 texcoord,
                      , SMAATexture2D velocityTex
                      #endif
                      ) {
-	// unity: not tested
+    // unity: not tested
 
     #if SMAA_REPROJECTION == 1
     // Velocity is calculated from previous to current position, so we need to
@@ -1415,7 +1415,7 @@ void SMAASeparatePS(float4 position : SV_POSITION,
                     out float4 target0,
                     out float4 target1,
                     uniform SMAATexture2DMS2 colorTexMS) {
-	// unity: also not tested
+    // unity: also not tested
     int2 pos = int2(position.xy);
     target0 = SMAALoad(colorTexMS, pos, 0);
     target1 = SMAALoad(colorTexMS, pos, 1);

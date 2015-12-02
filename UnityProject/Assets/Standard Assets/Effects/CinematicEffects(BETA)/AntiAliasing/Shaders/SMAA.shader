@@ -174,7 +174,7 @@ Shader "Hidden/SMAA" {
         float d = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, depth_uv);
 
         // calculate position from pixel from depth
-        float3 clipPos = float3(depth_uv.x*2.0-1.0, (depth_uv.y)*2.0-1.0, d);
+        float3 clipPos = float3(depth_uv.x*2.0-1.0, depth_uv.y*2.0-1.0, d);
 
         // only 1 matrix mul:
         float4 prevClipPos = mul(_ToPrevViewProjCombined, float4(clipPos, 1.0));
@@ -194,11 +194,14 @@ Shader "Hidden/SMAA" {
         float distSqr = dot(prevUv - currUv, prevUv - currUv);
 
         // 1% of the screen seems like a good number
-        float rho = .01f;
+        float rho = 0.01;
         float invRR = 1.0f/(rho*rho);
         float distW = exp(-invRR * distSqr);
 
         weight *= distW;
+
+        weight = 0.5 * max(0, 1 - sqrt(abs(length(currUv) - length(prevUv))));
+
         return float3(prevUv,weight);
     }
 
@@ -280,16 +283,6 @@ Shader "Hidden/SMAA" {
 
         half4 accum = tex2D (accumTex, prevUv);
         half4 color = tex2D (smaaTex, i.uv + _PixelOffset.xy);
-
-        // get better accumulation
-        {
-            half4 clampAccum = ClampAccumulation(i.uv + _PixelOffset.xy,accum,color);
-
-            half2 edgeData = tex2D (edgesTex, i.uv + SMAA_PIXEL_SIZE.xy*0.5f);
-            float edgeVal = saturate(max(edgeData.x,edgeData.y));
-
-            accum = lerp(clampAccum,accum,edgeVal);
-        }
 
         // get better accumulation
         {

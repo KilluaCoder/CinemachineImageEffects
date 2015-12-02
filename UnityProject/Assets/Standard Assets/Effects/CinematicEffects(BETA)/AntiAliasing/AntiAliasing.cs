@@ -12,7 +12,8 @@ namespace UnityStandardAssets.ImageEffects
             Off,
             Edges,
             Weights,
-            Depth
+            Depth,
+            Accumulation
         }
 
         public enum EdgeType
@@ -483,6 +484,11 @@ namespace UnityStandardAssets.ImageEffects
             else if (displayType == DebugDisplay.Depth)
             {
                 Graphics.Blit(null, destination, smaaMaterial, (int)Passes.DebugDepth);
+            }
+            else if(displayType == DebugDisplay.Accumulation)
+            {
+
+                Graphics.Blit(m_RtAccum, destination);
             }
 
             RenderTexture.ReleaseTemporary(rtEdges);

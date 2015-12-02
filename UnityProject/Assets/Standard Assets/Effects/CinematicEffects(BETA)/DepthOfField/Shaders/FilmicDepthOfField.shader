@@ -534,7 +534,8 @@ inline float4 circleSignedCocBokeh(float2 uv, bool sampleDilatedFG, int incremen
         half4 sample0  = tex2Dlod(_MainTex, half4(sampleUV,0,0));
 
         half isNear = max(0.0h, -sample0.a);
-        half isFar  = max(0.0h, sample0.a);
+        half distanceFactor = saturate(-0.5f * abs(sample0.a - centerTap.a) * DiscBokeh48[l].z + 1.0f);
+        half isFar  = max(0.0h, sample0.a) * distanceFactor;
         isNear *= 1- smoothstep(1.0h, 2.0h, DiscBokeh48[l].z * radOtherFgRad);
         isFar  *= 1- smoothstep(1.0h, 2.0h, DiscBokeh48[l].z * radOtherBgRad);
 
@@ -790,7 +791,7 @@ static const half2 DiscPrefilter[DISC_PREFILTER_SAMPLE] =
 float4 fragCircleSignedCocPrefilter (v2fDepth i) : SV_Target
 {
     half4 centerTap = tex2Dlod(_MainTex, half4(i.uv.xy,0,0));
-    half  radius = 0.1h * (centerTap.a < 0.0f ? -(centerTap.a * _BlurCoe.x):(centerTap.a * _BlurCoe.y));
+    half  radius = 0.33h * 0.5h * (centerTap.a < 0.0f ? -(centerTap.a * _BlurCoe.x):(centerTap.a * _BlurCoe.y));
     half2 poissonScale = radius * _MainTex_TexelSize.xy;
 
     if (radius < 0.01h )
@@ -804,7 +805,6 @@ float4 fragCircleSignedCocPrefilter (v2fDepth i) : SV_Target
     {
         half2 sampleUV = i.uv + DiscPrefilter[l].xy * poissonScale.xy;
         half4 sample0 = tex2Dlod(_MainTex, half4(sampleUV.xy,0,0));
-
         half weight = max(sample0.a * centerTap.a,0.0h);
         sum += sample0.rgb * weight;
         sampleCount += weight;
@@ -1186,30 +1186,30 @@ inline half fgCocSourceChannel(half2 uv, bool fromAlpha)
 
 inline half weigthedFGCocBlur(v2fBlur i, bool fromAlpha)
 {
-    half  fgCocA = fgCocSourceChannel(i.uv.xy, fromAlpha);
-    half  fgCocC = fgCocSourceChannel(i.uv01.zw, fromAlpha);
-    half  fgCocB = fgCocSourceChannel(i.uv01.xy, fromAlpha);
-    half  fgCocD = fgCocSourceChannel(i.uv23.xy, fromAlpha);
-    half  fgCocE = fgCocSourceChannel(i.uv23.zw, fromAlpha);
-    half  fgCocF = fgCocSourceChannel(i.uv45.xy, fromAlpha);
-    half  fgCocG = fgCocSourceChannel(i.uv45.zw, fromAlpha);
-    half  fgCocH = fgCocSourceChannel(i.uv67.xy, fromAlpha);
-    half  fgCocI = fgCocSourceChannel(i.uv67.zw, fromAlpha);
-    half  fgCocJ = fgCocSourceChannel(i.uv89.xy, fromAlpha);
-    half  fgCocK = fgCocSourceChannel(i.uv89.zw, fromAlpha);
+    half fgCoc0 = fgCocSourceChannel(i.uv.xy, fromAlpha);
+    half fgCoc1 = fgCocSourceChannel(i.uv01.zw, fromAlpha) * 1.0h;
+    half fgCoc2 = fgCocSourceChannel(i.uv01.xy, fromAlpha) * 1.0h;
+    half fgCoc3 = fgCocSourceChannel(i.uv23.xy, fromAlpha) * 0.8h;
+    half fgCoc4 = fgCocSourceChannel(i.uv23.zw, fromAlpha) * 0.8h;
+    half fgCoc5 = fgCocSourceChannel(i.uv45.xy, fromAlpha) * 0.6h;
+    half fgCoc6 = fgCocSourceChannel(i.uv45.zw, fromAlpha) * 0.6h;
+    half fgCoc7 = fgCocSourceChannel(i.uv67.xy, fromAlpha) * 0.40h;
+    half fgCoc8 = fgCocSourceChannel(i.uv67.zw, fromAlpha) * 0.40f;
+    half fgCoc9 = fgCocSourceChannel(i.uv89.xy, fromAlpha) * 0.25f;
+    half fgCoc10 = fgCocSourceChannel(i.uv89.zw, fromAlpha) * 0.25f;
 
     half fgCoc = 0;
-    fgCoc = min(0, fgCocA);
-    fgCoc = min(fgCoc, fgCocB);
-    fgCoc = min(fgCoc, fgCocC);
-    fgCoc = min(fgCoc, fgCocD);
-    fgCoc = min(fgCoc, fgCocE);
-    fgCoc = min(fgCoc, fgCocF);
-    fgCoc = min(fgCoc, fgCocG);
-    fgCoc = min(fgCoc, fgCocH);
-    fgCoc = min(fgCoc, fgCocI);
-    fgCoc = min(fgCoc, fgCocJ);
-    fgCoc = min(fgCoc, fgCocK);
+    fgCoc = min(0, fgCoc0);
+    fgCoc = min(fgCoc, fgCoc1);
+    fgCoc = min(fgCoc, fgCoc2);
+    fgCoc = min(fgCoc, fgCoc3);
+    fgCoc = min(fgCoc, fgCoc4);
+    fgCoc = min(fgCoc, fgCoc5);
+    fgCoc = min(fgCoc, fgCoc6);
+    fgCoc = min(fgCoc, fgCoc7);
+    fgCoc = min(fgCoc, fgCoc8);
+    fgCoc = min(fgCoc, fgCoc9);
+    fgCoc = min(fgCoc, fgCoc10);
 
     return fgCoc;
 }

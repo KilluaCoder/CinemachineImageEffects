@@ -41,7 +41,7 @@ namespace UnityStandardAssets.ImageEffects
             }
         }
 
-        const float kMaxBlur = 45.0f;
+        const float kMaxBlur = 35.0f;
 
         private enum Passes
         {
@@ -777,9 +777,9 @@ namespace UnityStandardAssets.ImageEffects
             {
                 RenderTexture blurredFgCoc2 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.RHalf);
                 blurredFgCoc = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.RHalf);
-                filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(0.0f, nearBlurRadius * 0.25f, 0.0f, 0.0f));
+                filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(0.0f, nearBlurRadius * 0.75f, 0.0f, 0.0f));
                 Graphics.Blit(src, blurredFgCoc2, filmicDepthOfFieldMaterial, (int)Passes.BlurFGCocFromColor);
-                filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(nearBlurRadius * 0.25f, 0.0f, 0.0f, 0.0f));
+                filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(nearBlurRadius * 0.75f, 0.0f, 0.0f, 0.0f));
                 Graphics.Blit(blurredFgCoc2, blurredFgCoc, filmicDepthOfFieldMaterial, (int)Passes.BlurFGCoc);
                 ImageEffectHelper.ReleaseTemporaryRenderTexture(this, blurredFgCoc2);
             }

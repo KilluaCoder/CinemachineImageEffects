@@ -6,14 +6,14 @@ Shader "Hidden/TonemappingColorGradingHistogram"
         Fog { Mode off }
 
         CGINCLUDE
-        
+
             #pragma fragmentoption ARB_precision_hint_fastest
             #pragma target 5.0
             #include "UnityCG.cginc"
-                
-            struct v_data 
+
+            struct v_data
             {
-                float4 pos : SV_POSITION; 
+                float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
             };
 
@@ -29,8 +29,8 @@ Shader "Hidden/TonemappingColorGradingHistogram"
             {
                 v_data o;
                 o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
-                o.uv = v.texcoord;        	        	
-                return o; 
+                o.uv = v.texcoord;
+                return o;
             }
 
             half4 frag_channel(v_data i) : COLOR
@@ -99,6 +99,6 @@ Shader "Hidden/TonemappingColorGradingHistogram"
 
             ENDCG
         }
-    } 
+    }
     FallBack off
 }

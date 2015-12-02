@@ -1,39 +1,39 @@
-﻿Shader "Hidden/TonemappingColorGrading"
+Shader "Hidden/TonemappingColorGrading"
 {
     Properties
     {
         _MainTex ("", 2D) = "black" {}
     }
-    
+
     CGINCLUDE
-    
+
         #pragma vertex vert
         #include "UnityCG.cginc"
-     
+
         struct v2f {
             half4 pos : SV_POSITION;
             half2 uv : TEXCOORD0;
         };
-    
+
         sampler2D _MainTex;
 
         sampler3D _LutTex;
         sampler2D _LutTex1D;
-    
+
         half _LutA;
         half4 _LutExposureMult;
 
         half _Vibrance;
 
-        v2f vert(appdata_img v) 
+        v2f vert(appdata_img v)
         {
             v2f o;
             o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
             o.uv = v.texcoord.xy;
             return o;
-        } 
-    
-        half4 fragNonAdaptive1D(v2f i) : SV_Target 
+        }
+
+        half4 fragNonAdaptive1D(v2f i) : SV_Target
         {
             half4 color = tex2D (_MainTex, i.uv);
             half3 x = color.rgb;
@@ -64,8 +64,8 @@
 
             return color;
         }
-    
-        half4 fragNonAdaptive(v2f i) : SV_Target 
+
+        half4 fragNonAdaptive(v2f i) : SV_Target
         {
             half4 color = tex2D (_MainTex, i.uv);
             half3 x = color.rgb;
@@ -75,11 +75,11 @@
             // offset and scale
             half pad = .5f/32.0f;
             half scale = 31.0f/(32.0f);
-        
+
             x = _LutA * (x/(1.0f + x));
             x = x*scale + pad;
             x = tex3D(_LutTex,x).xyz;
-        
+
             color.rgb = x;
 
             return color;
@@ -94,9 +94,9 @@
 
             return color;
         }
-    
-    ENDCG 
-    
+
+    ENDCG
+
     Subshader
     {
         // 1 - Non-adaptive

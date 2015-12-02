@@ -1,13 +1,13 @@
 /**
 \author Michael Mara and Morgan McGuire, Casual Effects. 2015.
 */
-Shader "Hidden/ScreenSpaceReflection" 
+Shader "Hidden/ScreenSpaceReflection"
 {
     Properties {
         _MainTex ("Base (RGB)", 2D) = "white" {}
     }
-    
-    
+
+
     CGINCLUDE
 
     #include "UnityCG.cginc"
@@ -15,14 +15,14 @@ Shader "Hidden/ScreenSpaceReflection"
     #include "UnityStandardBRDF.cginc"
     #include "UnityStandardUtils.cginc"
     #include "ScreenSpaceRaytrace.cginc"
-    
-    float4 	 _ProjInfo;
+
+    float4   _ProjInfo;
     float4x4 _WorldToCameraMatrix;
     float4x4 _CameraToWorldMatrix;
     float4x4 _ProjectToPixelMatrix;
     float2   _ScreenSize;
     float2   _ReflectionBufferSize;
-    float2	 _InvScreenSize;
+    float2   _InvScreenSize;
     float3   _CameraClipInfo;
 
     sampler2D _CameraGBufferTexture0;
@@ -30,15 +30,15 @@ Shader "Hidden/ScreenSpaceReflection"
     sampler2D _CameraGBufferTexture2;
     sampler2D _CameraGBufferTexture3;
     sampler2D _CameraReflectionsTexture;
-    
+
     float _CurrentMipLevel;
     float _RayStepSize;
     float _MaxRayTraceDistance;
     float _LayerThickness;
     float _FresnelFade;
     float _FresnelFadePower;
-    
-    
+
+
     sampler2D _MainTex;
 
     int _VisualizeWhereBilateral;
@@ -62,23 +62,23 @@ Shader "Hidden/ScreenSpaceReflection"
 
     float4 _MainTex_TexelSize;
     float4 _SourceToTempUV;
-    
+
     int _EnableRefine;
     int _AdditiveReflection;
     int _ImproveCorners;
-    
+
     float _ScreenEdgeFading;
-    
+
     float _MipBias;
-    
+
     int _UseOcclusion;
-    
+
     int _MaxSteps;
-    
+
     int _FullResolutionFiltering;
-    
+
     int _BilateralUpsampling;
-    
+
     float _MaxRoughness;
     float _RoughnessFalloffRange;
     float _SSRMultiplier;
@@ -105,7 +105,7 @@ Shader "Hidden/ScreenSpaceReflection"
     float       _TemporalAlpha;
     int         _UseTemporalConfidence;
 
-    struct v2f 
+    struct v2f
     {
         float4 pos : SV_POSITION;
         float2 uv : TEXCOORD0;
@@ -121,7 +121,7 @@ Shader "Hidden/ScreenSpaceReflection"
         #if UNITY_UV_STARTS_AT_TOP
         if (_MainTex_TexelSize.y < 0)
             o.uv2.y = 1-o.uv2.y;
-        #endif				
+        #endif
         return o;
     }
 
@@ -129,7 +129,7 @@ Shader "Hidden/ScreenSpaceReflection"
         return floor(_ReflectionBufferSize * exp2(-mip));
     }
 
-    float3 ReconstructCSPosition(float2 S, float z) 
+    float3 ReconstructCSPosition(float2 S, float z)
     {
         float linEyeZ = -LinearEyeDepth(z);
         return float3(( (( S.xy * _MainTex_TexelSize.zw) ) * _ProjInfo.xy + _ProjInfo.zw) * linEyeZ, linEyeZ);
@@ -146,14 +146,14 @@ Shader "Hidden/ScreenSpaceReflection"
         return P;
     }
 
-    float square(float x) 
+    float square(float x)
     {
         return x*x;
     }
-    
+
     float applyEdgeFade(float2 tsP, float fadeStrength) {
         float maxFade = 0.1;
-        
+
         float2 itsP = float2(1.0, 1.0) - tsP;
         float dist = min(min(itsP.x, itsP.y), min(tsP.x, tsP.x));
         float fade = dist / (maxFade*fadeStrength + 0.001);
@@ -161,7 +161,7 @@ Shader "Hidden/ScreenSpaceReflection"
         fade = pow(fade, 0.2);
         return fade;
     }
-    
+
     float3 csMirrorVector(float3 csPosition, float3 csN) {
         float3 csE = -normalize(csPosition.xyz);
         float cos_o = dot(csN, csE);
@@ -182,9 +182,9 @@ Shader "Hidden/ScreenSpaceReflection"
         if ((!_TraceEverywhere) && (smoothness < (1.0 - _MaxRoughness)) ) {
             return float4(0.0, 0.0, 0.0, 0.0);
         }
-        
+
         float3 wsNormal = tex2D(_CameraGBufferTexture2, ssP).rgb * 2.0 - 1.0;
-        
+
         int2 ssC = int2(ssP * _ScreenSize);
 
         float3 csN = mul((float3x3)(_WorldToCameraMatrix), wsNormal);
@@ -204,9 +204,9 @@ Shader "Hidden/ScreenSpaceReflection"
         float2 hitPixel;
         float3 csHitPoint;
         float stepCount;
-        
+
         bool wasHit = castDenseScreenSpaceRay
-                   (csPosition + (csN) * rayBump, 
+                   (csPosition + (csN) * rayBump,
                     csRayDirection,
                     _ProjectToPixelMatrix,
                     _ScreenSize,
@@ -221,7 +221,7 @@ Shader "Hidden/ScreenSpaceReflection"
                     _TraceBehindObjects == 1,
                     csHitPoint,
                     stepCount);
-                    
+
         float2 tsPResult = hitPixel / _ScreenSize;
         float rayDist = dot(csHitPoint - csPosition, csRayDirection);
         float confidence = 0.0;
@@ -245,9 +245,9 @@ Shader "Hidden/ScreenSpaceReflection"
                 confidence = 1.0;
             }
         }
-        
+
         // Fade out reflections that hit near edge of screen, to prevent abrupt appearance/disappearance when object go off screen
-        // Fade out reflections that hit near edge of screen, 
+        // Fade out reflections that hit near edge of screen,
         // to prevent abrupt appearance/disappearance when object go off screen
         float vignette = applyEdgeFade(tsPResult, _ScreenEdgeFading);
         confidence *= vignette;
@@ -256,10 +256,10 @@ Shader "Hidden/ScreenSpaceReflection"
 
         return float4(tsPResult, rayDist, confidence);
     }
-    
+
     float4 fragComposite(v2f i) : SV_Target
     {
-        // Pixel being shaded 
+        // Pixel being shaded
         float2 tsP = i.uv2.xy;
 
         // View space point being shaded
@@ -267,34 +267,34 @@ Shader "Hidden/ScreenSpaceReflection"
 
         // Final image before this pass
         float4 gbuffer3 = tex2D(_MainTex, i.uv);
-        
+
         float4 specEmission = float4(0.0,0.0,0.0,0.0);
         float3 specColor = tex2D(_CameraGBufferTexture1, tsP).rgb;
 
         float roughness = 1.0-tex2D(_CameraGBufferTexture1, tsP).a;
-        
+
         float4 reflectionTexel = tex2D(_FinalReflectionTexture, tsP * _SourceToTempUV.xy);
-        
+
         float4 gbuffer0 = tex2D(_CameraGBufferTexture0, tsP);
         // Let core Unity functions do the dirty work of applying the BRDF
         float3 baseColor = gbuffer0.rgb;
         float occlusion = gbuffer0.a;
         float oneMinusReflectivity;
         baseColor = EnergyConservationBetweenDiffuseAndSpecular(baseColor, specColor, oneMinusReflectivity);
-        
+
         float3 wsNormal = tex2D(_CameraGBufferTexture2, tsP).rgb * 2.0 - 1.0;
 
         float3 csEyeVec = normalize(C);
         float3 eyeVec = mul(_CameraToWorldMatrix, float4(csEyeVec, 0)).xyz;
-        
+
         float3 worldPos =  mul(_CameraToWorldMatrix, float4(C, 1)).xyz;
 
         float cos_o = dot(wsNormal, eyeVec);
         float3 w_mi = -normalize((wsNormal * (2.0 * cos_o)) - eyeVec);
-        
+
 
         float3 incomingRadiance = reflectionTexel.rgb;
-        
+
         UnityLight light;
         light.color = 0;
         light.dir = 0;
@@ -303,10 +303,10 @@ Shader "Hidden/ScreenSpaceReflection"
         UnityIndirect ind;
         ind.diffuse = 0;
         ind.specular = incomingRadiance;
-        
+
         float3 ssrResult = UNITY_BRDF_PBS (0, specColor, oneMinusReflectivity, 1-roughness, wsNormal, -eyeVec, light, ind).rgb * _SSRMultiplier;
         float confidence = reflectionTexel.a;
-        
+
         if(_EnableSSR == 0) {
             confidence = 0.0;
         }
@@ -326,7 +326,7 @@ Shader "Hidden/ScreenSpaceReflection"
         if (_UseOcclusion) {
             finalGlossyTerm *= occlusion;
         }
-        
+
         if (_DebugMode == 1)
             return float4(incomingRadiance,0);
         if (_DebugMode == 2)
@@ -355,19 +355,19 @@ Shader "Hidden/ScreenSpaceReflection"
             return -float4(gbuffer3.rgb, 0.0);
         if (_DebugMode == 14) // Mip level, stored directly in ssrResult
             return float4(incomingRadiance, 0);
-        
+
         // Additively blend the glossy GI result with the output buffer
         return gbuffer3 + float4(finalGlossyTerm, 0);
     }
-    
+
     float roughnessWeight(float midpointRoughness, float tapRoughness) {
         return (1.0 - sqrt(sqrt(abs(midpointRoughness-tapRoughness))));
     }
-    
+
     float normalWeight(float3 midpointNormal, float3 tapNormal) {
         return clamp(dot(midpointNormal, tapNormal), 0, 1);
     }
-    
+
     float highlightDecompression(float x) {
         return x / (1.0 - x);
     }
@@ -389,12 +389,12 @@ Shader "Hidden/ScreenSpaceReflection"
             highlightCompression(x.y),
             highlightCompression(x.z));
     }
-    
+
     float4 _Axis;
     float4 fragGBlur(v2f i) : SV_Target
     {
         int radius = 4;
-        // Pixel being shaded 
+        // Pixel being shaded
         float2 tsP = i.uv2.xy;
         float weightSum = 0.0;
         float gaussWeights[5] = {0.225, 0.150, 0.110, 0.075, 0.0525};//{0.225, 0.150, 0.110, 0.075, 0.0525};
@@ -409,7 +409,7 @@ Shader "Hidden/ScreenSpaceReflection"
                 float tapRoughness = midpointRoughness;
                 float3 tapNormal = midpointNormal;
                 float2 tsTap = tsP + (_Axis.xy * _MainTex_TexelSize.xy * float2(i,i));
-                
+
                 temp = tex2D(_MainTex, tsTap);
 
                 int gaussWeightIndex;
@@ -418,7 +418,7 @@ Shader "Hidden/ScreenSpaceReflection"
                 #else
                 gaussWeightIndex = frac(abs(i) / 2);
                 #endif
-                
+
                 float weight = temp.a * gaussWeights[gaussWeightIndex]*0.5;
                 // Bilateral filtering
                 if (_ImproveCorners) {
@@ -437,11 +437,11 @@ Shader "Hidden/ScreenSpaceReflection"
                 float tapRoughness;
                 float3 tapNormal;
                 float2 tsTap = tsP + (_Axis.xy * _MainTex_TexelSize.xy * float2(i,i)*2.0);
-                
+
                 temp = tex2D(_MainTex, tsTap);
-                    
+
                 float weight = temp.a * gaussWeights[abs(i)];
-                // Bilateral filtering 
+                // Bilateral filtering
                 if (_ImproveCorners) {
                     nAndRough = tex2D(_NormalAndRoughnessTexture, tsTap);
                     tapRoughness = nAndRough.a;
@@ -456,10 +456,10 @@ Shader "Hidden/ScreenSpaceReflection"
                 resultSum += temp*weight;
             }
         }
-        
+
         if (weightSum > 0.01) {
             float invWeightSum = (1.0/weightSum);
-            // Adding the sqrt seems to decrease temporal flickering at the expense 
+            // Adding the sqrt seems to decrease temporal flickering at the expense
             // of having larger "halos" of fallback on rough surfaces
             // Subject to change with testing. Sqrt around only half the expression is *intentional*.
             float confidence = min(resultSum.a * sqrt(max(invWeightSum, 2.0)), 1.0);
@@ -476,7 +476,7 @@ Shader "Hidden/ScreenSpaceReflection"
             return float4(finalColor, 0.0);
         }
     }
-    
+
     sampler2D _ReflectionTexture0;
     sampler2D _ReflectionTexture1;
     sampler2D _ReflectionTexture2;
@@ -518,33 +518,33 @@ Shader "Hidden/ScreenSpaceReflection"
             return tex2Dlod(_EdgeTexture4, coord);
         }
     }
-    
+
     float2 centerPixel(float2 inputP) {
         return floor(inputP - float2(0.5,0.5)) + float2(0.5,0.5);
     }
-    
+
     float2 snapToTexelCenter(float2 inputP, float2 texSize, float2 texSizeInv) {
         return centerPixel(inputP * texSize) * texSizeInv;
     }
-    
+
     float4 bilateralUpsampleReflection(float2 tsP, int mip) {
-        
+
         float2 smallTexSize = mipToSize(mip);
         float2 smallPixelPos = tsP * smallTexSize;
         float2 smallPixelPosi = centerPixel(smallPixelPos);
         float2 smallTexSizeInv = 1.0 / smallTexSize;
-        
-        
+
+
         float2 p0 = smallPixelPosi * smallTexSizeInv;
         float2 p3 = (smallPixelPosi + float2(1.0, 1.0)) * smallTexSizeInv;
         float2 p1 = float2(p3.x, p0.y);
         float2 p2 = float2(p0.x, p3.y);
-        
+
         float4 V0 = getReflectionValue(p0.xy, mip);
         float4 V1 = getReflectionValue(p1.xy, mip);
         float4 V2 = getReflectionValue(p2.xy, mip);
         float4 V3 = getReflectionValue(p3.xy, mip);
-        
+
         float a0 = 1.0;
         float a1 = 1.0;
         float a2 = 1.0;
@@ -557,15 +557,15 @@ Shader "Hidden/ScreenSpaceReflection"
         a1 = smallPixelPosf.x * (1.0 - smallPixelPosf.y);
         a2 = (1.0 - smallPixelPosf.x) * smallPixelPosf.y;
         a3 = smallPixelPosf.x * smallPixelPosf.y;
-        
+
         float2 fullTexSize = _ReflectionBufferSize;
         float2 fullTexSizeInv = 1.0 / fullTexSize;
-        
+
         float4 hiP0 = float4(snapToTexelCenter(p0, fullTexSize, fullTexSizeInv), 0,0);
         float4 hiP3 = float4(snapToTexelCenter(p3, fullTexSize, fullTexSizeInv), 0,0);
         float4 hiP1 = float4(snapToTexelCenter(p1, fullTexSize, fullTexSizeInv), 0,0);
         float4 hiP2 = float4(snapToTexelCenter(p2, fullTexSize, fullTexSizeInv), 0,0);
-        
+
         float4 tempCenter = tex2Dlod(_NormalAndRoughnessTexture, float4(tsP, 0, 0));
         float3 n  = tempCenter.xyz * 2 - 1;
 
@@ -578,19 +578,19 @@ Shader "Hidden/ScreenSpaceReflection"
         float3 n1 = temp1.xyz * 2 - 1;
         float3 n2 = temp2.xyz * 2 - 1;
         float3 n3 = temp3.xyz * 2 - 1;
-    
+
         a0 *= normalWeight(n, n0);
         a1 *= normalWeight(n, n1);
         a2 *= normalWeight(n, n2);
         a3 *= normalWeight(n, n3);
-        
+
         float r = tempCenter.a;
         float r0 = temp0.a;
         float r1 = temp1.a;
         float r2 = temp2.a;
         float r3 = temp3.a;
-        
-        
+
+
         a0 *= roughnessWeight(r, r0);
         a1 *= roughnessWeight(r, r1);
         a2 *= roughnessWeight(r, r2);
@@ -601,14 +601,14 @@ Shader "Hidden/ScreenSpaceReflection"
         a1 = max(a1, 0.001);
         a2 = max(a2, 0.001);
         a3 = max(a3, 0.001);
-        
+
         // Nearest neighbor
         // a0 = a1 = a2 = a3 = 1.0;
 
-        // Normalize the blending weights (weights were chosen so that 
+        // Normalize the blending weights (weights were chosen so that
         // the denominator can never be zero)
         float norm = 1.0 / (a0 + a1 + a2 + a3);
-            
+
         // Blend
         float4 value = (V0 * a0 + V1 * a1 + V2 * a2 + V3 * a3) * norm;
         //return V0;
@@ -668,17 +668,17 @@ Shader "Hidden/ScreenSpaceReflection"
     //  --------------
     //    0    |   1          no filter, so single pixel
     //    1    |   17         2r + 1 filter applied once, grabbing from pixels r away in either direction (r=8, four samples times stride of 2)
-    //    2    |   50         2r + 1 filter applied on double size pixels, and each of those pixels had reached another r out to the side 2(2r + 1) + m_1           
+    //    2    |   50         2r + 1 filter applied on double size pixels, and each of those pixels had reached another r out to the side 2(2r + 1) + m_1
     //    3    |   118        4(2r + 1) + m_2
     //    4    |   254        8(2r + 1) + m_3
     //
     // Approximated by pixels = 16*2^mip-15
-    // rearranging we get mip = log_2((pixels + 15) / 16) 
+    // rearranging we get mip = log_2((pixels + 15) / 16)
     //
     float filterFootprintInPixelsToMip(float footprint) {
         return log2((footprint + 15) / 16);
     }
-    
+
     float3 ansiGradient(float t) {
         //return float3(t, t, t);
         return fmod(floor(t * float3(8.0, 4.0, 2.0)), 2.0);
@@ -686,7 +686,7 @@ Shader "Hidden/ScreenSpaceReflection"
 
     float4 fragCompositeSSR(v2f i) : SV_Target
     {
-        // Pixel being shaded 
+        // Pixel being shaded
         float2 tsP = i.uv2.xy;
 
         float roughness = 1.0-tex2D(_CameraGBufferTexture1, tsP * _SourceToTempUV.zw).a;
@@ -727,7 +727,7 @@ Shader "Hidden/ScreenSpaceReflection"
         if (_DebugMode == 14) {
             return float4(ansiGradient(mip*0.25), 1.0);
         }
-        
+
         float4 result;
         {
             int mipMin = int(mip);
@@ -756,25 +756,25 @@ Shader "Hidden/ScreenSpaceReflection"
                 result.a = min(minResult.a, maxResult.a);
             }
         }
-        
+
         result.a = min(result.a, 1.0);
         float vignette = applyEdgeFade(tsP, _ScreenEdgeFading);
         result.a *= vignette;
 
-        
+
         float alphaModifier = 1.0 - clamp((roughness - (_MaxRoughness - _RoughnessFalloffRange)) / _RoughnessFalloffRange, 0.0, 1.0);
         result.a *= alphaModifier;
-        return  result; 
+        return  result;
     }
-    
+
     float4 fragBlit(v2f i) : SV_Target
     {
-        // Pixel being shaded 
+        // Pixel being shaded
         float2 ssP = i.uv2.xy;
         return tex2D(_MainTex, ssP);
-        
+
     }
-    
+
     float edgeDetector(float2 tsP, float2 axis, float2 texelSize) {
         float4 temp = tex2D(_NormalAndRoughnessTexture, tsP);
         float midpointRoughness = temp.a;
@@ -783,25 +783,25 @@ Shader "Hidden/ScreenSpaceReflection"
         float tapRoughness;
         float3 tapNormal;
         float2 tsTap = tsP + (axis * _MainTex_TexelSize.xy);
-            
+
         temp = tex2D(_NormalAndRoughnessTexture, tsTap);
         tapRoughness = temp.a;
         tapNormal = temp.rgb * 2 - 1;
-                
+
         float weight = 1.0;
         weight *= roughnessWeight(midpointRoughness, tapRoughness);
         weight *= normalWeight(midpointNormal, tapNormal);
-        
+
         return weight;
     }
-    
-    
+
+
     float4 fragEdge(v2f i) : SV_Target
     {
         float2 tsP = i.uv2.xy;
         return edgeDetector(tsP, float2(1,0), _MainTex_TexelSize.xy) * edgeDetector(tsP, float2(0,1), _MainTex_TexelSize.xy);
     }
-    
+
     int _LastMip;
     float4 fragMin(v2f i) : SV_Target
     {
@@ -810,7 +810,7 @@ Shader "Hidden/ScreenSpaceReflection"
         float2 lastTexSizeInv = 1.0 / lastTexSize;//_SourceToTempUV.xy * exp2(mip);
         float2 p00 = snapToTexelCenter(tsP, lastTexSize, lastTexSizeInv);
         float2 p11 = p00 + lastTexSizeInv;
-        return min( 
+        return min(
                 min(tex2D(_MainTex, p00), tex2D(_MainTex, p11)),
                 min(tex2D(_MainTex, float2(p00.x, p11.y)), tex2D(_MainTex, float2(p11.x, p00.y)))
             );
@@ -822,8 +822,8 @@ Shader "Hidden/ScreenSpaceReflection"
         float4 temp = tex2D(_HitPointTexture, tsP);
         float2 hitPoint = temp.xy;
         float confidence = temp.w;
-        float3 colorResult = confidence > 0.0 ? 
-            tex2D(_MainTex, hitPoint).rgb : 
+        float3 colorResult = confidence > 0.0 ?
+            tex2D(_MainTex, hitPoint).rgb :
             tex2D(_CameraReflectionsTexture, tsP).rgb;
         if (any(isnan(colorResult)))
             colorResult = float3(0.0, 0.0, 0.0);
@@ -848,9 +848,9 @@ Shader "Hidden/ScreenSpaceReflection"
         float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv2.xy);
         return float4(-LinearEyeDepth(depth), 0.0, 0.0, 0.0);
     }
-    
-    
-    float3 csPositionToOldNormalizedScreenCoordinate(float3 csPosition) 
+
+
+    float3 csPositionToOldNormalizedScreenCoordinate(float3 csPosition)
     {
         // We could multiply these matrices together on the CPU
         float4 oldCSPosition = mul(_CurrentCameraToPreviousCamera, float4(csPosition, 1.0));
@@ -889,19 +889,19 @@ Shader "Hidden/ScreenSpaceReflection"
 
         float alpha = _TemporalAlpha;
         alpha *= zAlphaModifier;
-        
+
         if (_UseTemporalConfidence) {
             alpha *= oldResult.w;
         }
-     
+
         // Always compress
         currentResult.rgb   = highlightCompression(currentResult.rgb);
         oldResult.rgb       = highlightCompression(oldResult.rgb);
-        
+
         float4 resultValue = lerp(currentResult, oldResult, alpha);
-        
+
         resultValue.rgb = highlightDecompression(resultValue.rgb);
-        
+
 
         return resultValue;
 
@@ -1029,7 +1029,7 @@ SubShader {
         float4 fragRaytrace16(v2f i) : SV_Target { return fragRaytrace(i, 16); }
         ENDCG
     }
-    
+
     // 5: Composite
     Pass {
         CGPROGRAM
@@ -1039,7 +1039,7 @@ SubShader {
         #pragma target 3.0
         ENDCG
     }
-    
+
     // 6: GBlur
     Pass {
         CGPROGRAM
@@ -1049,7 +1049,7 @@ SubShader {
         #pragma target 3.0
         ENDCG
     }
-    
+
     // 7: CompositeSSR
     Pass {
         CGPROGRAM
@@ -1059,7 +1059,7 @@ SubShader {
         #pragma target 3.0
         ENDCG
     }
-    
+
     // 8: Simple Blit
     Pass {
         CGPROGRAM
@@ -1069,7 +1069,7 @@ SubShader {
         #pragma target 3.0
         ENDCG
     }
-    
+
     // 9: Generate Edge Texture
     Pass {
         CGPROGRAM
@@ -1079,7 +1079,7 @@ SubShader {
         #pragma target 3.0
         ENDCG
     }
-    
+
     // 10: Min mip generation
     Pass {
         CGPROGRAM

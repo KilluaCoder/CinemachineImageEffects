@@ -256,7 +256,7 @@ namespace UnityStandardAssets.ImageEffects
                 return m_TonemapMaterial;
             }
         }
-        
+
         private int m_UserLutDim = 16;
         private Color[] m_UserLutData;
 

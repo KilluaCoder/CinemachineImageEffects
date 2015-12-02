@@ -157,7 +157,7 @@ Shader "Hidden/SMAA" {
         return bestDist;
     }
 
-
+    float K;
 
     float3 FetchPreviousUvWeight(float2 currUv)
     {
@@ -200,7 +200,7 @@ Shader "Hidden/SMAA" {
 
         weight *= distW;
 
-        weight = 0.5 * max(0, 1 - sqrt(abs(length(currUv) - length(prevUv))));
+       // weight = 0.5 * max(0, 1 - K * sqrt(abs(length(currUv) - length(prevUv))));
 
         return float3(prevUv,weight);
     }
@@ -230,40 +230,34 @@ Shader "Hidden/SMAA" {
     // same as above, but also blend with accumulation buffer
     half4 DX9_SMAANeighborhoodBlendingAccumPS(v2f i) : SV_Target
     {
-        float3 prevUvWeight = FetchPreviousUvWeight(i.uv);
-        float  prevWeight = prevUvWeight.z;
-        float2 prevUv = prevUvWeight.xy;
+        float2 uv = i.uv;
 
-        half4 accum = tex2D (accumTex, prevUv);
-        half4 color = tex2D (colorTex, i.uv);
+        #if UNITY_UV_STARTS_AT_TOP
+            uv.y = 1 - uv.y;
+        #endif
 
-        // get color
-        {
-            float2 texcoord = i.uv;
+        float4 position = float4(2. * uv - 1., SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv), 1.);
+        float4 previousPosition = mul(_ToPrevViewProjCombined, position);
 
-            float4 offset[2];
-            offset[0] = texcoord.xyxy + SMAA_PIXEL_SIZE.xyxy * float4(-1.0, 0.0, 0.0, -1.0);
-            offset[1] = texcoord.xyxy + SMAA_PIXEL_SIZE.xyxy * float4( 1.0, 0.0, 0.0,  1.0);
+        previousPosition.xyz /= previousPosition.w;
 
-            color = SMAANeighborhoodBlendingPS(texcoord, offset, colorTex, blendTex);
-        }
+        uv = previousPosition.xy * .5 + .5;
 
-        // get better accumulation
-        {
-            half4 clampAccum = ClampAccumulation(i.uv + _PixelOffset.xy,accum,color);
+        #if UNITY_UV_STARTS_AT_TOP
+            uv.y = 1. - uv.y;
+        #endif
 
-            half2 edgeData = tex2D (edgesTex, i.uv + SMAA_PIXEL_SIZE.xy*0.5f);
-            float edgeVal = saturate(max(edgeData.x,edgeData.y));
+        // Inverse velocity from the current position to the previous position
+        float2 velocity = uv - i.uv;
 
-            accum = lerp(clampAccum,accum,edgeVal);
-        }
+        half4 current = SMAASample(colorTex, i.uv);
+        half4 previous = SMAASample(colorTex, uv);
 
-        float t = _TemporalAccum;
-        t = t + (1.0f-t)*(1.0f-prevWeight);
+        float delta = abs(current.a * current.a - previous.a * previous.a) / 5.0;
+        float weight = .5 * SMAASaturate(1. - (sqrt(delta) * K)); // K ~= SMAA_REPROJECTION_WEIGHT_SCALE
 
-        half4 res = accum * (1.0f-t) + color * t;
-
-        return res;
+        //return half4(.5 * (uv - i.uv) + .5, 0., 1.);
+        return lerp(current, previous, weight);
     }
 
 

@@ -1,4 +1,4 @@
-Shader "Hidden/MedianFilter"
+Shader "Hidden/DepthOfField/MedianFilter"
 {
 
 Properties
@@ -40,7 +40,7 @@ v2f vert(appdata_img v)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float4 fragCircleSignedCocMedian3 (v2f i) : SV_Target
+float4 fragCocMedian3 (v2f i) : SV_Target
 {
     //TODO use med3 on GCN architecture.
     half4 A = tex2Dlod(_MainTex, half4(i.uv,0,0));
@@ -94,7 +94,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define mnmx5(a, b, c, d, e)    s2(a, b); s2(c, d); mn3(a, c, e); mx3(b, d, e);
 #define mnmx6(a, b, c, d, e, f) s2(a, d); s2(b, e); s2(c, f); mn3(a, b, c); mx3(d, e, f);
 
-float4 fragCircleSignedCocMedian3x3 (v2f i) : SV_Target
+float4 fragCocMedian3x3 (v2f i) : SV_Target
 {
     half4 center = tex2Dlod(_MainTex, half4(i.uv + half2(0, 0) * _MainTex_TexelSize.xy,0,0));
 
@@ -142,7 +142,7 @@ SubShader
     {
         CGPROGRAM
         #pragma vertex vert
-        #pragma fragment fragCircleSignedCocMedian3
+        #pragma fragment fragCocMedian3
         ENDCG
     }
 
@@ -151,7 +151,7 @@ SubShader
     {
         CGPROGRAM
         #pragma vertex vert
-        #pragma fragment fragCircleSignedCocMedian3x3
+        #pragma fragment fragCocMedian3x3
         ENDCG
     }
 }

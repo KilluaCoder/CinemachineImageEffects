@@ -23,9 +23,9 @@ namespace UnityStandardAssets.ImageEffects
     //  http://vec3.ca/bicubic-filtering-in-fewer-taps/
 
     [ExecuteInEditMode]
-    [AddComponentMenu("Image Effects/Other/FilmicDepthOfField")]
+    [AddComponentMenu("Image Effects/Other/DepthOfField")]
     [RequireComponent(typeof(Camera))]
-    public class FilmicDepthOfField : MonoBehaviour
+    public class DepthOfField : MonoBehaviour
     {
         [AttributeUsage(AttributeTargets.Field)]
         public sealed class GradientRangeAttribute : PropertyAttribute
@@ -146,16 +146,16 @@ namespace UnityStandardAssets.ImageEffects
         public float fStops  = 5.0f;
 
         [Range(0.01f, 5.0f)]
-        public float dx11BokehScale = 1.0f;
+        public float textureBokehScale = 1.0f;
         [Range(0.01f, 100.0f)]
-        public float dx11BokehIntensity = 50.0f;
+        public float textureBokehIntensity = 50.0f;
         [Range(0.01f, 50.0f)]
-        public float dx11BokehThreshold = 2.0f;
+        public float textureBokehThreshold = 2.0f;
         [Range(0.01f, 1.0f)]
-        public float dx11SpawnHeuristic = 0.15f;
+        public float textureBokehSpawnHeuristic = 0.15f;
 
         public Transform focusTransform = null;
-        public Texture2D dx11BokehTexture = null;
+        public Texture2D bokehTexture = null;
         public ApertureShape apertureShape = ApertureShape.Circular;
         [Range(0.0f, 179.0f)]
         public float apertureOrientation = 0.0f;
@@ -167,7 +167,7 @@ namespace UnityStandardAssets.ImageEffects
 
         public Shader filmicDepthOfFieldShader;
         public Shader medianFilterShader;
-        public Shader dx11BokehShader;
+        public Shader textureBokehShader;
 
         public Material filmicDepthOfFieldMaterial
         {
@@ -191,14 +191,14 @@ namespace UnityStandardAssets.ImageEffects
             }
         }
 
-        public Material dx11BokehMaterial
+        public Material textureBokehMaterial
         {
             get
             {
-                if (m_Dx11BokehMaterial == null)
-                    m_Dx11BokehMaterial = ImageEffectHelper.CheckShaderAndCreateMaterial(dx11BokehShader);
+                if (m_TextureBokehMaterial == null)
+                    m_TextureBokehMaterial = ImageEffectHelper.CheckShaderAndCreateMaterial(textureBokehShader);
 
-                return m_Dx11BokehMaterial;
+                return m_TextureBokehMaterial;
             }
         }
 
@@ -236,7 +236,7 @@ namespace UnityStandardAssets.ImageEffects
         private ComputeBuffer m_ComputeBufferPoints;
         private Material m_FilmicDepthOfFieldMaterial;
         private Material m_MedianFilterMaterial;
-        private Material m_Dx11BokehMaterial;
+        private Material m_TextureBokehMaterial;
         private float m_LastApertureOrientation;
         private Vector4 m_OctogonalBokehDirection1;
         private Vector4 m_OctogonalBokehDirection2;
@@ -254,8 +254,8 @@ namespace UnityStandardAssets.ImageEffects
             if (medianFilterShader == null)
                 medianFilterShader = Shader.Find("Hidden/DepthOfField/MedianFilter");
 
-            if (dx11BokehShader == null)
-                dx11BokehShader = Shader.Find("Hidden/DepthOfField/DX11BokehSplatting");
+            if (textureBokehShader == null)
+                textureBokehShader = Shader.Find("Hidden/DepthOfField/BokehSplatting");
 
             if (!ImageEffectHelper.IsSupported(filmicDepthOfFieldShader, true, true, this)
                 || !ImageEffectHelper.IsSupported(medianFilterShader, true, true, this)
@@ -268,7 +268,7 @@ namespace UnityStandardAssets.ImageEffects
 
             if (ImageEffectHelper.supportsDX11)
             {
-                if (!ImageEffectHelper.IsSupported(dx11BokehShader, true, true, this))
+                if (!ImageEffectHelper.IsSupported(textureBokehShader, true, true, this))
                 {
                     enabled = false;
                     Debug.LogWarning("The image effect " + ToString() + " has been disabled as it's not supported on the current platform.");
@@ -286,12 +286,12 @@ namespace UnityStandardAssets.ImageEffects
 
             if (m_FilmicDepthOfFieldMaterial)
                 DestroyImmediate(m_FilmicDepthOfFieldMaterial);
-            if (m_Dx11BokehMaterial)
-                DestroyImmediate(m_Dx11BokehMaterial);
+            if (m_TextureBokehMaterial)
+                DestroyImmediate(m_TextureBokehMaterial);
             if (m_MedianFilterMaterial)
                 DestroyImmediate(m_MedianFilterMaterial);
 
-            m_Dx11BokehMaterial = null;
+            m_TextureBokehMaterial = null;
             m_FilmicDepthOfFieldMaterial = null;
             m_MedianFilterMaterial = null;
         }
@@ -378,11 +378,11 @@ namespace UnityStandardAssets.ImageEffects
                 Graphics.Blit(dst, blurred, filmicDepthOfFieldMaterial, (int)Passes.BlurAlphaWeighted);
 
                 // Collect texture bokeh candidates and replace with a darker pixel
-                dx11BokehMaterial.SetTexture("_BlurredColor", blurred);
-                dx11BokehMaterial.SetFloat("_SpawnHeuristic", dx11SpawnHeuristic);
-                dx11BokehMaterial.SetVector("_BokehParams", new Vector4(dx11BokehScale * textureBokehScale, dx11BokehIntensity, dx11BokehThreshold, textureBokehMaxRadius));
+                textureBokehMaterial.SetTexture("_BlurredColor", blurred);
+                textureBokehMaterial.SetFloat("_SpawnHeuristic", textureBokehSpawnHeuristic);
+                textureBokehMaterial.SetVector("_BokehParams", new Vector4(this.textureBokehScale * textureBokehScale, textureBokehIntensity, textureBokehThreshold, textureBokehMaxRadius));
                 Graphics.SetRandomWriteTarget(1, computeBufferPoints);
-                Graphics.Blit(src, dst, dx11BokehMaterial, (int)BokehTexturesPasses.Collect);
+                Graphics.Blit(src, dst, textureBokehMaterial, (int)BokehTexturesPasses.Collect);
                 Graphics.ClearRandomWriteTargets();
                 SwapRenderTexture(ref src, ref dst);
                 ImageEffectHelper.ReleaseTemporaryRenderTexture(this, blurred);
@@ -459,10 +459,10 @@ namespace UnityStandardAssets.ImageEffects
 
                 Graphics.SetRenderTarget(tmp);
                 ComputeBuffer.CopyCount(computeBufferPoints, computeBufferDrawArgs, 0);
-                dx11BokehMaterial.SetBuffer("pointBuffer", computeBufferPoints);
-                dx11BokehMaterial.SetTexture("_MainTex", dx11BokehTexture);
-                dx11BokehMaterial.SetVector("_Screen", new Vector3(1.0f / (1.0f * source.width), 1.0f / (1.0f * source.height), textureBokehMaxRadius));
-                dx11BokehMaterial.SetPass((int)BokehTexturesPasses.Apply);
+                textureBokehMaterial.SetBuffer("pointBuffer", computeBufferPoints);
+                textureBokehMaterial.SetTexture("_MainTex", bokehTexture);
+                textureBokehMaterial.SetVector("_Screen", new Vector3(1.0f / (1.0f * source.width), 1.0f / (1.0f * source.height), textureBokehMaxRadius));
+                textureBokehMaterial.SetPass((int)BokehTexturesPasses.Apply);
                 Graphics.DrawProceduralIndirect(MeshTopology.Points, computeBufferDrawArgs, 0);
                 Graphics.Blit(tmp, destination);// hackaround for DX11 flipfun (OPTIMIZEME)
             }
@@ -624,7 +624,7 @@ namespace UnityStandardAssets.ImageEffects
 
         private bool shouldPerformBokeh
         {
-            get { return ImageEffectHelper.supportsDX11 && useBokehTexture && dx11BokehMaterial; }
+            get { return ImageEffectHelper.supportsDX11 && useBokehTexture && textureBokehMaterial; }
         }
 
         private static void Rotate2D(ref Vector4 direction, float cosinus, float sinus)

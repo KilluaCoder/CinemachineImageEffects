@@ -9,7 +9,7 @@
     * blend bokeh texture sprites via append buffer on top of blurred buffer
 */
 
-Shader "Hidden/DepthOfField/DX11BokehSplatting"
+Shader "Hidden/DepthOfField/BokehSplatting"
 {
     Properties
     {

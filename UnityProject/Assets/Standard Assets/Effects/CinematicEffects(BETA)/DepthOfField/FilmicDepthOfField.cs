@@ -45,71 +45,47 @@ namespace UnityStandardAssets.ImageEffects
 
         private enum Passes
         {
-            BlurAlphaWeighted                    =  0 ,
-            BoxDownsample                        =  1 ,
-            BlurFGCocFromColor                   =  2 ,
-            BlurFGCoc                            =  3 ,
-            CaptureSignedCoc                     =  4 ,
-            CaptureSignedCocExplicit             =  5 ,
-            VisualizeCoc                         =  6 ,
-            VisualizeCocExplicit                 =  7 ,
-            CircleSignedCocPrefilter             =  8 ,
-            CircleSignedCocBokeh                 =  9 ,
-            CircleSignedCocBokehWithDilatedFG    =  10,
-            CircleSignedCocBokehLow              =  11,
-            CircleSignedCocBokehWithDilatedFGLow =  12,
-            SignedCocMerge                       =  13,
-            SignedCocMergeExplicit               =  14,
-            SignedCocMergeBicubic                =  15,
-            SignedCocMergeExplicitBicubic        =  16,
-            ShapeLowQuality                      =  17,
-            ShapeLowQualityDilateFG              =  18,
-            ShapeLowQualityMerge                 =  19,
-            ShapeLowQualityMergeDilateFG         =  20,
-            ShapeMediumQuality                   =  21,
-            ShapeMediumQualityDilateFG           =  22,
-            ShapeMediumQualityMerge              =  23,
-            ShapeMediumQualityMergeDilateFG      =  24,
-            ShapeHighQuality                     =  25,
-            ShapeHighQualityDilateFG             =  26,
-            ShapeHighQualityMerge                =  27,
-            ShapeHighQualityMergeDilateFG        =  28,
-
-            //remove these
-            BlurinessAmountVisualisation0        =  29,
-            BlurinessAmount                      =  30,
-            BlurinessAmountVisualisation2        =  31,
-            BlurinessAmountExplicit              =  32,
-            CaptureCoc                           =  33,
-            CaptureCocExplicit                   =  34,
-            Copy                                 =  35,
-            Shape0                               =  36,
-            Shape1                               =  37,
-            Shape2                               =  38,
-            Shape3                               =  39,
-            Shape4                               =  40,
-            Shape5                               =  41,
-            Circle0                              =  42,
-            Circle1                              =  43,
-            Circle2                              =  44,
-            Circle3                              =  45,
-            BoostThresh                          =  46,
-            Boost                                =  47,
-            AlphaMask                            =  48,
-            BlurBoxBlend                         =  49,
-            BlurBox                              =  50
+            BlurAlphaWeighted                 =  0 ,
+            BoxBlur                           =  1 ,
+            DilateFgCocFromColor              =  2 ,
+            DilateFgCoc                       =  3 ,
+            CaptureCoc                        =  4 ,
+            CaptureCocExplicit                =  5 ,
+            VisualizeCoc                      =  6 ,
+            VisualizeCocExplicit              =  7 ,
+            CocPrefilter                      =  8 ,
+            CircleBlur                        =  9 ,
+            CircleBlurWithDilatedFg           =  10,
+            CircleBlurLowQuality              =  11,
+            CircleBlowLowQualityWithDilatedFg =  12,
+            Merge                             =  13,
+            MergeExplicit                     =  14,
+            MergeBicubic                      =  15,
+            MergeExplicitBicubic              =  16,
+            ShapeLowQuality                   =  17,
+            ShapeLowQualityDilateFg           =  18,
+            ShapeLowQualityMerge              =  19,
+            ShapeLowQualityMergeDilateFg      =  20,
+            ShapeMediumQuality                =  21,
+            ShapeMediumQualityDilateFg        =  22,
+            ShapeMediumQualityMerge           =  23,
+            ShapeMediumQualityMergeDilateFg   =  24,
+            ShapeHighQuality                  =  25,
+            ShapeHighQualityDilateFg          =  26,
+            ShapeHighQualityMerge             =  27,
+            ShapeHighQualityMergeDilateFg     =  28
         }
 
         public enum MedianPasses
         {
             Median3 = 0,
-            Median3x3 = 1
+            Median3X3 = 1
         }
 
         public enum BokehTexturesPasses
         {
-            Apply = 2,
-            Collect = 3
+            Apply = 0,
+            Collect = 1
         }
 
         public enum UIMode
@@ -121,12 +97,8 @@ namespace UnityStandardAssets.ImageEffects
         public enum ApertureShape
         {
             Circular,
-            CircularOLD,
             Hexagonal,
-            HexagonalOLD,
-            Octogonal,
-            OctogonalOLD,
-            BokehTextureOLD
+            Octogonal
         }
         public enum FilterQuality
         {
@@ -191,20 +163,11 @@ namespace UnityStandardAssets.ImageEffects
         [Tooltip("Use with care Bokeh texture are only available on shader model 5, and performance scale with the number of bokehs.")]
         public bool useBokehTexture;
 
-        private bool shouldPerformBokeh
-        {
-            get { return ImageEffectHelper.supportsDX11 && useBokehTexture && dx11BokehMaterial; }
-        }
-
         public UIMode uiMode = UIMode.Basic;
 
         public Shader filmicDepthOfFieldShader;
         public Shader medianFilterShader;
         public Shader dx11BokehShader;
-
-        private Material m_FilmicDepthOfFieldMaterial;
-        private Material m_MedianFilterMaterial;
-        private Material m_Dx11BokehMaterial;
 
         public Material filmicDepthOfFieldMaterial
         {
@@ -271,7 +234,9 @@ namespace UnityStandardAssets.ImageEffects
 
         private ComputeBuffer m_ComputeBufferDrawArgs;
         private ComputeBuffer m_ComputeBufferPoints;
-
+        private Material m_FilmicDepthOfFieldMaterial;
+        private Material m_MedianFilterMaterial;
+        private Material m_Dx11BokehMaterial;
         private float m_LastApertureOrientation;
         private Vector4 m_OctogonalBokehDirection1;
         private Vector4 m_OctogonalBokehDirection2;
@@ -281,17 +246,16 @@ namespace UnityStandardAssets.ImageEffects
         private Vector4 m_HexagonalBokehDirection2;
         private Vector4 m_HexagonalBokehDirection3;
 
-
         protected void OnEnable()
         {
             if (filmicDepthOfFieldShader == null)
-                filmicDepthOfFieldShader = Shader.Find("Hidden/FilmicDepthOfField");
+                filmicDepthOfFieldShader = Shader.Find("Hidden/DepthOfField/DepthOfField");
 
             if (medianFilterShader == null)
-                medianFilterShader = Shader.Find("Hidden/MedianFilter");
+                medianFilterShader = Shader.Find("Hidden/DepthOfField/MedianFilter");
 
             if (dx11BokehShader == null)
-                dx11BokehShader = Shader.Find("Hidden/Dof/DX11Dof");
+                dx11BokehShader = Shader.Find("Hidden/DepthOfField/DX11BokehSplatting");
 
             if (!ImageEffectHelper.IsSupported(filmicDepthOfFieldShader, true, true, this)
                 || !ImageEffectHelper.IsSupported(medianFilterShader, true, true, this)
@@ -316,7 +280,7 @@ namespace UnityStandardAssets.ImageEffects
             GetComponent<Camera>().depthTextureMode |= DepthTextureMode.Depth;
         }
 
-        void OnDisable()
+        protected void OnDisable()
         {
             ReleaseComputeResources();
 
@@ -332,357 +296,14 @@ namespace UnityStandardAssets.ImageEffects
             m_MedianFilterMaterial = null;
         }
 
-        //----------------------------------//
-        //TODO remove this section after new path have been validated
-        //----------------------------------//
-        void DoDX11Bokeh(RenderTexture source, RenderTexture destination)
-        {
-            float maxRadius = nearRadius > farRadius ? nearRadius : farRadius;
-            if (maxRadius == 0.0 || !ImageEffectHelper.supportsDX11)
-            {
-                Graphics.Blit(source, destination);
-                return;
-            }
-
-            // Setup
-            float internalBlurWidth = maxRadius / 2.0f;
-            int rtW = source.width;
-            int rtH = source.height;
-            RenderTexture rtLow = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, source.format);
-            RenderTexture dest2 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW / 2, rtH / 2, source.format);
-            RenderTexture rtSuperLow1 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW / 2, rtH / 2, source.format);
-            RenderTexture rtSuperLow2 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW / 2, rtH / 2, source.format);
-
-            // Blur Map
-            Bluriness(source, rtLow);
-
-            Graphics.Blit(source, rtSuperLow1, filmicDepthOfFieldMaterial, (int)Passes.BoxDownsample);
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(0.0f, 1.5f, 0.0f, 1.5f));
-            Graphics.Blit(rtSuperLow1, rtSuperLow2, filmicDepthOfFieldMaterial, (int)Passes.BlurAlphaWeighted);
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(1.5f, 0.0f, 0.0f, 1.5f));
-            Graphics.Blit(rtSuperLow2, rtSuperLow1, filmicDepthOfFieldMaterial, (int)Passes.BlurAlphaWeighted);
-
-            float scaleFactor = source.height / 720.0f; //Adjust scale taking 720p as a reference.
-
-            dx11BokehMaterial.SetTexture("_BlurredColor", rtSuperLow1);
-            dx11BokehMaterial.SetFloat("_SpawnHeuristic", dx11SpawnHeuristic);
-            dx11BokehMaterial.SetVector("_BokehParams", new Vector4(dx11BokehScale * scaleFactor, dx11BokehIntensity, dx11BokehThreshold, internalBlurWidth));
-            dx11BokehMaterial.SetTexture("_FgCocMask", null);
-
-            // collect bokeh candidates and replace with a darker pixel
-            Graphics.SetRandomWriteTarget(1, computeBufferPoints);
-            Graphics.Blit(source, rtLow, dx11BokehMaterial, 0);
-            Graphics.ClearRandomWriteTargets();
-
-            Graphics.Blit(rtLow, dest2, filmicDepthOfFieldMaterial, (int)Passes.AlphaMask);
-
-            // box blur
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(internalBlurWidth, 0.0f, 0.0f, internalBlurWidth));
-            Graphics.Blit(rtLow, source, filmicDepthOfFieldMaterial, (int)(Passes.BlurBox));
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(0.0f, internalBlurWidth, 0.0f, internalBlurWidth));
-            Graphics.Blit(source, dest2, filmicDepthOfFieldMaterial, (int)(Passes.BlurBoxBlend));
-
-            // apply bokeh candidates
-            Graphics.SetRenderTarget(dest2);
-            ComputeBuffer.CopyCount(computeBufferPoints, computeBufferDrawArgs, 0);
-            dx11BokehMaterial.SetBuffer("pointBuffer", computeBufferPoints);
-            dx11BokehMaterial.SetTexture("_MainTex", dx11BokehTexture);
-            dx11BokehMaterial.SetVector("_Screen", new Vector3(1.0f / (1.0f * source.width), 1.0f / (1.0f * source.height), internalBlurWidth));
-            dx11BokehMaterial.SetPass(2);
-
-            Graphics.DrawProceduralIndirect(MeshTopology.Points, computeBufferDrawArgs, 0);
-
-            Graphics.Blit(dest2, destination, filmicDepthOfFieldMaterial, (int)Passes.Copy);    // hackaround for DX11 high resolution flipfun (OPTIMIZEME)
-        }
-
-        void WhiteBoost(RenderTexture source, RenderTexture bluriness, RenderTexture tmp, RenderTexture destination)
-        {
-            if ((nearBoostAmount == 0.0f && farBoostAmount == 0.0f) || (uiMode == UIMode.Basic))
-            {
-                Graphics.Blit(source, destination);
-            }
-            else
-            {
-                Vector4 blurrinessCoe = new Vector4(nearRadius, farRadius, 0.0f, 0.0f);
-                filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
-                filmicDepthOfFieldMaterial.SetFloat("_Param1", boostPoint);
-                filmicDepthOfFieldMaterial.SetTexture("_MainTex", source);
-                filmicDepthOfFieldMaterial.SetTexture("_SecondTex", bluriness);
-                Graphics.Blit(source, tmp, filmicDepthOfFieldMaterial, (int)Passes.BoostThresh);
-                filmicDepthOfFieldMaterial.SetTexture("_MainTex", source);
-                filmicDepthOfFieldMaterial.SetTexture("_SecondTex", bluriness);
-                filmicDepthOfFieldMaterial.SetTexture("_ThirdTex", tmp);
-                Vector4 boostCoe = new Vector4(nearBoostAmount * 0.5f, farBoostAmount * 0.5f, 0.0f, 0.0f);
-                filmicDepthOfFieldMaterial.SetVector("_Param0", boostCoe);
-                Graphics.Blit(source, destination, filmicDepthOfFieldMaterial, (int)Passes.Boost);
-            }
-        }
-
-        void Bluriness(RenderTexture source, RenderTexture destination)
-        {
-            Camera camera = GetComponent<Camera>();
-            Vector4 blurrinessParam;
-            Vector4 blurrinessCoe;
-            if (uiMode == UIMode.Basic || uiMode == UIMode.Advanced)
-            {
-                float focusDistance01 = focusTransform ? (camera.WorldToViewportPoint(focusTransform.position)).z / (camera.farClipPlane) : (focusPlane * focusPlane * focusPlane * focusPlane);
-                float focusRange01 = 0.0f;
-                if (uiMode == UIMode.Advanced)
-                    focusRange01 = focusRange * focusRange * focusRange * focusRange;
-                float focalLength = 4.0f / Mathf.Tan(0.5f * camera.fieldOfView * Mathf.Deg2Rad);
-                float aperture = focalLength / fStops;
-                blurrinessCoe = new Vector4(0.0f, 0.0f, 1.0f, 1.0f);
-                blurrinessParam = new Vector4(aperture, focalLength, focusDistance01, focusRange01);
-                filmicDepthOfFieldMaterial.SetVector("_BlurParams", blurrinessParam);
-                filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
-
-                if (visualizeBluriness)
-                {
-                    Graphics.Blit(source, destination, filmicDepthOfFieldMaterial, (int)Passes.BlurinessAmountVisualisation0);
-                }
-                else
-                {
-                    if (apertureShape == ApertureShape.BokehTextureOLD)
-                    {
-                        //source.MarkRestoreExpected();
-                        Graphics.Blit(source, destination, filmicDepthOfFieldMaterial, (int)Passes.CaptureCoc);
-                        Graphics.Blit(destination, source);
-                    }
-                    else
-                    {
-                        Graphics.Blit(source, destination, filmicDepthOfFieldMaterial, (int)Passes.BlurinessAmount);
-                    }
-                }
-            }
-            else
-            {
-                float focusDistance01 = focusTransform ? (camera.WorldToViewportPoint(focusTransform.position)).z / (camera.farClipPlane) : (focusPlane * focusPlane * focusPlane * focusPlane);
-                float nearDistance01 = nearPlane * nearPlane * nearPlane * nearPlane;
-                float farDistance01 = farPlane * farPlane * farPlane * farPlane;
-                float nearFocusRange01 = focusRange * focusRange * focusRange * focusRange;
-                float farFocusRange01 = nearFocusRange01;
-
-                if (focusDistance01 <= nearDistance01)
-                    focusDistance01 = nearDistance01 + 0.0000001f;
-                if (focusDistance01 >= farDistance01)
-                    focusDistance01 = farDistance01 - 0.0000001f;
-                if ((focusDistance01 - nearFocusRange01) <= nearDistance01)
-                    nearFocusRange01 = (focusDistance01 - nearDistance01 - 0.0000001f);
-                if ((focusDistance01 + farFocusRange01) >= farDistance01)
-                    farFocusRange01 = (farDistance01 - focusDistance01 - 0.0000001f);
-
-
-                float a1 = 1.0f / (nearDistance01 - focusDistance01 + nearFocusRange01);
-                float a2 = 1.0f / (farDistance01 - focusDistance01 - farFocusRange01);
-                float b1 = (1.0f - a1 * nearDistance01), b2 = (1.0f - a2 * farDistance01);
-                float c1 = -1.0f, c2 = 1.0f;
-                blurrinessParam = new Vector4(c1 * a1, c1 * b1, c2 * a2, c2 * b2);
-                blurrinessCoe = new Vector4(0.0f, 0.0f, (b2 - b1) / (a1 - a2), 0.0f);
-                filmicDepthOfFieldMaterial.SetVector("_BlurParams", blurrinessParam);
-                filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
-
-                if (visualizeBluriness)
-                {
-                    Graphics.Blit(source, destination, filmicDepthOfFieldMaterial, (int)Passes.BlurinessAmountVisualisation2);
-                }
-                else
-                {
-                    if (apertureShape == ApertureShape.BokehTextureOLD)
-                    {
-                        //source.MarkRestoreExpected();
-                        Graphics.Blit(source, destination, filmicDepthOfFieldMaterial, (int)Passes.CaptureCocExplicit);
-                        Graphics.Blit(destination, source);
-                    }
-                    else
-                    {
-                        Graphics.Blit(source, destination, filmicDepthOfFieldMaterial, (int)Passes.BlurinessAmountExplicit);
-                    }
-                }
-            }
-        }
-
-        void DoCircle(RenderTexture source, RenderTexture destination)
-        {
-            float maxRadius = nearRadius > farRadius ? nearRadius : farRadius;
-            if (maxRadius == 0.0)
-            {
-                Graphics.Blit(source, destination);
-                return;
-            }
-
-            // Setup
-            int rtW = source.width;
-            int rtH = source.height;
-            RenderTexture blurinessFullRes = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.ARGBHalf);
-            RenderTexture tmpFullRes = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, source.format);
-            RenderTexture tmpQuarterRes = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW / 2, rtH / 2, source.format);
-
-            // Blur Map
-            Bluriness(source, blurinessFullRes);
-
-            // Boost
-            RenderTexture sourceWithBoost = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.ARGBHalf);
-            WhiteBoost(source, blurinessFullRes, tmpFullRes, sourceWithBoost);
-            ImageEffectHelper.ReleaseTemporaryRenderTexture(this, tmpFullRes);
-
-            // Convolve
-            Vector4 blurrinessCoe;
-            int blurPass = maxRadius <= 7.0f ? (int)Passes.Circle0 : (int)Passes.Circle2;
-
-            RenderTexture sourceBoostQuarterRes = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW / 2, rtH / 2, RenderTextureFormat.ARGBHalf);
-            Graphics.Blit(sourceWithBoost, sourceBoostQuarterRes);
-            blurrinessCoe = new Vector4(0.4f * nearRadius, 0.4f * farRadius, 0.0f, 0.0f);
-            filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
-            filmicDepthOfFieldMaterial.SetTexture("_MainTex", sourceBoostQuarterRes);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurinessFullRes);
-            Graphics.Blit(sourceBoostQuarterRes, tmpQuarterRes, filmicDepthOfFieldMaterial, blurPass);
-
-            blurrinessCoe = new Vector4(0.8f * nearRadius, 0.8f * farRadius, 0.0f, 0.0f);
-            filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
-            filmicDepthOfFieldMaterial.SetTexture("_MainTex", sourceWithBoost);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurinessFullRes);
-            filmicDepthOfFieldMaterial.SetTexture("_ThirdTex", tmpQuarterRes);
-            Graphics.Blit(sourceWithBoost, destination, filmicDepthOfFieldMaterial, blurPass + 1);
-        }
-
-        void DoHexagon(RenderTexture source, RenderTexture destination)
-        {
-            float maxRadius = nearRadius > farRadius ? nearRadius : farRadius;
-            if (maxRadius == 0.0)
-            {
-                Graphics.Blit(source, destination);
-                return;
-            }
-
-            // Setup
-            int rtW = source.width;
-            int rtH = source.height;
-            RenderTexture bluriness = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.ARGBHalf);
-            RenderTexture tmp1 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, source.format);
-            RenderTexture tmp2 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, source.format);
-
-            // Blur Map
-            Bluriness(source, bluriness);
-
-            // Boost
-            RenderTexture sourceWithBoost = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.ARGBHalf);
-            WhiteBoost(source, bluriness, tmp1, sourceWithBoost);
-
-            // Convolve
-            int blurPass = maxRadius <= 5.0f ? (int)Passes.Shape0 : (maxRadius <= 10.0f ? (int)Passes.Shape2 : (int)Passes.Shape4);
-            Vector4 blurrinessCoe = new Vector4(nearRadius, farRadius, 0.0f, 0.0f);
-            Vector4 delta = new Vector4(0.5f, 0.0f, 0.0f, 0.0f);
-            filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
-            filmicDepthOfFieldMaterial.SetTexture("_MainTex", sourceWithBoost);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", bluriness);
-            filmicDepthOfFieldMaterial.SetVector("_Delta", delta);
-            Graphics.Blit(sourceWithBoost, tmp1, filmicDepthOfFieldMaterial, blurPass);
-
-            delta = new Vector4(0.25f, 0.433013f, 0.0f, 0.0f);
-            filmicDepthOfFieldMaterial.SetTexture("_MainTex", tmp1);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", bluriness);
-            filmicDepthOfFieldMaterial.SetVector("_Delta", delta);
-            Graphics.Blit(tmp1, tmp2, filmicDepthOfFieldMaterial, blurPass);
-
-            delta = new Vector4(0.25f, -0.433013f, 0.0f, 0.0f);
-            filmicDepthOfFieldMaterial.SetTexture("_MainTex", tmp1);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", bluriness);
-            filmicDepthOfFieldMaterial.SetTexture("_ThirdTex", tmp2);
-            filmicDepthOfFieldMaterial.SetVector("_Delta", delta);
-            Graphics.Blit(tmp1, destination, filmicDepthOfFieldMaterial, blurPass + 1);
-        }
-
-        void DoOctogon(RenderTexture source, RenderTexture destination)
-        {
-            float maxRadius = nearRadius > farRadius ? nearRadius : farRadius;
-            if (maxRadius == 0.0)
-            {
-                Graphics.Blit(source, destination);
-                return;
-            }
-
-            // Setup
-            int rtW = source.width;
-            int rtH = source.height;
-            RenderTexture bluriness = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.ARGBHalf);
-            RenderTexture tmp1 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, source.format);
-            RenderTexture tmp2 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, source.format);
-
-            // Blur Map
-            Bluriness(source, bluriness);
-
-            // Boost
-            RenderTexture sourceWithBoost = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.ARGBHalf);
-            WhiteBoost(source, bluriness, tmp1, sourceWithBoost);
-
-            // Convolve
-            int blurPass = maxRadius <= 5.0f ? (int)Passes.Shape0 : (maxRadius <= 10.0f ? (int)Passes.Shape2 : (int)Passes.Shape4);
-            Vector4 blurrinessCoe = new Vector4(nearRadius, farRadius, 0.0f, 0.0f);
-            Vector4 delta = new Vector4(0.5f, 0.0f, 0.0f, 0.0f);
-            filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
-            filmicDepthOfFieldMaterial.SetTexture("_MainTex", sourceWithBoost);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", bluriness);
-            filmicDepthOfFieldMaterial.SetVector("_Delta", delta);
-            Graphics.Blit(sourceWithBoost, tmp1, filmicDepthOfFieldMaterial, blurPass);
-
-            delta = new Vector4(0.0f, 0.5f, 0.0f, 0.0f);
-            filmicDepthOfFieldMaterial.SetTexture("_MainTex", tmp1);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", bluriness);
-            filmicDepthOfFieldMaterial.SetVector("_Delta", delta);
-            Graphics.Blit(tmp1, tmp2, filmicDepthOfFieldMaterial, blurPass);
-
-            delta = new Vector4(-0.353553f, 0.353553f, 0.0f, 0.0f);
-            filmicDepthOfFieldMaterial.SetTexture("_MainTex", sourceWithBoost);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", bluriness);
-            filmicDepthOfFieldMaterial.SetVector("_Delta", delta);
-            Graphics.Blit(sourceWithBoost, tmp1, filmicDepthOfFieldMaterial, blurPass);
-
-            delta = new Vector4(0.353553f, 0.353553f, 0.0f, 0.0f);
-            filmicDepthOfFieldMaterial.SetTexture("_MainTex", tmp1);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", bluriness);
-            filmicDepthOfFieldMaterial.SetTexture("_ThirdTex", tmp2);
-            filmicDepthOfFieldMaterial.SetVector("_Delta", delta);
-            Graphics.Blit(tmp1, destination, filmicDepthOfFieldMaterial, blurPass + 1);
-        }
-
-        void OnRenderImage_OLD(RenderTexture source, RenderTexture destination)
-        {
-            if (visualizeBluriness)
-            {
-                Bluriness(source, destination);
-            }
-            else
-            {
-                switch (apertureShape)
-                {
-                    case ApertureShape.CircularOLD:       DoCircle(source, destination); break;
-                    case ApertureShape.HexagonalOLD:      DoHexagon(source, destination); break;
-                    case ApertureShape.OctogonalOLD:      DoOctogon(source, destination); break;
-                    case ApertureShape.BokehTextureOLD: DoDX11Bokeh(source, destination); break;
-                }
-            }
-
-            ImageEffectHelper.ReleaseAllTemporyRenderTexutres(this);
-        }
-
         //-------------------------------------------------------------------//
         // Main entry point                                                  //
         //-------------------------------------------------------------------//
-        void OnRenderImage(RenderTexture source, RenderTexture destination)
+        public void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
             if (medianFilterMaterial == null || filmicDepthOfFieldMaterial == null)
             {
                 Graphics.Blit(source, destination);
-                return;
-            }
-
-            //TODO cleanme
-            if ((apertureShape == ApertureShape.CircularOLD) ||
-                (apertureShape == ApertureShape.HexagonalOLD) ||
-                (apertureShape == ApertureShape.OctogonalOLD) ||
-                (apertureShape == ApertureShape.BokehTextureOLD))
-            {
-                OnRenderImage_OLD(source, destination);
                 return;
             }
 
@@ -740,7 +361,7 @@ namespace UnityStandardAssets.ImageEffects
             filmicDepthOfFieldMaterial.SetVector("_BlurParams", cocParam);
             filmicDepthOfFieldMaterial.SetVector("_BlurCoe", cocCoe);
             filmicDepthOfFieldMaterial.SetVector("_BoostParams", new Vector4(nearBlurRadius * nearBoostAmount * -0.5f, farBlurRadius * farBoostAmount * 0.5f, boostPoint, 0.0f));
-            Graphics.Blit(source, colorAndCoc2, filmicDepthOfFieldMaterial, (uiMode == UIMode.Explicit) ? (int)Passes.CaptureSignedCocExplicit : (int)Passes.CaptureSignedCoc);
+            Graphics.Blit(source, colorAndCoc2, filmicDepthOfFieldMaterial, (uiMode == UIMode.Explicit) ? (int)Passes.CaptureCocExplicit : (int)Passes.CaptureCoc);
             RenderTexture src = colorAndCoc2;
             RenderTexture dst = colorAndCoc;
 
@@ -750,7 +371,7 @@ namespace UnityStandardAssets.ImageEffects
             {
                 // Blur a bit so we can do a frequency check
                 RenderTexture blurred = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.ARGBHalf);
-                Graphics.Blit(src, blurred, filmicDepthOfFieldMaterial, (int)Passes.BoxDownsample);
+                Graphics.Blit(src, blurred, filmicDepthOfFieldMaterial, (int)Passes.BoxBlur);
                 filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(0.0f, 1.5f, 0.0f, 1.5f));
                 Graphics.Blit(blurred, dst, filmicDepthOfFieldMaterial, (int)Passes.BlurAlphaWeighted);
                 filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(1.5f, 0.0f, 0.0f, 1.5f));
@@ -778,16 +399,16 @@ namespace UnityStandardAssets.ImageEffects
                 RenderTexture blurredFgCoc2 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.RHalf);
                 blurredFgCoc = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.RHalf);
                 filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(0.0f, nearBlurRadius * 0.75f, 0.0f, 0.0f));
-                Graphics.Blit(src, blurredFgCoc2, filmicDepthOfFieldMaterial, (int)Passes.BlurFGCocFromColor);
+                Graphics.Blit(src, blurredFgCoc2, filmicDepthOfFieldMaterial, (int)Passes.DilateFgCocFromColor);
                 filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(nearBlurRadius * 0.75f, 0.0f, 0.0f, 0.0f));
-                Graphics.Blit(blurredFgCoc2, blurredFgCoc, filmicDepthOfFieldMaterial, (int)Passes.BlurFGCoc);
+                Graphics.Blit(blurredFgCoc2, blurredFgCoc, filmicDepthOfFieldMaterial, (int)Passes.DilateFgCoc);
                 ImageEffectHelper.ReleaseTemporaryRenderTexture(this, blurredFgCoc2);
             }
 
             // Blur downsampled color to fill the gap between samples
             if (prefilterBlur)
             {
-                Graphics.Blit(src, dst, filmicDepthOfFieldMaterial, (int)Passes.CircleSignedCocPrefilter);
+                Graphics.Blit(src, dst, filmicDepthOfFieldMaterial, (int)Passes.CocPrefilter);
                 SwapRenderTexture(ref src, ref dst);
             }
 
@@ -814,7 +435,7 @@ namespace UnityStandardAssets.ImageEffects
                 }
                 case FilterQuality.High:
                 {
-                    Graphics.Blit(src, dst, medianFilterMaterial, (int)MedianPasses.Median3x3);
+                    Graphics.Blit(src, dst, medianFilterMaterial, (int)MedianPasses.Median3X3);
                     SwapRenderTexture(ref src, ref dst);
                     break;
                 }
@@ -824,10 +445,10 @@ namespace UnityStandardAssets.ImageEffects
             filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
             filmicDepthOfFieldMaterial.SetVector("_Convolved_TexelSize", new Vector4(src.width, src.height, 1.0f / src.width, 1.0f / src.height));
             filmicDepthOfFieldMaterial.SetTexture("_SecondTex", src);
-            int mergePass = (uiMode == UIMode.Explicit) ? (int)Passes.SignedCocMergeExplicit : (int)Passes.SignedCocMerge;
+            int mergePass = (uiMode == UIMode.Explicit) ? (int)Passes.MergeExplicit : (int)Passes.Merge;
             if (highQualityUpsampling)
             {
-                mergePass = (uiMode == UIMode.Explicit) ? (int)Passes.SignedCocMergeExplicitBicubic : (int)Passes.SignedCocMergeBicubic;
+                mergePass = (uiMode == UIMode.Explicit) ? (int)Passes.MergeExplicitBicubic : (int)Passes.MergeBicubic;
             }
 
             // Apply texture bokeh
@@ -864,13 +485,13 @@ namespace UnityStandardAssets.ImageEffects
             filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurredFgCoc);
             RenderTexture tmp = ImageEffectHelper.GetTemporaryRenderTexture(this, src.width, src.height, src.format);
 
-            filmicDepthOfFieldMaterial.SetVector("_Delta", m_HexagonalBokehDirection1);
+            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_HexagonalBokehDirection1);
             Graphics.Blit(src, tmp, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Delta", m_HexagonalBokehDirection2);
+            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_HexagonalBokehDirection2);
             Graphics.Blit(tmp, src, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Delta", m_HexagonalBokehDirection3);
+            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_HexagonalBokehDirection3);
             filmicDepthOfFieldMaterial.SetTexture("_ThirdTex", src);
             Graphics.Blit(tmp, dst, filmicDepthOfFieldMaterial, blurPassMerge);
             ImageEffectHelper.ReleaseTemporaryRenderTexture(this, tmp);
@@ -887,16 +508,16 @@ namespace UnityStandardAssets.ImageEffects
             filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurredFgCoc);
             RenderTexture tmp = ImageEffectHelper.GetTemporaryRenderTexture(this, src.width, src.height, src.format);
 
-            filmicDepthOfFieldMaterial.SetVector("_Delta", m_OctogonalBokehDirection1);
+            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_OctogonalBokehDirection1);
             Graphics.Blit(src, tmp, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Delta", m_OctogonalBokehDirection2);
+            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_OctogonalBokehDirection2);
             Graphics.Blit(tmp, dst, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Delta", m_OctogonalBokehDirection3);
+            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_OctogonalBokehDirection3);
             Graphics.Blit(src, tmp, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Delta", m_OctogonalBokehDirection4);
+            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_OctogonalBokehDirection4);
             filmicDepthOfFieldMaterial.SetTexture("_ThirdTex", dst);
             Graphics.Blit(tmp, src, filmicDepthOfFieldMaterial, blurPassMerge);
             ImageEffectHelper.ReleaseTemporaryRenderTexture(this, tmp);
@@ -908,11 +529,11 @@ namespace UnityStandardAssets.ImageEffects
             if (blurredFgCoc != null)
             {
                 filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurredFgCoc);
-                bokehPass = (maxRadius > 10.0f) ? (int)Passes.CircleSignedCocBokehWithDilatedFG : (int)Passes.CircleSignedCocBokehWithDilatedFGLow;
+                bokehPass = (maxRadius > 10.0f) ? (int)Passes.CircleBlurWithDilatedFg : (int)Passes.CircleBlowLowQualityWithDilatedFg;
             }
             else
             {
-                bokehPass = (maxRadius > 10.0f) ? (int)Passes.CircleSignedCocBokeh : (int)Passes.CircleSignedCocBokehLow;
+                bokehPass = (maxRadius > 10.0f) ? (int)Passes.CircleBlur : (int)Passes.CircleBlurLowQuality;
             }
             Graphics.Blit(src, dst, filmicDepthOfFieldMaterial, bokehPass);
             SwapRenderTexture(ref src, ref dst);
@@ -1001,6 +622,11 @@ namespace UnityStandardAssets.ImageEffects
             }
         }
 
+        private bool shouldPerformBokeh
+        {
+            get { return ImageEffectHelper.supportsDX11 && useBokehTexture && dx11BokehMaterial; }
+        }
+
         private static void Rotate2D(ref Vector4 direction, float cosinus, float sinus)
         {
             Vector4 source = direction;
@@ -1039,18 +665,18 @@ namespace UnityStandardAssets.ImageEffects
             {
                 if (maxRadius > 10.0f)
                 {
-                    blurPass = (int)Passes.ShapeHighQualityDilateFG;
-                    blurAndMergePass = (int)Passes.ShapeHighQualityMergeDilateFG;
+                    blurPass = (int)Passes.ShapeHighQualityDilateFg;
+                    blurAndMergePass = (int)Passes.ShapeHighQualityMergeDilateFg;
                 }
                 else if (maxRadius > 5.0f)
                 {
-                    blurPass = (int)Passes.ShapeMediumQualityDilateFG;
-                    blurAndMergePass = (int)Passes.ShapeMediumQualityMergeDilateFG;
+                    blurPass = (int)Passes.ShapeMediumQualityDilateFg;
+                    blurAndMergePass = (int)Passes.ShapeMediumQualityMergeDilateFg;
                 }
                 else
                 {
-                    blurPass = (int)Passes.ShapeLowQualityDilateFG;
-                    blurAndMergePass = (int)Passes.ShapeLowQualityMergeDilateFG;
+                    blurPass = (int)Passes.ShapeLowQualityDilateFg;
+                    blurAndMergePass = (int)Passes.ShapeLowQualityMergeDilateFg;
                 }
             }
         }

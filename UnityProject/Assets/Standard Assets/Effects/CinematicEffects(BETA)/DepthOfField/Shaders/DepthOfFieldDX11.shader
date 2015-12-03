@@ -1,19 +1,15 @@
 
 /*
-    DX11 Depth Of Field
-    pretty much just does bokeh texture splatting
+    DX11 Bokeh splatting
 
     basic algorithm:
-
     * find bright spots
     * verify high frequency (otherwise dont care)
     * if possitive, replace with black pixel and add to append buffer
-    * box blur buffer (thus smearing black pixels)
-    * blend bokeh texture sprites via append buffer on top of box blurred buffer
-    * composite with frame buffer
+    * blend bokeh texture sprites via append buffer on top of blurred buffer
 */
 
-Shader "Hidden/Dof/DX11Dof"
+Shader "Hidden/DepthOfField/DX11BokehSplatting"
 {
     Properties
     {
@@ -96,17 +92,6 @@ Shader "Hidden/Dof/DX11Dof"
         return o;
     }
 
-    vs_out vertApplyNoFlip (uint id : SV_VertexID)
-    {
-        vs_out o = (vs_out)0;
-        float2 pos = pointBuffer[id].pos.xy ;
-        o.pos = float4(pos * 2.0 - 1.0, 0, 1);
-        o.color =  pointBuffer[id].color;
-        o.cocOverlap = pointBuffer[id].pos.z;
-
-        return o;
-    }
-
     v2f vertCollect (appdata v)
     {
         v2f o;
@@ -126,7 +111,6 @@ Shader "Hidden/Dof/DX11Dof"
     void geom (point vs_out input[1], inout TriangleStream<gs_out> outStream)
     {
         // NEW ENERGY CONSERVATION:
-
         float2 scale2 = _BokehParams.ww * input[0].color.aa * _BokehParams.xx;
         float4 offs = 0;
         offs.xy = float2(3.0, 3.0) + 2.0f * floor(scale2 + float2(0.5,0.5));
@@ -166,7 +150,7 @@ Shader "Hidden/Dof/DX11Dof"
         outStream.RestartStrip();
     }
 
-    float4 collectBrightPixel(half2 uv, bool fgCocFromSample)
+    float4 collectBrightPixel(half2 uv)
     {
         half4 c = tex2D (_MainTex, uv);
         half  coc = abs(c.a);
@@ -175,19 +159,16 @@ Shader "Hidden/Dof/DX11Dof"
         half4 cblurred = tex2D (_BlurredColor, uv);
         half  cocBlurred = abs(cblurred.a);
         half  lumblurred = Luminance (cblurred.rgb);
-
-        half fgCoc = -min(c.a,0.0h);
-        if (fgCocFromSample)
-            fgCoc = tex2D(_FgCocMask, uv).a;
+        half  fgCoc = -min(c.a,0.0h);
 
         [branch]
         if (coc * _BokehParams.w > 1 && cocBlurred > 0.1 && lumc > _BokehParams.z && abs(lumc-lumblurred) > _SpawnHeuristic)
         {
-            appendStruct append;
-            append.pos = float4(uv, fgCoc, 1);
+            appendStruct append = (appendStruct)0;
+            append.pos = float3(uv, fgCoc);
             append.color.rgba = half4(c.rgb * saturate(coc*4), coc);
-            pointBufferOutput.Append (append);
-            return half4(c.rgb * saturate(1-coc*4), c.a);
+            pointBufferOutput.Append(append);
+            c = half4(c.rgb * saturate(1-coc*4), c.a);
         }
         return c;
     }
@@ -197,48 +178,7 @@ ENDCG
 SubShader
 {
 
-// pass 0: append buffer "collect"
-Pass
-{
-    ZWrite Off ZTest Always Cull Off
-
-    CGPROGRAM
-
-    #pragma vertex vertCollect
-    #pragma fragment frag
-    #pragma target 5.0
-
-    float4 frag (v2f i) : SV_Target
-    {
-        return collectBrightPixel(i.uv, true);
-    }
-    ENDCG
-}
-
-// pass 1: bokeh splatting (low resolution)
-Pass {
-
-    ZWrite Off ZTest Always Cull Off
-    Blend One One, One One
-    ColorMask RGBA
-
-    CGPROGRAM
-
-    #pragma target 5.0
-    #pragma vertex vertApply
-    #pragma geometry geom
-    #pragma fragment frag
-
-    fixed4 frag (gs_out i) : SV_Target
-    {
-        float2 uv = (i.uv.xy) * i.misc.xy + (float2(1,1)-i.misc.xy) * 0.5;  // smooth uv scale
-        return float4(i.color.rgb, 1) * float4(tex2D(_MainTex, uv.xy).rgb, i.uv.z) * clampBorderColor (uv);
-    }
-
-    ENDCG
-}
-
-// pass 2: bokeh splatting (high resolution)
+// pass 0: bokeh splatting
 Pass {
 
     ZWrite Off ZTest Always Cull Off
@@ -262,7 +202,7 @@ Pass {
     ENDCG
 }
 
-// pass 3: append buffer "collect" without foreground fetch
+// pass 1: append buffer "collect"
 Pass
 {
     ZWrite Off ZTest Always Cull Off
@@ -275,7 +215,7 @@ Pass
 
     float4 frag (v2f i) : SV_Target
     {
-        return collectBrightPixel(i.uv, false);
+        return collectBrightPixel(i.uv);
     }
     ENDCG
 }

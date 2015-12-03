@@ -5,14 +5,13 @@ namespace UnityStandardAssets.ImageEffects
 {
     //Improvement ideas:
     //  In hdr do local tonemapping/inverse tonemapping to stabilize bokeh.
-    //  Use ldr buffer in ldr + See what pass can go with ldr buffer in hdr (in correlation to previous point and remapping coc from -1/0/1 to 0/0.5/1)
+    //  Use rgba8 buffer in ldr / in some pass in hdr (in correlation to previous point and remapping coc from -1/0/1 to 0/0.5/1)
     //  Use temporal stabilisation.
-    //  Optimize when near and far blur are the same.
-    //  Improve quality when near and far blur are not the same (perf ?)
-    //  Improve bokeh quality in low setting by using swirl effect on the samples.
-    //  Improve integration of the bokeh texture into the other blur (perf/consistency)
-    //  Support different near and far blur amount with the bokeh texture
-    //  Use distance field for the bokeh texture.
+    //  Add a mode to do bokeh texture in quarter res as well
+    //  Support different near and far blur for the bokeh texture
+    //  Try distance field for the bokeh texture.
+    //  Try to separate the output of the blur pass to two rendertarget near+far, see the gain in quality vs loss in performance.
+    //  Try swirl effect on the samples of the circle blur.
 
     //References :
     //  This DOF implementation use ideas from public sources, a big thank to them :
@@ -396,8 +395,8 @@ namespace UnityStandardAssets.ImageEffects
             RenderTexture blurredFgCoc = null;
             if (dilateNearBlur)
             {
-                RenderTexture blurredFgCoc2 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.RHalf);
-                blurredFgCoc = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.RHalf);
+                RenderTexture blurredFgCoc2 = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.RGHalf);
+                blurredFgCoc = ImageEffectHelper.GetTemporaryRenderTexture(this, rtW, rtH, RenderTextureFormat.RGHalf);
                 filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(0.0f, nearBlurRadius * 0.75f, 0.0f, 0.0f));
                 Graphics.Blit(src, blurredFgCoc2, filmicDepthOfFieldMaterial, (int)Passes.DilateFgCocFromColor);
                 filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(nearBlurRadius * 0.75f, 0.0f, 0.0f, 0.0f));
@@ -484,6 +483,7 @@ namespace UnityStandardAssets.ImageEffects
             GetDirectionalBlurPassesFromRadius(blurredFgCoc, maxRadius, out blurPass, out blurPassMerge);
             filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurredFgCoc);
             RenderTexture tmp = ImageEffectHelper.GetTemporaryRenderTexture(this, src.width, src.height, src.format);
+
 
             filmicDepthOfFieldMaterial.SetVector("_Offsets", m_HexagonalBokehDirection1);
             Graphics.Blit(src, tmp, filmicDepthOfFieldMaterial, blurPass);
@@ -602,13 +602,13 @@ namespace UnityStandardAssets.ImageEffects
             float sinus = Mathf.Sin(rotationRadian);
 
             m_OctogonalBokehDirection1 = new Vector4(0.5f, 0.0f, 0.0f, 0.0f);
-            m_OctogonalBokehDirection2 = new Vector4(0.0f, 0.5f, 0.0f, 0.0f);
-            m_OctogonalBokehDirection3 = new Vector4(-0.353553f, 0.353553f, 0.0f, 0.0f);
-            m_OctogonalBokehDirection4 = new Vector4(0.353553f, 0.353553f, 0.0f, 0.0f);
+            m_OctogonalBokehDirection2 = new Vector4(0.0f, 0.5f, 1.0f, 0.0f);
+            m_OctogonalBokehDirection3 = new Vector4(-0.353553f, 0.353553f, 1.0f, 0.0f);
+            m_OctogonalBokehDirection4 = new Vector4(0.353553f, 0.353553f, 1.0f, 0.0f);
 
             m_HexagonalBokehDirection1 = new Vector4(0.5f, 0.0f, 0.0f, 0.0f);
-            m_HexagonalBokehDirection2 = new Vector4(0.25f, 0.433013f, 0.0f, 0.0f);
-            m_HexagonalBokehDirection3 = new Vector4(0.25f, -0.433013f, 0.0f, 0.0f);
+            m_HexagonalBokehDirection2 = new Vector4(0.25f, 0.433013f, 1.0f, 0.0f);
+            m_HexagonalBokehDirection3 = new Vector4(0.25f, -0.433013f, 1.0f, 0.0f);
 
             if (rotationRadian > float.Epsilon)
             {

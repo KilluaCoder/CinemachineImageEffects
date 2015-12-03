@@ -166,9 +166,12 @@ half4 shapeDirectionalBlur(half2 uv, bool mergePass, int numSample, bool sampleD
 {
     half4 centerTap = tex2Dlod (_MainTex, float4(uv,0,0));
     half  fgCoc  = centerTap.a;
+    half  fgBlendFromPreviousPass = centerTap.a * _Offsets.z;
     if (sampleDilatedFG)
     {
-        fgCoc  = min(tex2Dlod(_SecondTex, half4(uv,0,0)).r, fgCoc);
+        half2 cocs = tex2Dlod(_SecondTex, half4(uv,0,0)).rg;
+        fgCoc  = min(cocs.r, cocs.g);
+        centerTap.a = cocs.g;
     }
 
     half  bgRadius = smoothstep(0.0h, 0.85h, centerTap.a)  * _BlurCoe.y;
@@ -176,11 +179,11 @@ half4 shapeDirectionalBlur(half2 uv, bool mergePass, int numSample, bool sampleD
     half  radius = max(bgRadius, fgRadius);
     if (radius < 1e-2f )
     {
-        return half4(centerTap.rgb, mergePass?0.0h:centerTap.a);
+        return half4(centerTap.rgb, (sampleDilatedFG||mergePass)?fgBlendFromPreviousPass:centerTap.a);
     }
 
-    half radOtherFgRad = radius/fgRadius;
-    half radOtherBgRad = radius/bgRadius;
+    half radOtherFgRad = radius/(fgRadius + 1e-2h);
+    half radOtherBgRad = radius/(bgRadius + 1e-2h);
     half2 range = radius * _MainTex_TexelSize.xy;
 
     half fgWeight = 0.001h;
@@ -195,6 +198,10 @@ half4 shapeDirectionalBlur(half2 uv, bool mergePass, int numSample, bool sampleD
         half2 offset = kVal * range;
         half2 texCoord = uv + offset;
         half4 sample0 = tex2Dlod(_MainTex, half4(texCoord,0,0));
+        if (sampleDilatedFG)
+        {
+            sample0.a = tex2Dlod(_SecondTex, half4(texCoord,0,0)).g;
+        }
 
         half dist = abs(2.0h * t - 1);
         half distanceFactor = saturate(-0.5f * abs(sample0.a - centerTap.a) * dist + 1.0f);
@@ -221,9 +228,10 @@ half4 shapeDirectionalBlur(half2 uv, bool mergePass, int numSample, bool sampleD
     {
         finalColor = min(finalColor, tex2Dlod(_ThirdTex, half4(uv,0,0)).rgb);
     }
-
+    
     finalColor = lerp(centerTap.rgb, finalColor, saturate(bgBlend+fgBlend));
-    return half4(finalColor, mergePass?fgBlend:centerTap.a);
+    fgBlend = max(fgBlendFromPreviousPass, fgBlend);
+    return half4(finalColor, (sampleDilatedFG||mergePass)?fgBlend:centerTap.a);
 }
 
 half4 fragShapeLowQuality(v2fDepth i) : COLOR
@@ -367,8 +375,8 @@ inline float4 circleCocBokeh(float2 uv, bool sampleDilatedFG, int increment)
     half3 fgSum = centerTap.rgb * fgWeight;
     half3 bgSum = centerTap.rgb * bgWeight;
 
-    half radOtherFgRad = radius/fgRadius;
-    half radOtherBgRad = radius/bgRadius;
+    half radOtherFgRad = radius/(fgRadius + 1e-2h);
+    half radOtherBgRad = radius/(bgRadius + 1e-2h);
 
     for (int l = 0; l < 48; l+= increment)
     {
@@ -593,54 +601,52 @@ float4 fragVisualizeCocExplicit(v2fDepth i) : SV_Target
 // Foreground blur dilatation
 ///////////////////////////////////////////////////////////////////////////////
 
-inline half fgCocSourceChannel(half2 uv, bool fromAlpha)
+inline half2 fgCocSourceChannel(half2 uv, bool fromAlpha)
 {
     if (fromAlpha)
-        return tex2Dlod(_MainTex, half4(uv,0,0)).a;
+        return tex2Dlod(_MainTex, half4(uv,0,0)).aa;
     else
-        return tex2Dlod(_MainTex, half4(uv,0,0)).r;
+        return tex2Dlod(_MainTex, half4(uv,0,0)).rg;
 }
 
-inline half weigthedFGCocBlur(v2fBlur i, bool fromAlpha)
+inline half2 weigthedFGCocBlur(v2fBlur i, bool fromAlpha)
 {
-    half fgCoc00 = fgCocSourceChannel(i.uv.xy  , fromAlpha);
-    half fgCoc01 = fgCocSourceChannel(i.uv01.zw, fromAlpha) * 1.0h;
-    half fgCoc02 = fgCocSourceChannel(i.uv01.xy, fromAlpha) * 1.0h;
-    half fgCoc03 = fgCocSourceChannel(i.uv23.xy, fromAlpha) * 0.8h;
-    half fgCoc04 = fgCocSourceChannel(i.uv23.zw, fromAlpha) * 0.8h;
-    half fgCoc05 = fgCocSourceChannel(i.uv45.xy, fromAlpha) * 0.6h;
-    half fgCoc06 = fgCocSourceChannel(i.uv45.zw, fromAlpha) * 0.6h;
-    half fgCoc07 = fgCocSourceChannel(i.uv67.xy, fromAlpha) * 0.40h;
-    half fgCoc08 = fgCocSourceChannel(i.uv67.zw, fromAlpha) * 0.40f;
-    half fgCoc09 = fgCocSourceChannel(i.uv89.xy, fromAlpha) * 0.25f;
-    half fgCoc10 = fgCocSourceChannel(i.uv89.zw, fromAlpha) * 0.25f;
+    half2 fgCoc00 = fgCocSourceChannel(i.uv.xy  , fromAlpha);
+    half2 fgCoc01 = fgCocSourceChannel(i.uv01.zw, fromAlpha) * 1.0h;
+    half2 fgCoc02 = fgCocSourceChannel(i.uv01.xy, fromAlpha) * 1.0h;
+    half2 fgCoc03 = fgCocSourceChannel(i.uv23.xy, fromAlpha) * 0.8h;
+    half2 fgCoc04 = fgCocSourceChannel(i.uv23.zw, fromAlpha) * 0.8h;
+    half2 fgCoc05 = fgCocSourceChannel(i.uv45.xy, fromAlpha) * 0.6h;
+    half2 fgCoc06 = fgCocSourceChannel(i.uv45.zw, fromAlpha) * 0.6h;
+    half2 fgCoc07 = fgCocSourceChannel(i.uv67.xy, fromAlpha) * 0.40h;
+    half2 fgCoc08 = fgCocSourceChannel(i.uv67.zw, fromAlpha) * 0.40f;
+    half2 fgCoc09 = fgCocSourceChannel(i.uv89.xy, fromAlpha) * 0.25f;
+    half2 fgCoc10 = fgCocSourceChannel(i.uv89.zw, fromAlpha) * 0.25f;
 
     half fgCoc;
-    fgCoc = min( 0.0h, fgCoc00);
-    fgCoc = min(fgCoc, fgCoc01);
-    fgCoc = min(fgCoc, fgCoc02);
-    fgCoc = min(fgCoc, fgCoc03);
-    fgCoc = min(fgCoc, fgCoc04);
-    fgCoc = min(fgCoc, fgCoc05);
-    fgCoc = min(fgCoc, fgCoc06);
-    fgCoc = min(fgCoc, fgCoc07);
-    fgCoc = min(fgCoc, fgCoc08);
-    fgCoc = min(fgCoc, fgCoc09);
-    fgCoc = min(fgCoc, fgCoc10);
+    fgCoc = min( 0.0h, fgCoc00.r);
+    fgCoc = min(fgCoc, fgCoc01.r);
+    fgCoc = min(fgCoc, fgCoc02.r);
+    fgCoc = min(fgCoc, fgCoc03.r);
+    fgCoc = min(fgCoc, fgCoc04.r);
+    fgCoc = min(fgCoc, fgCoc05.r);
+    fgCoc = min(fgCoc, fgCoc06.r);
+    fgCoc = min(fgCoc, fgCoc07.r);
+    fgCoc = min(fgCoc, fgCoc08.r);
+    fgCoc = min(fgCoc, fgCoc09.r);
+    fgCoc = min(fgCoc, fgCoc10.r);
 
-    return fgCoc;
+    return half2(fgCoc,fgCoc00.g);
 }
 
 float4 fragDilateFgCocFromColor (v2fBlur i) : SV_Target
 {
-    half fgCoc = weigthedFGCocBlur(i,true);
-    return fgCoc.rrrr;
+    return weigthedFGCocBlur(i,true).xyxy;
 }
 
 float4 fragDilateFgCoc (v2fBlur i) : SV_Target
 {
-    half fgCoc = weigthedFGCocBlur(i,false);
-    return fgCoc.rrrr;
+    return weigthedFGCocBlur(i,false).xyxy;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

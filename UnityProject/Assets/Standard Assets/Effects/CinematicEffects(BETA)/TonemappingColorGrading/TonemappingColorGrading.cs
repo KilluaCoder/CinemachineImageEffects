@@ -14,7 +14,7 @@ namespace UnityStandardAssets.ImageEffects
     {
         #region Temp stuff, should be removed before release
 
-        [NonSerialized] public bool fastMode = true;
+        [NonSerialized] public bool fastMode = false;
         public bool debugClamp = false;
 
         #endregion

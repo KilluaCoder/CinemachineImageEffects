@@ -5,10 +5,10 @@ using UnityEngine;
 
 namespace UnityStandardAssets.ImageEffects
 {
-    [CustomEditor(typeof(FilmicDepthOfField))]
-    class FilmicDepthOfFieldEditor : Editor
+    [CustomEditor(typeof(DepthOfField))]
+    class DepthOfFieldEditor : Editor
     {
-        [CustomPropertyDrawer(typeof(FilmicDepthOfField.GradientRangeAttribute))]
+        [CustomPropertyDrawer(typeof(DepthOfField.GradientRangeAttribute))]
         internal sealed class GradientRangeDrawer : PropertyDrawer
         {
             public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -20,7 +20,7 @@ namespace UnityStandardAssets.ImageEffects
                 }
 
                 var savedbackgroundColor = GUI.backgroundColor;
-                var gradientRange = (FilmicDepthOfField.GradientRangeAttribute)attribute;
+                var gradientRange = (DepthOfField.GradientRangeAttribute)attribute;
 
                 float range01 = (property.floatValue - gradientRange.min) / (gradientRange.max - gradientRange.min);
                 GUI.backgroundColor = Color.Lerp(Color.green, Color.yellow, range01);
@@ -68,14 +68,14 @@ namespace UnityStandardAssets.ImageEffects
 
 
         bool useBokehTexture { get { return m_UseBokehTexture.boolValue; } }
-        bool useAdvancedOrExplicitView { get { return (m_UIMode.enumValueIndex != (int)FilmicDepthOfField.UIMode.Basic); } }
-        bool useExplicitView { get { return (m_UIMode.enumValueIndex == (int)FilmicDepthOfField.UIMode.Explicit); } }
+        bool useAdvancedOrExplicitView { get { return (m_UIMode.enumValueIndex != (int)DepthOfField.UIMode.Basic); } }
+        bool useExplicitView { get { return (m_UIMode.enumValueIndex == (int)DepthOfField.UIMode.Explicit); } }
         bool useBlurOrientation
         {
             get
             {
-                return ((m_ApertureShape.enumValueIndex == (int)FilmicDepthOfField.ApertureShape.Hexagonal) ||
-                        (m_ApertureShape.enumValueIndex == (int)FilmicDepthOfField.ApertureShape.Octogonal));
+                return ((m_ApertureShape.enumValueIndex == (int)DepthOfField.ApertureShape.Hexagonal) ||
+                        (m_ApertureShape.enumValueIndex == (int)DepthOfField.ApertureShape.Octogonal));
             }
         }
         AnimBool showQualitySettings = new AnimBool();
@@ -105,11 +105,11 @@ namespace UnityStandardAssets.ImageEffects
             m_FStops = m_TargetSerializedDOFObject.FindProperty("fStops");
             m_Radius = m_TargetSerializedDOFObject.FindProperty("radius");
             m_FocusTransform = m_TargetSerializedDOFObject.FindProperty("focusTransform");
-            m_Dx11BokehThreshold = m_TargetSerializedDOFObject.FindProperty("dx11BokehThreshold");
-            m_Dx11SpawnHeuristic = m_TargetSerializedDOFObject.FindProperty("dx11SpawnHeuristic");
-            m_Dx11BokehTexture = m_TargetSerializedDOFObject.FindProperty("dx11BokehTexture");
-            m_Dx11BokehScale = m_TargetSerializedDOFObject.FindProperty("dx11BokehScale");
-            m_Dx11BokehIntensity = m_TargetSerializedDOFObject.FindProperty("dx11BokehIntensity");
+            m_Dx11BokehThreshold = m_TargetSerializedDOFObject.FindProperty("textureBokehThreshold");
+            m_Dx11SpawnHeuristic = m_TargetSerializedDOFObject.FindProperty("textureBokehSpawnHeuristic");
+            m_Dx11BokehTexture = m_TargetSerializedDOFObject.FindProperty("bokehTexture");
+            m_Dx11BokehScale = m_TargetSerializedDOFObject.FindProperty("textureBokehScale");
+            m_Dx11BokehIntensity = m_TargetSerializedDOFObject.FindProperty("textureBokehIntensity");
             m_HighQualityUpsampling = m_TargetSerializedDOFObject.FindProperty("highQualityUpsampling");
             m_DilateNearBlur = m_TargetSerializedDOFObject.FindProperty("dilateNearBlur");
             m_PrefilterBlur = m_TargetSerializedDOFObject.FindProperty("prefilterBlur");
@@ -173,14 +173,14 @@ namespace UnityStandardAssets.ImageEffects
                 if (!m_HighQualityUpsampling.boolValue) m_Quality.floatValue = Mathf.Min(highUpsamplingQuality - stepBack, m_Quality.floatValue);
                 if (!m_PrefilterBlur.boolValue) m_Quality.floatValue = Mathf.Min(prefilterBlurQuality - stepBack, m_Quality.floatValue);
                 if (!m_DilateNearBlur.boolValue) m_Quality.floatValue = Mathf.Min(dilateNearBlurQuality - stepBack, m_Quality.floatValue);
-                if (m_MedianFilter.enumValueIndex == (int)FilmicDepthOfField.FilterQuality.Normal) m_Quality.floatValue = Mathf.Min(medianFilterQualityHigh - stepBack, m_Quality.floatValue);
-                if (m_MedianFilter.enumValueIndex == (int)FilmicDepthOfField.FilterQuality.None) m_Quality.floatValue = Mathf.Min(medianFilterQuality - stepBack, m_Quality.floatValue);
+                if (m_MedianFilter.enumValueIndex == (int)DepthOfField.FilterQuality.Normal) m_Quality.floatValue = Mathf.Min(medianFilterQualityHigh - stepBack, m_Quality.floatValue);
+                if (m_MedianFilter.enumValueIndex == (int)DepthOfField.FilterQuality.None) m_Quality.floatValue = Mathf.Min(medianFilterQuality - stepBack, m_Quality.floatValue);
 
                 if (m_HighQualityUpsampling.boolValue) m_Quality.floatValue = Mathf.Max(highUpsamplingQuality, m_Quality.floatValue);
                 if (m_PrefilterBlur.boolValue) m_Quality.floatValue = Mathf.Max(prefilterBlurQuality, m_Quality.floatValue);
                 if (m_DilateNearBlur.boolValue) m_Quality.floatValue = Mathf.Max(dilateNearBlurQuality, m_Quality.floatValue);
-                if (m_MedianFilter.enumValueIndex == (int)FilmicDepthOfField.FilterQuality.High) m_Quality.floatValue = Mathf.Max(medianFilterQualityHigh, m_Quality.floatValue);
-                if (m_MedianFilter.enumValueIndex == (int)FilmicDepthOfField.FilterQuality.Normal) m_Quality.floatValue = Mathf.Max(medianFilterQuality - 1, m_Quality.floatValue);
+                if (m_MedianFilter.enumValueIndex == (int)DepthOfField.FilterQuality.High) m_Quality.floatValue = Mathf.Max(medianFilterQualityHigh, m_Quality.floatValue);
+                if (m_MedianFilter.enumValueIndex == (int)DepthOfField.FilterQuality.Normal) m_Quality.floatValue = Mathf.Max(medianFilterQuality - 1, m_Quality.floatValue);
             }
         }
 
@@ -192,7 +192,7 @@ namespace UnityStandardAssets.ImageEffects
             EditorGUILayout.PropertyField(m_Quality);
             GUI.enabled = true;
 
-            if (m_UIMode.enumValueIndex == (int)FilmicDepthOfField.UIMode.Basic)
+            if (m_UIMode.enumValueIndex == (int)DepthOfField.UIMode.Basic)
             {
                 m_CustomizeQualitySettings.boolValue = false;
             }
@@ -261,9 +261,9 @@ namespace UnityStandardAssets.ImageEffects
             }
             EditorGUILayout.EndFadeGroup();
 
-            if ((m_ApertureShape.enumValueIndex == (int)FilmicDepthOfField.ApertureShape.Circular)  ||
-                (m_ApertureShape.enumValueIndex == (int)FilmicDepthOfField.ApertureShape.Hexagonal) ||
-                (m_ApertureShape.enumValueIndex == (int)FilmicDepthOfField.ApertureShape.Octogonal)
+            if ((m_ApertureShape.enumValueIndex == (int)DepthOfField.ApertureShape.Circular)  ||
+                (m_ApertureShape.enumValueIndex == (int)DepthOfField.ApertureShape.Hexagonal) ||
+                (m_ApertureShape.enumValueIndex == (int)DepthOfField.ApertureShape.Octogonal)
                 )
             {
                 EditorGUILayout.Separator();
@@ -276,7 +276,7 @@ namespace UnityStandardAssets.ImageEffects
             EditorGUILayout.PropertyField(m_FocusTransform, new GUIContent("Focus on Transform"));
             EditorGUILayout.Separator();
 
-            if (m_UIMode.enumValueIndex == (int)FilmicDepthOfField.UIMode.Basic)
+            if (m_UIMode.enumValueIndex == (int)DepthOfField.UIMode.Basic)
             {
                 EditorGUILayout.PropertyField(m_FStops, new GUIContent("F-Stops"));
                 EditorGUILayout.PropertyField(m_FocusRange);

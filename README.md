@@ -1,5 +1,7 @@
 # README #
 
+![new-image-effectsb2.png](https://bitbucket.org/repo/gpBABE/images/2503994939-new-image-effectsb2.png)
+
 The Unity Cinematic Image Effects are open source and available for use in your games and applications. This document details how to get it up and running on your computer and start modifying the code!
 
 ### What license are the Cinematic Image Effects shipped under? ###

@@ -14,7 +14,7 @@ namespace UnityStandardAssets.ImageEffects
     {
         #region Temp stuff, should be removed before release
 
-        [NonSerialized] public bool fastMode = true;
+        [NonSerialized] public bool fastMode = false;
         public bool debugClamp = false;
 
         #endregion
@@ -256,9 +256,6 @@ namespace UnityStandardAssets.ImageEffects
                 return m_TonemapMaterial;
             }
         }
-
-        private RenderTexture m_RtDebug = null;
-        private RenderTextureFormat m_RtFormat = RenderTextureFormat.ARGBHalf;
 
         private int m_UserLutDim = 16;
         private Color[] m_UserLutData;

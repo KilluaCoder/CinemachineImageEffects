@@ -405,8 +405,8 @@ namespace UnityStandardAssets.ImageEffects
             if (m_HasInformationFromPreviousFrame)
             {
                 m_HasInformationFromPreviousFrame = (m_PreviousDepthBuffer != null) &&
-                                                    (source.width == m_PreviousDepthBuffer.width) &&
-                                                    (source.height == m_PreviousDepthBuffer.height);
+                    (source.width == m_PreviousDepthBuffer.width) &&
+                    (source.height == m_PreviousDepthBuffer.height);
             }
             bool doTemporalFilterThisFrame = m_HasInformationFromPreviousFrame && settings.advancedSettings.temporalFilterStrength > 0.0;
             m_HasInformationFromPreviousFrame = false;

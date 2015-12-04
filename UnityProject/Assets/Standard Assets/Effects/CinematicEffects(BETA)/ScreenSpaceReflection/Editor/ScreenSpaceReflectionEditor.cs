@@ -5,7 +5,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.CinematicEffects
 {
     [CustomPropertyDrawer(typeof(ScreenSpaceReflection.SSRSettings.LayoutAttribute))]
     public class LayoutDrawer : PropertyDrawer

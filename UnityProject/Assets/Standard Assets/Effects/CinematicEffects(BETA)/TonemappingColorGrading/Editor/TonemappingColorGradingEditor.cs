@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.CinematicEffects
 {
     [CustomPropertyDrawer(typeof(TonemappingColorGrading.ColorWheelGroup))]
     class ColorWheelGroupDrawer : PropertyDrawer

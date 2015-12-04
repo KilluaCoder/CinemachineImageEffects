@@ -23,6 +23,7 @@ If you want to contribute patches back, please keep it under the unmodified MIT 
 We will be developing the new image effects directly in the public Bitbucket repository, we will happily take pull requests if they improve any of the effects we currently have available.
 
 If you want to make a pull request please do the following
+
 * In your fork create a new branch based off trunk
 * Make the changes you wish to have merged
 * Make a pull request from your branch to unity with the same branch name (you may have to allow the creation of the new branch in the main unity repository)

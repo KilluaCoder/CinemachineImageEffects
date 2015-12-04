@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.CinematicEffects
 {
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
@@ -39,16 +39,19 @@ namespace UnityStandardAssets.ImageEffects
         {
             [AttributeUsage(AttributeTargets.Field)]
             public class LayoutAttribute : PropertyAttribute
-            {
-            }
+            {}
 
-            [Layout] public BasicSettings basicSettings;
+            [Layout]
+            public BasicSettings basicSettings;
 
-            [Layout] public ReflectionSettings reflectionSettings;
+            [Layout]
+            public ReflectionSettings reflectionSettings;
 
-            [Layout] public AdvancedSettings advancedSettings;
+            [Layout]
+            public AdvancedSettings advancedSettings;
 
-            [Layout] public DebugSettings debugSettings;
+            [Layout]
+            public DebugSettings debugSettings;
 
             private static readonly SSRSettings s_Performance = new SSRSettings
             {
@@ -200,88 +203,131 @@ namespace UnityStandardAssets.ImageEffects
         public struct BasicSettings
         {
             /// BASIC SETTINGS
-            [Tooltip("Nonphysical multiplier for the SSR reflections. 1.0 is physically based.")][Range(0.0f, 2.0f)] public float reflectionMultiplier;
+            [Tooltip("Nonphysical multiplier for the SSR reflections. 1.0 is physically based.")]
+            [Range(0.0f, 2.0f)]
+            public float reflectionMultiplier;
 
-            [Tooltip("Maximum reflection distance in world units.")][Range(0.5f, 1000.0f)] public float maxDistance;
+            [Tooltip("Maximum reflection distance in world units.")]
+            [Range(0.5f, 1000.0f)]
+            public float maxDistance;
 
-            [Tooltip("How far away from the maxDistance to begin fading SSR.")][Range(0.0f, 1000.0f)] public float fadeDistance;
+            [Tooltip("How far away from the maxDistance to begin fading SSR.")]
+            [Range(0.0f, 1000.0f)]
+            public float fadeDistance;
 
-            [Tooltip("Higher = fade out SSRR near the edge of the screen so that reflections don't pop under camera motion.")][Range(0.0f, 1.0f)] public float screenEdgeFading;
+            [Tooltip("Higher = fade out SSRR near the edge of the screen so that reflections don't pop under camera motion.")]
+            [Range(0.0f, 1.0f)]
+            public float screenEdgeFading;
 
-            [Tooltip("Enable for better reflections of very bright objects at a performance cost")] public bool enableHDR;
+            [Tooltip("Enable for better reflections of very bright objects at a performance cost")]
+            public bool enableHDR;
 
             // When enabled, we just add our reflections on top of the existing ones. This is physically incorrect, but several
             // popular demos and games have taken this approach, and it does hide some artifacts.
-            [Tooltip("Add reflections on top of existing ones. Not physically correct.")] public bool additiveReflection;
+            [Tooltip("Add reflections on top of existing ones. Not physically correct.")]
+            public bool additiveReflection;
         }
 
         [Serializable]
         public struct ReflectionSettings
         {
             /// REFLECTIONS
-            [Tooltip("Max raytracing length.")][Range(16, 2048)] public int maxSteps;
+            [Tooltip("Max raytracing length.")]
+            [Range(16, 2048)]
+            public int maxSteps;
 
-            [Tooltip("Log base 2 of ray tracing coarse step size. Higher traces farther, lower gives better quality silhouettes.")][Range(0, 4)] public int rayStepSize;
+            [Tooltip("Log base 2 of ray tracing coarse step size. Higher traces farther, lower gives better quality silhouettes.")]
+            [Range(0, 4)]
+            public int rayStepSize;
 
-            [Tooltip("Typical thickness of columns, walls, furniture, and other objects that reflection rays might pass behind.")][Range(0.01f, 10.0f)] public float widthModifier;
+            [Tooltip("Typical thickness of columns, walls, furniture, and other objects that reflection rays might pass behind.")]
+            [Range(0.01f, 10.0f)]
+            public float widthModifier;
 
-            [Tooltip("Increase if reflections flicker on very rough surfaces.")][Range(0.0f, 1.0f)] public float smoothFallbackThreshold;
+            [Tooltip("Increase if reflections flicker on very rough surfaces.")]
+            [Range(0.0f, 1.0f)]
+            public float smoothFallbackThreshold;
 
-            [Tooltip("Start falling back to non-SSR value solution at smoothFallbackThreshold - smoothFallbackDistance, with full fallback occuring at smoothFallbackThreshold.")][Range(0.0f, 0.2f)] public float smoothFallbackDistance;
+            [Tooltip("Start falling back to non-SSR value solution at smoothFallbackThreshold - smoothFallbackDistance, with full fallback occuring at smoothFallbackThreshold.")]
+            [Range(0.0f, 0.2f)]
+            public float smoothFallbackDistance;
 
-            [Tooltip("Amplify Fresnel fade out. Increase if floor reflections look good close to the surface and bad farther 'under' the floor.")][Range(0.0f, 1.0f)] public float fresnelFade;
+            [Tooltip("Amplify Fresnel fade out. Increase if floor reflections look good close to the surface and bad farther 'under' the floor.")]
+            [Range(0.0f, 1.0f)]
+            public float fresnelFade;
 
-            [Tooltip("Higher values correspond to a faster Fresnel fade as the reflection changes from the grazing angle.")][Range(0.1f, 10.0f)] public float fresnelFadePower;
+            [Tooltip("Higher values correspond to a faster Fresnel fade as the reflection changes from the grazing angle.")]
+            [Range(0.1f, 10.0f)]
+            public float fresnelFadePower;
 
-            [Tooltip("Controls how blurry reflections get as objects are further from the camera. 0 is constant blur no matter trace distance or distance from camera. 1 fully takes into account both factors.")][Range(0.0f, 1.0f)] public float distanceBlur;
+            [Tooltip("Controls how blurry reflections get as objects are further from the camera. 0 is constant blur no matter trace distance or distance from camera. 1 fully takes into account both factors.")]
+            [Range(0.0f, 1.0f)]
+            public float distanceBlur;
         }
 
         [Serializable]
         public struct AdvancedSettings
         {
             /// ADVANCED
-            [Range(0.0f, 0.99f)][Tooltip("Increase to decrease flicker in scenes; decrease to prevent ghosting (especially in dynamic scenes). 0 gives maximum performance.")] public float temporalFilterStrength;
+            [Range(0.0f, 0.99f)]
+            [Tooltip("Increase to decrease flicker in scenes; decrease to prevent ghosting (especially in dynamic scenes). 0 gives maximum performance.")]
+            public float temporalFilterStrength;
 
-            [Tooltip("Enable to limit ghosting from applying the temporal filter.")] public bool useTemporalConfidence;
+            [Tooltip("Enable to limit ghosting from applying the temporal filter.")]
+            public bool useTemporalConfidence;
 
-            [Tooltip("Enable to allow rays to pass behind objects. This can lead to more screen-space reflections, but the reflections are more likely to be wrong.")] public bool traceBehindObjects;
+            [Tooltip("Enable to allow rays to pass behind objects. This can lead to more screen-space reflections, but the reflections are more likely to be wrong.")]
+            public bool traceBehindObjects;
 
-            [Tooltip("Enable to increase quality of the sharpest reflections (through filtering), at a performance cost.")] public bool highQualitySharpReflections;
+            [Tooltip("Enable to increase quality of the sharpest reflections (through filtering), at a performance cost.")]
+            public bool highQualitySharpReflections;
 
-            [Tooltip("Improves quality in scenes with varying smoothness, at a potential performance cost.")] public bool traceEverywhere;
+            [Tooltip("Improves quality in scenes with varying smoothness, at a potential performance cost.")]
+            public bool traceEverywhere;
 
-            [Tooltip("Enable to force more surfaces to use reflection probes if you see streaks on the sides of objects or bad reflections of their backs.")] public bool treatBackfaceHitAsMiss;
+            [Tooltip("Enable to force more surfaces to use reflection probes if you see streaks on the sides of objects or bad reflections of their backs.")]
+            public bool treatBackfaceHitAsMiss;
 
-            [Tooltip("Enable for a performance gain in scenes where most glossy objects are horizontal, like floors, water, and tables. Leave on for scenes with glossy vertical objects.")] public bool allowBackwardsRays;
+            [Tooltip("Enable for a performance gain in scenes where most glossy objects are horizontal, like floors, water, and tables. Leave on for scenes with glossy vertical objects.")]
+            public bool allowBackwardsRays;
 
-            [Tooltip("Improve visual fidelity of reflections on rough surfaces near corners in the scene, at the cost of a small amount of performance.")] public bool improveCorners;
+            [Tooltip("Improve visual fidelity of reflections on rough surfaces near corners in the scene, at the cost of a small amount of performance.")]
+            public bool improveCorners;
 
-            [Tooltip("Half resolution SSRR is much faster, but less accurate. Quality can be reclaimed for some performance by doing the resolve at full resolution.")] public SSRResolution resolution;
+            [Tooltip("Half resolution SSRR is much faster, but less accurate. Quality can be reclaimed for some performance by doing the resolve at full resolution.")]
+            public SSRResolution resolution;
 
-            [Tooltip("Drastically improves reflection reconstruction quality at the expense of some performance.")] public bool bilateralUpsample;
+            [Tooltip("Drastically improves reflection reconstruction quality at the expense of some performance.")]
+            public bool bilateralUpsample;
 
-            [Tooltip("Improve visual fidelity of mirror reflections at the cost of a small amount of performance.")] public bool reduceBanding;
+            [Tooltip("Improve visual fidelity of mirror reflections at the cost of a small amount of performance.")]
+            public bool reduceBanding;
 
-            [Tooltip("Enable to limit the effect a few bright pixels can have on rougher surfaces")] public bool highlightSuppression;
+            [Tooltip("Enable to limit the effect a few bright pixels can have on rougher surfaces")]
+            public bool highlightSuppression;
         }
 
         [Serializable]
         public struct DebugSettings
         {
             /// DEBUG
-            [Tooltip("Various Debug Visualizations")] public SSRDebugMode debugMode;
+            [Tooltip("Various Debug Visualizations")]
+            public SSRDebugMode debugMode;
         }
 
 
-        [SerializeField] public SSRSettings settings = SSRSettings.defaultSettings;
+        [SerializeField]
+        public SSRSettings settings = SSRSettings.defaultSettings;
 
         ///////////// Unexposed Variables //////////////////
 
         // Perf optimization we still need to test across platforms
-        [Tooltip("Enable to try and bypass expensive bilateral upsampling away from edges. There is a slight performance hit for generating the edge buffers, but a potentially high performance savings from bypassing bilateral upsampling where it is unneeded. Test on your target platforms to see if performance improves.")] private bool useEdgeDetector = false;
+        [Tooltip("Enable to try and bypass expensive bilateral upsampling away from edges. There is a slight performance hit for generating the edge buffers, but a potentially high performance savings from bypassing bilateral upsampling where it is unneeded. Test on your target platforms to see if performance improves.")]
+        private bool useEdgeDetector = false;
 
         // Debug variable, useful for forcing all surfaces in a scene to reflection with arbitrary sharpness/roughness
-        [Range(-4.0f, 4.0f)] private float mipBias = 0.0f;
+        [Range(-4.0f, 4.0f)]
+        private float mipBias = 0.0f;
 
         // Flag for whether to knock down the reflection term by occlusion stored in the gbuffer. Currently consistently gives
         // better results when true, so this flag is private for now.
@@ -305,6 +351,9 @@ namespace UnityStandardAssets.ImageEffects
 
         public Shader ssrShader;
         private Material m_SSRMaterial;
+
+        [NonSerialized]
+        private RenderTexureUtility m_RTU = new RenderTexureUtility();
 
         public Material ssrMaterial
         {
@@ -423,7 +472,7 @@ namespace UnityStandardAssets.ImageEffects
 
             // RGB: Normals, A: Roughness.
             // Has the nice benefit of allowing us to control the filtering mode as well.
-            RenderTexture bilateralKeyTexture = RenderTexture.GetTemporary(rtW, rtH, 0, RenderTextureFormat.ARGB32);
+            RenderTexture bilateralKeyTexture = m_RTU.GetTemporaryRenderTexture(rtW, rtH, 0, RenderTextureFormat.ARGB32);
             bilateralKeyTexture.filterMode = FilterMode.Point;
             Graphics.Blit(source, bilateralKeyTexture, ssrMaterial, (int)PassIndex.BilateralKeyPack);
             ssrMaterial.SetTexture("_NormalAndRoughnessTexture", bilateralKeyTexture);
@@ -507,9 +556,9 @@ namespace UnityStandardAssets.ImageEffects
             for (int i = 0; i < maxMip; ++i)
             {
                 if (fullResolutionFiltering)
-                    reflectionBuffers[i] = RenderTexture.GetTemporary(rtW, rtH, 0, intermediateFormat);
+                    reflectionBuffers[i] = m_RTU.GetTemporaryRenderTexture(rtW, rtH, 0, intermediateFormat);
                 else
-                    reflectionBuffers[i] = RenderTexture.GetTemporary(rtW >> i, rtH >> i, 0, intermediateFormat);
+                    reflectionBuffers[i] = m_RTU.GetTemporaryRenderTexture(rtW >> i, rtH >> i, 0, intermediateFormat);
                 // We explicitly interpolate during bilateral upsampling.
                 reflectionBuffers[i].filterMode = settings.advancedSettings.bilateralUpsample ? FilterMode.Point : FilterMode.Bilinear;
             }
@@ -521,7 +570,7 @@ namespace UnityStandardAssets.ImageEffects
 
             ssrMaterial.SetInt("_MaxSteps", settings.reflectionSettings.maxSteps);
 
-            RenderTexture rayHitTexture = RenderTexture.GetTemporary(rtW, rtH, 0, RenderTextureFormat.ARGBHalf);
+            RenderTexture rayHitTexture = m_RTU.GetTemporaryRenderTexture(rtW, rtH);
 
             // We have 5 passes for different step sizes
             int tracePass = Mathf.Clamp(settings.reflectionSettings.rayStepSize, 0, 4);
@@ -542,11 +591,11 @@ namespace UnityStandardAssets.ImageEffects
             RenderTexture[] edgeTextures = new RenderTexture[maxMip];
             if (settings.advancedSettings.bilateralUpsample && useEdgeDetector)
             {
-                edgeTextures[0] = RenderTexture.GetTemporary(rtW, rtH);
+                edgeTextures[0] = m_RTU.GetTemporaryRenderTexture(rtW, rtH);
                 Graphics.Blit(source, edgeTextures[0], ssrMaterial, (int)PassIndex.EdgeGeneration);
                 for (int i = 1; i < maxMip; ++i)
                 {
-                    edgeTextures[i] = RenderTexture.GetTemporary(rtW >> i, rtH >> i);
+                    edgeTextures[i] = m_RTU.GetTemporaryRenderTexture(rtW >> i, rtH >> i);
                     ssrMaterial.SetInt("_LastMip", i - 1);
                     Graphics.Blit(edgeTextures[i - 1], edgeTextures[i], ssrMaterial, (int)PassIndex.MinMipGeneration);
                 }
@@ -554,13 +603,13 @@ namespace UnityStandardAssets.ImageEffects
 
             if (settings.advancedSettings.highQualitySharpReflections)
             {
-                RenderTexture filteredReflections = RenderTexture.GetTemporary(reflectionBuffers[0].width, reflectionBuffers[0].height, 0, reflectionBuffers[0].format);
+                RenderTexture filteredReflections = m_RTU.GetTemporaryRenderTexture(reflectionBuffers[0].width, reflectionBuffers[0].height, 0, reflectionBuffers[0].format);
                 filteredReflections.filterMode = reflectionBuffers[0].filterMode;
                 reflectionBuffers[0].filterMode = FilterMode.Bilinear;
                 Graphics.Blit(reflectionBuffers[0], filteredReflections, ssrMaterial, (int)PassIndex.PoissonBlur);
 
                 // Replace the unfiltered buffer with the newly filtered one.
-                RenderTexture.ReleaseTemporary(reflectionBuffers[0]);
+                m_RTU.ReleaseTemporaryRenderTexture(reflectionBuffers[0]);
                 reflectionBuffers[0] = filteredReflections;
                 ssrMaterial.SetTexture("_ReflectionTexture0", reflectionBuffers[0]);
             }
@@ -572,11 +621,11 @@ namespace UnityStandardAssets.ImageEffects
 
                 RenderTexture hBlur;
                 if (fullResolutionFiltering)
-                    hBlur = RenderTexture.GetTemporary(rtW, rtH, 0, intermediateFormat);
+                    hBlur = m_RTU.GetTemporaryRenderTexture(rtW, rtH, 0, intermediateFormat);
                 else
                 {
                     int lowMip = i;
-                    hBlur = RenderTexture.GetTemporary(rtW >> lowMip, rtH >> (i - 1), 0, intermediateFormat);
+                    hBlur = m_RTU.GetTemporaryRenderTexture(rtW >> lowMip, rtH >> (i - 1), 0, intermediateFormat);
                 }
                 for (int j = 0; j < (fullResolutionFiltering ? (i * i) : 1); ++j)
                 {
@@ -594,7 +643,7 @@ namespace UnityStandardAssets.ImageEffects
 
                 ssrMaterial.SetTexture("_ReflectionTexture" + i, reflectionBuffers[i]);
 
-                RenderTexture.ReleaseTemporary(hBlur);
+                m_RTU.ReleaseTemporaryRenderTexture(hBlur);
             }
 
 
@@ -605,7 +654,7 @@ namespace UnityStandardAssets.ImageEffects
             }
             ssrMaterial.SetInt("_UseEdgeDetector", useEdgeDetector ? 1 : 0);
 
-            RenderTexture averageRayDistanceBuffer = RenderTexture.GetTemporary(source.width, source.height, 0, RenderTextureFormat.RHalf);
+            RenderTexture averageRayDistanceBuffer = m_RTU.GetTemporaryRenderTexture(source.width, source.height, 0, RenderTextureFormat.RHalf);
             if (computeAverageRayDistance)
             {
                 Graphics.Blit(source, averageRayDistanceBuffer, ssrMaterial, (int)PassIndex.AverageRayDistanceGeneration);
@@ -613,7 +662,7 @@ namespace UnityStandardAssets.ImageEffects
             ssrMaterial.SetInt("_UseAverageRayDistance", computeAverageRayDistance ? 1 : 0);
             ssrMaterial.SetTexture("_AverageRayDistanceBuffer", averageRayDistanceBuffer);
             bool resolveDiffersFromTraceRes = (settings.advancedSettings.resolution == SSRResolution.HalfTraceFullResolve);
-            RenderTexture finalReflectionBuffer = RenderTexture.GetTemporary(resolveDiffersFromTraceRes ? source.width : rtW, resolveDiffersFromTraceRes ? source.height : rtH, 0, intermediateFormat);
+            RenderTexture finalReflectionBuffer = m_RTU.GetTemporaryRenderTexture(resolveDiffersFromTraceRes ? source.width : rtW, resolveDiffersFromTraceRes ? source.height : rtH, 0, intermediateFormat);
 
             ssrMaterial.SetFloat("_FresnelFade", settings.reflectionSettings.fresnelFade);
             ssrMaterial.SetFloat("_FresnelFadePower", settings.reflectionSettings.fresnelFadePower);
@@ -624,7 +673,7 @@ namespace UnityStandardAssets.ImageEffects
             ssrMaterial.SetTexture("_FinalReflectionTexture", finalReflectionBuffer);
 
 
-            RenderTexture temporallyFilteredBuffer = RenderTexture.GetTemporary(resolveDiffersFromTraceRes ? source.width : rtW, resolveDiffersFromTraceRes ? source.height : rtH, 0, intermediateFormat);
+            RenderTexture temporallyFilteredBuffer = m_RTU.GetTemporaryRenderTexture(resolveDiffersFromTraceRes ? source.width : rtW, resolveDiffersFromTraceRes ? source.height : rtH, 0, intermediateFormat);
             if (doTemporalFilterThisFrame)
             {
                 ssrMaterial.SetInt("_UseTemporalConfidence", settings.advancedSettings.useTemporalConfidence ? 1 : 0);
@@ -651,24 +700,7 @@ namespace UnityStandardAssets.ImageEffects
 
             Graphics.Blit(source, destination, ssrMaterial, (int)PassIndex.CompositeFinal);
 
-
-            RenderTexture.ReleaseTemporary(temporallyFilteredBuffer);
-            RenderTexture.ReleaseTemporary(averageRayDistanceBuffer);
-            RenderTexture.ReleaseTemporary(bilateralKeyTexture);
-            RenderTexture.ReleaseTemporary(rayHitTexture);
-
-            if (settings.advancedSettings.bilateralUpsample && useEdgeDetector)
-            {
-                for (int i = 0; i < maxMip; ++i)
-                {
-                    RenderTexture.ReleaseTemporary(edgeTextures[i]);
-                }
-            }
-            RenderTexture.ReleaseTemporary(finalReflectionBuffer);
-            for (int i = 0; i < maxMip; ++i)
-            {
-                RenderTexture.ReleaseTemporary(reflectionBuffers[i]);
-            }
+            m_RTU.ReleaseAllTemporyRenderTexutres();
         }
     }
 }

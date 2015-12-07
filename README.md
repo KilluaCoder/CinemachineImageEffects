@@ -26,10 +26,10 @@ We will be developing the new image effects directly in the public Bitbucket rep
 
 If you want to contribute to the repository please do the following:
 
-* Fork and clone the Unity repository [doc](https://confluence.atlassian.com/bitbucket/fork-a-teammate-s-repository-774243391.html)
+* Fork and clone the Unity repository: [Doc](https://confluence.atlassian.com/bitbucket/fork-a-teammate-s-repository-774243391.html)
 * In your fork create a new branch based off trunk
 * Make the changes you wish
-* Make a pull request from your branch to the same one on the Unity repo (you may have to allow the creation of the new branch) [doc](https://confluence.atlassian.com/bitbucket/create-a-pull-request-774243413.html)
+* Make a pull request from your branch to the same one on the Unity repo (you may have to allow the creation of the new branch): [Doc](https://confluence.atlassian.com/bitbucket/create-a-pull-request-774243413.html)
 * We will accept or reject it.
 * We will run some internal code beautification tools
 * We will close the branch and merge it to trunk

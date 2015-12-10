@@ -1,6 +1,6 @@
 fileFormatVersion: 2
 guid: 8a338d679868f45439ea43c7ae035e36
-timeCreated: 1449145425
+timeCreated: 1449750736
 licenseType: Pro
 MonoImporter:
   serializedVersion: 2
@@ -11,7 +11,7 @@ MonoImporter:
       type: 3}
   - medianFilterShader: {fileID: 4800000, guid: a058b22d4123add4b807e832604e5e7b,
       type: 3}
-  - textureBokehShader: {fileID: 4800000, guid: d8e82664aa8686642a424c88ab10164a,
+  - textureBokehShader: {fileID: 4800000, guid: c961b8ed1f00f924d804ada5143bd0e8,
       type: 3}
   executionOrder: 0
   icon: {instanceID: 0}

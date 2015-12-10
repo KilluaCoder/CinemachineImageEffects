@@ -869,7 +869,9 @@ namespace UnityStandardAssets.CinematicEffects
                 m_LutCurveTex1D = null;
             }
 
+#if UNITY_EDITOR
             m_RTU.ReleaseAllTemporyRenderTexutres();
+#endif
         }
 
         // The image filter chain will continue in LDR
@@ -940,7 +942,7 @@ namespace UnityStandardAssets.CinematicEffects
                 if (destination == null)
                 {
                     var temp = m_RTU.GetTemporaryRenderTexture(source.width, source.height);
-                    Graphics.Blit(null, temp);
+                    Graphics.Blit(source, temp, tonemapMaterial, pass);
                     onFrameEndEditorOnly(temp, tonemapMaterial);
                     m_RTU.ReleaseTemporaryRenderTexture(temp);
                 }

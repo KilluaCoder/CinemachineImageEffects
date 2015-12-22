@@ -6,3 +6,4 @@ UnityProject/UnityProject.sln
 UnityProject/Assembly-CSharp-firstpass.csproj
 UnityProject/Assembly-CSharp-Editor-firstpass.csproj
 UnityProject/.vs
+.DS_Store

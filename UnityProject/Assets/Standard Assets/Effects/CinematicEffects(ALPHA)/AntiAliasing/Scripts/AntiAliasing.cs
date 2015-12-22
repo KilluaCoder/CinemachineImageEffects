@@ -24,6 +24,7 @@
 
 using UnityEngine;
 using System;
+using UnityEngine.Serialization;
 
 namespace Smaa
 {
@@ -82,6 +83,7 @@ namespace Smaa
         /// <summary>
         /// The shader used by the processing effect.
         /// </summary>
+        [FormerlySerializedAs("smaaShader")]
         public Shader Shader;
 
         /// <summary>

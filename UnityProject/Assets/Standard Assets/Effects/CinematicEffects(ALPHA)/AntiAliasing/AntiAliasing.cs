@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.CinematicEffects
 {
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
@@ -488,9 +488,8 @@ namespace UnityStandardAssets.ImageEffects
             {
                 Graphics.Blit(null, destination, smaaMaterial, (int)Passes.DebugDepth);
             }
-            else if(displayType == DebugDisplay.Accumulation)
+            else if (displayType == DebugDisplay.Accumulation)
             {
-
                 Graphics.Blit(m_RtAccum, destination);
             }
 

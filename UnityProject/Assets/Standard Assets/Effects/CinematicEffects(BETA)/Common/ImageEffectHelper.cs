@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.CinematicEffects
 {
     public static class ImageEffectHelper
     {
@@ -8,7 +9,6 @@ namespace UnityStandardAssets.ImageEffects
         {
             if (s == null || !s.isSupported)
             {
-                Debug.Log("shader is: " + s);
                 Debug.LogWarningFormat("Missing shader for image effect {0}", effect);
                 return false;
             }
@@ -33,6 +33,11 @@ namespace UnityStandardAssets.ImageEffects
             var material = new Material(s);
             material.hideFlags = HideFlags.DontSave;
             return material;
+        }
+
+        public static bool supportsDX11
+        {
+            get { return SystemInfo.graphicsShaderLevel >= 50 && SystemInfo.supportsComputeShaders; }
         }
     }
 }

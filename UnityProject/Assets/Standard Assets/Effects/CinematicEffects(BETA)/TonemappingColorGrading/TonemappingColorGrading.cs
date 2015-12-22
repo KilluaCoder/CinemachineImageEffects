@@ -2,7 +2,7 @@ using UnityEngine;
 using System;
 using UnityEngine.Events;
 
-namespace UnityStandardAssets.ImageEffects
+namespace UnityStandardAssets.CinematicEffects
 {
     // TODO: Retina support for the wheels (not sure how Unity handles Retina)
     // TODO: Cleanup all the temp stuff
@@ -14,7 +14,7 @@ namespace UnityStandardAssets.ImageEffects
     {
         #region Temp stuff, should be removed before release
 
-        [NonSerialized] public bool fastMode = true;
+        [NonSerialized] public bool fastMode = false;
         public bool debugClamp = false;
 
         #endregion
@@ -27,6 +27,9 @@ namespace UnityStandardAssets.ImageEffects
         [SerializeField] public ComputeShader histogramComputeShader;
 
         [SerializeField] public Shader histogramShader;
+
+        [NonSerialized]
+        private RenderTexureUtility m_RTU = new RenderTexureUtility();
 #endif
 
         [AttributeUsage(AttributeTargets.Field)]
@@ -865,6 +868,10 @@ namespace UnityStandardAssets.ImageEffects
                 DestroyImmediate(m_LutCurveTex1D);
                 m_LutCurveTex1D = null;
             }
+
+#if UNITY_EDITOR
+            m_RTU.ReleaseAllTemporyRenderTexutres();
+#endif
         }
 
         // The image filter chain will continue in LDR
@@ -934,10 +941,10 @@ namespace UnityStandardAssets.ImageEffects
             {
                 if (destination == null)
                 {
-                    var temp = RenderTexture.GetTemporary(source.width, source.height);
-                    Graphics.Blit(null, temp);
+                    var temp = m_RTU.GetTemporaryRenderTexture(source.width, source.height);
+                    Graphics.Blit(source, temp, tonemapMaterial, pass);
                     onFrameEndEditorOnly(temp, tonemapMaterial);
-                    RenderTexture.ReleaseTemporary(temp);
+                    m_RTU.ReleaseTemporaryRenderTexture(temp);
                 }
                 else
                     onFrameEndEditorOnly(destination, tonemapMaterial);

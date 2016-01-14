@@ -22,7 +22,7 @@
  *    distribution.
  */
 
-namespace Smaa
+namespace UnityStandardAssets.CinematicEffects
 {
     /// <summary>
     /// Helps debugging and fine tuning settings when working with <see cref="QualityPreset.Custom"/>.

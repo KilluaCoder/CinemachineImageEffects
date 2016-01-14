@@ -23,7 +23,7 @@
 
 using UnityEngine;
 
-namespace Smaa
+namespace UnityStandardAssets.CinematicEffects
 {
     /// <summary>
     /// Attribute used to make a float or int variable in a script be restricted to a specific minimum value.

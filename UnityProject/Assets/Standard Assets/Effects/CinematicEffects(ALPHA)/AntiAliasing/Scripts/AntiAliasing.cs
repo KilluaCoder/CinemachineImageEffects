@@ -26,7 +26,7 @@ using UnityEngine;
 using System;
 using UnityEngine.Serialization;
 
-namespace Smaa
+namespace UnityStandardAssets.CinematicEffects
 {
     /// <summary>
     /// Implementation of Subpixel Morphological Antialiasing for Unity.
@@ -51,7 +51,7 @@ namespace Smaa
         /// Quality preset to use. Set to <see cref="QualityPreset.Custom"/> to fine tune every setting.
         /// </summary>
         /// <seealso cref="QualityPreset"/>
-        public QualityPreset Quality = QualityPreset.Custom;
+        public QualityPreset Quality = QualityPreset.High;
 
         /// <summary>
         /// You have three edge detection methods to choose from: luma, color or depth.
@@ -59,7 +59,7 @@ namespace Smaa
         /// for you to choose the one that best suits your particular scenario.
         /// </summary>
         /// <seealso cref="EdgeDetectionMethod"/>
-        public EdgeDetectionMethod DetectionMethod = EdgeDetectionMethod.Luma;
+        public EdgeDetectionMethod DetectionMethod = EdgeDetectionMethod.Color;
 
         /// <summary>
         /// Predicated thresholding allows to better preserve texture details and to improve performance, by decreasing
@@ -67,8 +67,10 @@ namespace Smaa
         ///
         /// It locally decreases the luma or color threshold if an edge is found in an additional buffer (so the global
         /// threshold can be higher).
+        /// 
+        /// Note: currently useless without stencil buffer support. It actually makes the effect run slower.
         /// </summary>
-        public bool UsePredication = true; // Unused with EdgeDetectionMethod.Depth
+        public bool UsePredication = false; // Unused with EdgeDetectionMethod.Depth
 
         /// <summary>
         /// Holds the custom preset to use with <see cref="QualityPreset.Custom"/>.
@@ -188,13 +190,17 @@ namespace Smaa
             // Disable if we don't support image effects
             if (!SystemInfo.supportsImageEffects)
             {
+                Debug.LogWarning("Image effects aren't supported on this device");
                 enabled = false;
                 return;
             }
 
             // Disable the image effect if the shader can't run on the user's graphics card
             if (!Shader || !Shader.isSupported)
+            {
+                Debug.LogWarning("The shader is null or unsupported on this device");
                 enabled = false;
+            }
         }
 
         void OnDisable()
@@ -211,11 +217,11 @@ namespace Smaa
 
             if (m_Accumulation != null)
             {
-                                #if UNITY_EDITOR
+                #if UNITY_EDITOR
                 DestroyImmediate(m_Accumulation);
-                                #else
+                #else
                 Destroy(m_Accumulation);
-                                #endif
+                #endif
             }
         }
 
@@ -223,7 +229,7 @@ namespace Smaa
         {
             if (UseTemporalFiltering)
             {
-                m_ProjectionMatrix = GetComponent<Camera>().projectionMatrix;
+                m_ProjectionMatrix = m_Camera.projectionMatrix;
                 m_FlipFlop -= (2.0f * m_FlipFlop);
 
                 Matrix4x4 fuzz = Matrix4x4.identity;
@@ -268,13 +274,13 @@ namespace Smaa
                 renderFormat = RenderTextureFormat.ARGBHalf;
 
             // Reprojection setup
-            var viewProjectionMatrix = GL.GetGPUProjectionMatrix(m_ProjectionMatrix, true) * GetComponent<Camera>().worldToCameraMatrix;
+            var viewProjectionMatrix = GL.GetGPUProjectionMatrix(m_ProjectionMatrix, true) * m_Camera.worldToCameraMatrix;
 
             // Uniforms
             Material.SetTexture("_AreaTex", AreaTex);
             Material.SetTexture("_SearchTex", SearchTex);
 
-            Material.SetVector("_Metrics", new Vector4(1f / (float)width, 1f / (float)height, width, height));
+            Material.SetVector("_Metrics", new Vector4(1f / width, 1f / height, width, height));
             Material.SetVector("_Params1", new Vector4(preset.Threshold, preset.DepthThreshold, preset.MaxSearchSteps, preset.MaxSearchStepsDiag));
             Material.SetVector("_Params2", new Vector2(preset.CornerRounding, preset.LocalContrastAdaptationFactor));
 
@@ -325,14 +331,9 @@ namespace Smaa
 
                 isFirstFrame = true;
             }
-
-            // Temporary render textures
+            
             RenderTexture rt1 = TempRT(width, height, renderFormat);
-            RenderTexture rt2 = TempRT(width, height, renderFormat);
-
-            // Clear both temp RTs as they could (and will) be filled with garbage
-            Clear(rt1);
-            Clear(rt2);
+            Graphics.Blit(null, rt1, Material, 0); // Clear
 
             // Edge Detection
             Graphics.Blit(source, rt1, Material, passEdgeDetection);
@@ -343,6 +344,9 @@ namespace Smaa
             }
             else
             {
+                RenderTexture rt2 = TempRT(width, height, renderFormat);
+                Graphics.Blit(null, rt2, Material, 0); // Clear
+
                 // Blend Weights
                 Graphics.Blit(rt1, rt2, Material, passBlendWeights);
 
@@ -354,44 +358,42 @@ namespace Smaa
                 {
                     // Neighborhood Blending
                     Material.SetTexture("_BlendTex", rt2);
-
+                    
                     if (UseTemporalFiltering)
+                    {
+                        // Temporal filtering
                         Graphics.Blit(source, rt1, Material, passNeighborhoodBlending);
+
+                        if (DebugPass == DebugPass.Accumulation)
+                        {
+                            Graphics.Blit(m_Accumulation, destination);
+                        }
+                        else if (!isFirstFrame)
+                        {
+                            Material.SetTexture("_AccumulationTex", m_Accumulation);
+                            Graphics.Blit(rt1, destination, Material, passResolve);
+                        }
+                        else
+                        {
+                            Graphics.Blit(rt1, destination);
+                        }
+
+                        Graphics.Blit(rt1, m_Accumulation);
+                        RenderTexture.active = null;
+                    }
                     else
+                    {
                         Graphics.Blit(source, destination, Material, passNeighborhoodBlending);
-                }
-            }
-
-            if (DebugPass == DebugPass.Accumulation)
-            {
-                Graphics.Blit(m_Accumulation, destination);
-            }
-            else if (UseTemporalFiltering)
-            {
-                if (isFirstFrame)
-                {
-                    Graphics.Blit(rt1, m_Accumulation);
-                }
-                else
-                {
-                    Material.SetTexture("_AccumulationTex", m_Accumulation);
-                    Graphics.Blit(rt1, destination, Material, passResolve);
+                    }
                 }
 
-                Graphics.Blit(rt1, m_Accumulation);
+                RenderTexture.ReleaseTemporary(rt2);
             }
-
-            // Cleanup
+            
             RenderTexture.ReleaseTemporary(rt1);
-            RenderTexture.ReleaseTemporary(rt2);
 
             // Store the future-previous frame's view-projection matrix
             m_PreviousViewProjectionMatrix = viewProjectionMatrix;
-        }
-
-        void Clear(RenderTexture rt)
-        {
-            Graphics.Blit(rt, rt, Material, 0);
         }
 
         RenderTexture TempRT(int width, int height, RenderTextureFormat format)
@@ -411,19 +413,19 @@ namespace Smaa
             m_StdPresets[0] = new Preset
             {
                 Threshold = 0.15f,
-                MaxSearchSteps = 4
+                MaxSearchSteps = 4,
+                DiagDetection = false,
+                CornerDetection = false
             };
-            m_StdPresets[0].DiagDetection = false; // Can't use object initializer for bool (weird mono bug ?)
-            m_StdPresets[0].CornerDetection = false;
 
             // Medium
             m_StdPresets[1] = new Preset
             {
                 Threshold = 0.1f,
-                MaxSearchSteps = 8
+                MaxSearchSteps = 8,
+                DiagDetection = false,
+                CornerDetection = false
             };
-            m_StdPresets[1].DiagDetection = false;
-            m_StdPresets[1].CornerDetection = false;
 
             // High
             m_StdPresets[2] = new Preset

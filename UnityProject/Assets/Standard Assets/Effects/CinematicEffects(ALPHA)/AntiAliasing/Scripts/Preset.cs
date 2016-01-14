@@ -24,7 +24,7 @@
 using UnityEngine;
 using System;
 
-namespace Smaa
+namespace UnityStandardAssets.CinematicEffects
 {
     /// <summary>
     /// Holds a set of settings to use with SMAA passes.

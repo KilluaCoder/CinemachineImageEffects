@@ -23,9 +23,8 @@
 
 using UnityEngine;
 using UnityEditor;
-using Smaa;
 
-namespace SmaaEditor
+namespace UnityStandardAssets.CinematicEffects
 {
     [CustomPropertyDrawer(typeof(MinAttribute))]
     internal sealed class MinDrawer : PropertyDrawer

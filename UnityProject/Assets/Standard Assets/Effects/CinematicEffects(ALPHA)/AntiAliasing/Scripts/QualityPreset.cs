@@ -21,7 +21,7 @@
  *    distribution.
  */
 
-namespace Smaa
+namespace UnityStandardAssets.CinematicEffects
 {
     /// <summary>
     /// A bunch of quality presets. Use <see cref="QualityPreset.Custom"/> to fine tune every setting.

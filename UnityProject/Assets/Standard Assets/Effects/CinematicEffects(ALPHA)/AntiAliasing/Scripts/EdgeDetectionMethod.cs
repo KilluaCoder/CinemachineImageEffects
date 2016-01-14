@@ -21,7 +21,7 @@
  *    distribution.
  */
 
-namespace Smaa
+namespace UnityStandardAssets.CinematicEffects
 {
     /// <summary>
     /// You have three edge detection methods to choose from: luma, color or depth.

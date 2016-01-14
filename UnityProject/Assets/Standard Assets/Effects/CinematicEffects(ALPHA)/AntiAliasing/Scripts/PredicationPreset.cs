@@ -1,7 +1,7 @@
 using UnityEngine;
 using System;
 
-namespace Smaa
+namespace UnityStandardAssets.CinematicEffects
 {
     /// <summary>
     /// Holds a set of settings to use when <see cref="SMAA.UsePredication"/> is enabled.

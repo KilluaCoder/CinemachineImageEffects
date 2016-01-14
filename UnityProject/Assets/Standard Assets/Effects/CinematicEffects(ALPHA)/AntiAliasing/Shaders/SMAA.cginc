@@ -1274,7 +1274,7 @@ float2 SMAAReproject(float2 texcoord)
     // UV to clip-position:
     // -- This must be sampled at exactly mip 0 due to possible gradient divergence
     // -- as this function is called within a control flow block down below.
-    float depth = SMAASampleLevelZero(_CameraDepthTexture, texcoord);
+    float depth = SMAASampleLevelZero(_CameraDepthTexture, texcoord).r;
     float3 clipPosition = float3(2. * texcoord - 1., depth);
 
     // Reproject

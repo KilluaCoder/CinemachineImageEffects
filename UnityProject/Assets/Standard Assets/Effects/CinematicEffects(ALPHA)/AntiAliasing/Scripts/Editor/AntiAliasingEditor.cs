@@ -24,9 +24,8 @@
 
 using UnityEngine;
 using UnityEditor;
-using Smaa;
 
-namespace SmaaEditor
+namespace UnityStandardAssets.CinematicEffects
 {
     [CustomEditor(typeof(AntiAliasing))]
     public class SMAAEditor : Editor

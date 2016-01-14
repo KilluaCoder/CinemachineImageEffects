@@ -21,7 +21,7 @@
  *    distribution.
  */
 
-namespace Smaa
+namespace UnityStandardAssets.CinematicEffects
 {
     /// <summary>
     /// Render target mode. Keep it to <see cref="HDRMode.Auto"/> unless you know what you're doing.

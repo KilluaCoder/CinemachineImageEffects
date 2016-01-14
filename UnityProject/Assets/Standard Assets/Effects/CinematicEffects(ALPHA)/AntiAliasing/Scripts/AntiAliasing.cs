@@ -26,7 +26,7 @@ using UnityEngine;
 using System;
 using UnityEngine.Serialization;
 
-namespace Smaa
+namespace UnityStandardAssets.CinematicEffects
 {
     /// <summary>
     /// Implementation of Subpixel Morphological Antialiasing for Unity.

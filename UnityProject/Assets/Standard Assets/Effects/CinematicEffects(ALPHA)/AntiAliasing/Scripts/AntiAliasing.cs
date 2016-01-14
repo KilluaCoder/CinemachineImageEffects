@@ -51,7 +51,7 @@ namespace Smaa
         /// Quality preset to use. Set to <see cref="QualityPreset.Custom"/> to fine tune every setting.
         /// </summary>
         /// <seealso cref="QualityPreset"/>
-        public QualityPreset Quality = QualityPreset.Custom;
+        public QualityPreset Quality = QualityPreset.High;
 
         /// <summary>
         /// You have three edge detection methods to choose from: luma, color or depth.
@@ -59,7 +59,7 @@ namespace Smaa
         /// for you to choose the one that best suits your particular scenario.
         /// </summary>
         /// <seealso cref="EdgeDetectionMethod"/>
-        public EdgeDetectionMethod DetectionMethod = EdgeDetectionMethod.Luma;
+        public EdgeDetectionMethod DetectionMethod = EdgeDetectionMethod.Color;
 
         /// <summary>
         /// Predicated thresholding allows to better preserve texture details and to improve performance, by decreasing
@@ -67,8 +67,10 @@ namespace Smaa
         ///
         /// It locally decreases the luma or color threshold if an edge is found in an additional buffer (so the global
         /// threshold can be higher).
+        /// 
+        /// Note: currently useless without stencil buffer support. It actually makes the effect run slower.
         /// </summary>
-        public bool UsePredication = true; // Unused with EdgeDetectionMethod.Depth
+        public bool UsePredication = false; // Unused with EdgeDetectionMethod.Depth
 
         /// <summary>
         /// Holds the custom preset to use with <see cref="QualityPreset.Custom"/>.

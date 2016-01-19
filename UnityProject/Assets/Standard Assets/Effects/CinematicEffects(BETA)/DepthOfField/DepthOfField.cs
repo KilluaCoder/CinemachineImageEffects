@@ -169,7 +169,7 @@ namespace UnityStandardAssets.CinematicEffects
         public Shader textureBokehShader;
 
         [NonSerialized]
-        private RenderTexureUtility m_RTU = new RenderTexureUtility();
+        private RenderTextureUtility m_RTU = new RenderTextureUtility();
 
         public Material filmicDepthOfFieldMaterial
         {
@@ -297,7 +297,7 @@ namespace UnityStandardAssets.CinematicEffects
             m_FilmicDepthOfFieldMaterial = null;
             m_MedianFilterMaterial = null;
 
-            m_RTU.ReleaseAllTemporyRenderTexutres();
+            m_RTU.ReleaseAllTemporaryRenderTextures();
         }
 
         //-------------------------------------------------------------------//
@@ -325,7 +325,7 @@ namespace UnityStandardAssets.CinematicEffects
                 DoDepthOfField(source, destination);
             }
 
-            m_RTU.ReleaseAllTemporyRenderTexutres();
+            m_RTU.ReleaseAllTemporaryRenderTextures();
         }
 
         private void DoDepthOfField(RenderTexture source, RenderTexture destination)

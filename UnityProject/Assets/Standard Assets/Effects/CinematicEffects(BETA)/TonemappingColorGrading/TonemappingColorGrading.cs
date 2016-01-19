@@ -29,7 +29,7 @@ namespace UnityStandardAssets.CinematicEffects
         [SerializeField] public Shader histogramShader;
 
         [NonSerialized]
-        private RenderTexureUtility m_RTU = new RenderTexureUtility();
+        private RenderTextureUtility m_RTU = new RenderTextureUtility();
 #endif
 
         [AttributeUsage(AttributeTargets.Field)]
@@ -870,7 +870,7 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
 #if UNITY_EDITOR
-            m_RTU.ReleaseAllTemporyRenderTexutres();
+            m_RTU.ReleaseAllTemporaryRenderTextures();
 #endif
         }
 

@@ -394,7 +394,7 @@ namespace UnityStandardAssets.CinematicEffects
             int rw = Mathf.Min(Mathf.Max(source.width, source.height), 512);
             RenderTexture rt = RenderTexture.GetTemporary(rw, rw, 0);
             Graphics.Blit(source, rt);
-            UpdateHistogram(source, m_HistogramRect, m_HistogramMode);
+            UpdateHistogram(rt, m_HistogramRect, m_HistogramMode);
             Repaint();
             RenderTexture.ReleaseTemporary(rt);
             RenderTexture.active = null;

@@ -338,6 +338,12 @@ namespace UnityStandardAssets.CinematicEffects
             serializedObject.ApplyModifiedProperties();
         }
 
+        private static readonly GUIContent m_HistogramTitle = new GUIContent("Histogram");
+        public override GUIContent GetPreviewTitle()
+        {
+            return m_HistogramTitle;
+        }
+
         public override bool HasPreviewGUI()
         {
             return m_IsHistogramSupported && targets.Length == 1 && m_ConcreteTarget != null && m_ConcreteTarget.enabled;
@@ -400,6 +406,7 @@ namespace UnityStandardAssets.CinematicEffects
             RenderTexture.active = null;
         }
 
+        private static readonly int[] m_EmptyBuffer = new int[256 << 2];
         void UpdateHistogram(RenderTexture source, Rect rect, HistogramMode mode)
         {
             if (m_HistogramMaterial == null)
@@ -408,7 +415,7 @@ namespace UnityStandardAssets.CinematicEffects
             if (m_HistogramBuffer == null)
                 m_HistogramBuffer = new ComputeBuffer(256, sizeof(uint) << 2);
 
-            m_HistogramBuffer.SetData(new uint[256 << 2]);
+            m_HistogramBuffer.SetData(m_EmptyBuffer);
 
             ComputeShader cs = m_ConcreteTarget.HistogramComputeShader;
 
@@ -417,7 +424,7 @@ namespace UnityStandardAssets.CinematicEffects
             cs.SetTexture(kernel, "_Source", source);
             cs.SetVector("_SourceSize", new Vector2(source.width, source.height));
             cs.SetInt("_IsLinear", m_ConcreteTarget.IsGammaColorSpace ? 0 : 1);
-            cs.Dispatch(kernel, source.width >> 4, source.height >> 4, 1);
+            cs.Dispatch(kernel, Mathf.CeilToInt(source.width / 16f), Mathf.CeilToInt(source.height / 16f), 1);
 
             kernel = cs.FindKernel("KHistogramScale");
             cs.SetBuffer(kernel, "_Histogram", m_HistogramBuffer);

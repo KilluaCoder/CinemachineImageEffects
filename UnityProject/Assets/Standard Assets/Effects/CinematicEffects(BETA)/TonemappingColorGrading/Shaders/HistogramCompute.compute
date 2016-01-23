@@ -2,7 +2,6 @@
 
 RWStructuredBuffer<uint4> _Histogram;
 
-// !!!!!
 // TODO: Rework the KHistogramGather kernel, it's naive and slow
 
 // Gathering pass
@@ -48,13 +47,13 @@ void KHistogramScale(uint3 _group_thread_id : SV_GroupThreadID)
 
     // Parallel reduction to find the max value
     [unroll(256)]
-	for(uint i = 256 >> 1; i > 0; i >>= 1)
-	{
-		if(thread_id < i)
-			gs_pyramid[thread_id] = max(gs_pyramid[thread_id], gs_pyramid[thread_id + i]);
+    for(uint i = 256 >> 1; i > 0; i >>= 1)
+    {
+        if(thread_id < i)
+            gs_pyramid[thread_id] = max(gs_pyramid[thread_id], gs_pyramid[thread_id + i]);
 
-		GroupMemoryBarrierWithGroupSync();
-	}
+        GroupMemoryBarrierWithGroupSync();
+    }
 
     // Actual scaling
     float4 factor = _Height / (float4)gs_pyramid[0];

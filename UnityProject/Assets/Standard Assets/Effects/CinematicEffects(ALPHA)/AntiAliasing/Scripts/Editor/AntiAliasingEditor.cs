@@ -39,7 +39,7 @@ namespace UnityStandardAssets.CinematicEffects
         {
             var topLevelSettings = typeof(AntiAliasing).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(AntiAliasing.TopLevelSettings), false).Any());
             var settingsGroups = typeof(AntiAliasing).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(AntiAliasing.SettingsGroup), false).Any());
-            
+
             foreach (var group in topLevelSettings)
             {
                 var searchPath = group.Name + ".";

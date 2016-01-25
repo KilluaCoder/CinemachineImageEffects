@@ -132,7 +132,7 @@ Shader "Hidden/Subpixel Morphological Antialiasing"
                 #pragma fragment frag
                 #include "UnityCG.cginc"
 
-                float4 frag(v2f_img i) : COLOR
+                float4 frag(v2f_img i) : SV_Target
                 {
                     return float4(0.0, 0.0, 0.0, 0.0);
                 }
@@ -169,7 +169,7 @@ Shader "Hidden/Subpixel Morphological Antialiasing"
                 #include "UnityCG.cginc"
                 #include "SMAA.cginc"
 
-                float4 frag(fInput_edge i) : COLOR
+                float4 frag(fInput_edge i) : SV_Target
                 {
                     #if SMAA_PREDICATION
                     return float4(SMAALumaEdgeDetectionPS(i.uv, i.offset, _MainTex, _CameraDepthTexture), 0.0, 0.0);
@@ -206,7 +206,7 @@ Shader "Hidden/Subpixel Morphological Antialiasing"
                 #include "UnityCG.cginc"
                 #include "SMAA.cginc"
 
-                float4 frag(fInput_edge i) : COLOR
+                float4 frag(fInput_edge i) : SV_Target
                 {
                     #if SMAA_PREDICATION
                     return float4(SMAAColorEdgeDetectionPS(i.uv, i.offset, _MainTex, _CameraDepthTexture), 0.0, 0.0);
@@ -238,7 +238,7 @@ Shader "Hidden/Subpixel Morphological Antialiasing"
                 #include "UnityCG.cginc"
                 #include "SMAA.cginc"
 
-                float4 frag(fInput_edge i) : COLOR
+                float4 frag(fInput_edge i) : SV_Target
                 {
                     return float4(SMAADepthEdgeDetectionPS(i.uv, i.offset, _CameraDepthTexture), 0.0, 0.0);
                 }
@@ -305,7 +305,7 @@ Shader "Hidden/Subpixel Morphological Antialiasing"
                     return o;
                 }
 
-                float4 frag(fInput i) : COLOR
+                float4 frag(fInput i) : SV_Target
                 {
                     return SMAABlendingWeightCalculationPS(i.uv, i.pixcoord, i.offset, _MainTex, _AreaTex, _SearchTex,
                                     _SubsampleIndices);
@@ -351,7 +351,7 @@ Shader "Hidden/Subpixel Morphological Antialiasing"
                     return o;
                 }
 
-                float4 frag(fInput i) : COLOR
+                float4 frag(fInput i) : SV_Target
                 {
                     return SMAANeighborhoodBlendingPS(i.uv, i.offset, _MainTex, _BlendTex);
                 }
@@ -393,7 +393,7 @@ Shader "Hidden/Subpixel Morphological Antialiasing"
                     return o;
                 }
 
-                float4 frag(fInput i) : COLOR
+                float4 frag(fInput i) : SV_Target
                 {
                     return SMAAResolvePS(i.uv, _MainTex, _AccumulationTex);
                 }

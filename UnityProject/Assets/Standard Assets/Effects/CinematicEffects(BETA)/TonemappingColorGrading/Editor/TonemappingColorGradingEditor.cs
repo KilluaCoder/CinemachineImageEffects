@@ -12,7 +12,7 @@ namespace UnityStandardAssets.CinematicEffects
     {
         #region Property drawers
         [CustomPropertyDrawer(typeof(TonemappingColorGrading.ColorWheelGroup))]
-        class ColorWheelGroupDrawer : PropertyDrawer
+        private class ColorWheelGroupDrawer : PropertyDrawer
         {
             int m_RenderSizePerWheel;
             int m_NumberOfWheels;
@@ -50,7 +50,7 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
         [CustomPropertyDrawer(typeof(TonemappingColorGrading.IndentedGroup))]
-        class IndentedGroupDrawer : PropertyDrawer
+        private class IndentedGroupDrawer : PropertyDrawer
         {
             public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
             {
@@ -71,7 +71,7 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
         [CustomPropertyDrawer(typeof(TonemappingColorGrading.ChannelMixer))]
-        class ChannelMixerDrawer : PropertyDrawer
+        private class ChannelMixerDrawer : PropertyDrawer
         {
             public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
             {
@@ -84,8 +84,8 @@ namespace UnityStandardAssets.CinematicEffects
                 if (property.type != "ChannelMixerSettings")
                     return;
 
-                SerializedProperty currentChannel = property.FindPropertyRelative("CurrentChannel");
-                int i_currentChannel = currentChannel.intValue;
+                SerializedProperty currentChannel = property.FindPropertyRelative("currentChannel");
+                int intCurrentChannel = currentChannel.intValue;
                 
                 EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
 
@@ -94,20 +94,20 @@ namespace UnityStandardAssets.CinematicEffects
                 EditorGUILayout.BeginHorizontal();
                 {
                     EditorGUILayout.PrefixLabel("Channel");
-                    if (GUILayout.Toggle(i_currentChannel == 0, "Red", EditorStyles.miniButtonLeft)) i_currentChannel = 0;
-                    if (GUILayout.Toggle(i_currentChannel == 1, "Green", EditorStyles.miniButtonMid)) i_currentChannel = 1;
-                    if (GUILayout.Toggle(i_currentChannel == 2, "Blue", EditorStyles.miniButtonRight)) i_currentChannel = 2;
+                    if (GUILayout.Toggle(intCurrentChannel == 0, "red", EditorStyles.miniButtonLeft)) intCurrentChannel = 0;
+                    if (GUILayout.Toggle(intCurrentChannel == 1, "Green", EditorStyles.miniButtonMid)) intCurrentChannel = 1;
+                    if (GUILayout.Toggle(intCurrentChannel == 2, "Blue", EditorStyles.miniButtonRight)) intCurrentChannel = 2;
                 }
                 EditorGUILayout.EndHorizontal();
 
-                SerializedProperty channel = property.FindPropertyRelative("Channels").GetArrayElementAtIndex(i_currentChannel);
-                currentChannel.intValue = i_currentChannel;
+                SerializedProperty serializedChannel = property.FindPropertyRelative("channels").GetArrayElementAtIndex(intCurrentChannel);
+                currentChannel.intValue = intCurrentChannel;
 
-                Vector3 v = channel.vector3Value;
-                v.x = EditorGUILayout.Slider("Red", v.x, -2f, 2f);
+                Vector3 v = serializedChannel.vector3Value;
+                v.x = EditorGUILayout.Slider("red", v.x, -2f, 2f);
                 v.y = EditorGUILayout.Slider("Green", v.y, -2f, 2f);
                 v.z = EditorGUILayout.Slider("Blue", v.z, -2f, 2f);
-                channel.vector3Value = v;
+                serializedChannel.vector3Value = v;
 
                 EditorGUI.indentLevel--;
             }
@@ -116,7 +116,7 @@ namespace UnityStandardAssets.CinematicEffects
 
         #region Styling
         private static Styles s_Styles;
-        class Styles
+        private class Styles
         {
             public GUIStyle thumb2D = "ColorPicker2DThumb";
             public GUIStyle header = "ShurikenModuleTitle";
@@ -137,25 +137,25 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
         
-        public static readonly Color MasterCurveColor = new Color(1f, 1f, 1f, 2f);
-        public static readonly Color RedCurveColor = new Color(1f, 0f, 0f, 2f);
-        public static readonly Color GreenCurveColor = new Color(0f, 1f, 0f, 2f);
-        public static readonly Color BlueCurveColor = new Color(0f, 1f, 1f, 2f);
+        public static readonly Color masterCurveColor = new Color(1f, 1f, 1f, 2f);
+        public static readonly Color redCurveColor = new Color(1f, 0f, 0f, 2f);
+        public static readonly Color greenCurveColor = new Color(0f, 1f, 0f, 2f);
+        public static readonly Color blueCurveColor = new Color(0f, 1f, 1f, 2f);
         #endregion
 
-        private TonemappingColorGrading m_ConcreteTarget
+        private TonemappingColorGrading concreteTarget
         {
             get { return target as TonemappingColorGrading; }
         }
 
-        private bool m_IsHistogramSupported
+        private bool isHistogramSupported
         {
             get
             {
-                return m_ConcreteTarget.HistogramComputeShader != null
+                return concreteTarget.histogramComputeShader != null
                     && ImageEffectHelper.supportsDX11
-                    && m_ConcreteTarget.HistogramShader != null
-                    && m_ConcreteTarget.HistogramShader.isSupported;
+                    && concreteTarget.histogramShader != null
+                    && concreteTarget.histogramShader.isSupported;
             }
         }
 
@@ -175,9 +175,9 @@ namespace UnityStandardAssets.CinematicEffects
         private RenderTexture m_HistogramTexture;
 
         // settings group <setting, property reference>
-        Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
+        private Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
 
-        void PopulateMap(FieldInfo group)
+        private void PopulateMap(FieldInfo group)
         {
             var searchPath = group.Name + ".";
             foreach (var setting in group.FieldType.GetFields(BindingFlags.Instance | BindingFlags.Public))
@@ -195,19 +195,19 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        void OnEnable()
+        private void OnEnable()
         {
             var settingsGroups = typeof(TonemappingColorGrading).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(TonemappingColorGrading.SettingsGroup), false).Any());
 
             foreach (var settingGroup in settingsGroups)
                 PopulateMap(settingGroup);
 
-            m_ConcreteTarget.OnFrameEndEditorOnly = OnFrameEnd;
+            concreteTarget.onFrameEndEditorOnly = OnFrameEnd;
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
-            m_ConcreteTarget.OnFrameEndEditorOnly = null;
+            concreteTarget.onFrameEndEditorOnly = null;
 
             if (m_HistogramMaterial != null)
                 DestroyImmediate(m_HistogramMaterial);
@@ -219,7 +219,7 @@ namespace UnityStandardAssets.CinematicEffects
                 m_HistogramBuffer.Release();
         }
 
-        bool Header(SerializedProperty group, SerializedProperty enabledField)
+        private bool Header(SerializedProperty group, SerializedProperty enabledField)
         {
             var display = group == null || group.isExpanded;
             var enabled = enabledField != null && enabledField.boolValue;
@@ -250,11 +250,11 @@ namespace UnityStandardAssets.CinematicEffects
             return display;
         }
 
-        void DrawFields()
+        private void DrawFields()
         {
             foreach (var group in m_GroupFields)
             {
-                var enabledField = group.Value.FirstOrDefault(x => x.propertyPath == group.Key.Name + ".Enabled");
+                var enabledField = group.Value.FirstOrDefault(x => x.propertyPath == group.Key.Name + ".enabled");
                 var groupProperty = serializedObject.FindProperty(group.Key.Name);
 
                 GUILayout.Space(5);
@@ -268,7 +268,7 @@ namespace UnityStandardAssets.CinematicEffects
                     GUILayout.BeginVertical();
                     {
                         GUILayout.Space(3);
-                        foreach (var field in group.Value.Where(x => x.propertyPath != group.Key.Name + ".Enabled"))
+                        foreach (var field in group.Value.Where(x => x.propertyPath != group.Key.Name + ".enabled"))
                             EditorGUILayout.PropertyField(field);
                     }
                     GUILayout.EndVertical();
@@ -286,23 +286,23 @@ namespace UnityStandardAssets.CinematicEffects
 
             GUILayout.Label("All following effects will use LDR color buffers.", EditorStyles.miniBoldLabel);
             
-            if (m_ConcreteTarget.Tonemapping.Enabled)
+            if (concreteTarget.tonemapping.enabled)
             {
-                Camera camera = m_ConcreteTarget.GetComponent<Camera>();
+                Camera camera = concreteTarget.GetComponent<Camera>();
 
                 if (camera != null && !camera.hdr)
-                    EditorGUILayout.HelpBox("The camera is not HDR enabled. This will likely break the Tonemapper.", MessageType.Warning);
-                else if (!m_ConcreteTarget.ValidRenderTextureFormat)
-                    EditorGUILayout.HelpBox("The input to Tonemapper is not in HDR. Make sure that all effects prior to this are executed in HDR.", MessageType.Warning);
+                    EditorGUILayout.HelpBox("The camera is not HDR enabled. This will likely break the tonemapper.", MessageType.Warning);
+                else if (!concreteTarget.validRenderTextureFormat)
+                    EditorGUILayout.HelpBox("The input to tonemapper is not in HDR. Make sure that all effects prior to this are executed in HDR.", MessageType.Warning);
             }
 
-            if (m_ConcreteTarget.LUT.Enabled && m_ConcreteTarget.LUT.Texture != null)
+            if (concreteTarget.lut.enabled && concreteTarget.lut.texture != null)
             {
-                if (!m_ConcreteTarget.ValidUserLUTSize)
+                if (!concreteTarget.validUserLutSize)
                     EditorGUILayout.HelpBox("Invalid LUT size. Should be \"height = sqrt(width)\" (e.g. 256x16).", MessageType.Warning);
 
                 // Checks import settings on the lut, offers to fix them if invalid
-                TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(m_ConcreteTarget.LUT.Texture));
+                TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(concreteTarget.lut.texture));
                 bool valid = importer.anisoLevel == 0
                     && importer.mipmapEnabled == false
                     && importer.linearTexture == true
@@ -338,15 +338,15 @@ namespace UnityStandardAssets.CinematicEffects
             serializedObject.ApplyModifiedProperties();
         }
 
-        private static readonly GUIContent m_HistogramTitle = new GUIContent("Histogram");
+        private static readonly GUIContent k_HistogramTitle = new GUIContent("Histogram");
         public override GUIContent GetPreviewTitle()
         {
-            return m_HistogramTitle;
+            return k_HistogramTitle;
         }
 
         public override bool HasPreviewGUI()
         {
-            return m_IsHistogramSupported && targets.Length == 1 && m_ConcreteTarget != null && m_ConcreteTarget.enabled;
+            return isHistogramSupported && targets.Length == 1 && concreteTarget != null && concreteTarget.enabled;
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
@@ -376,7 +376,7 @@ namespace UnityStandardAssets.CinematicEffects
             GUILayout.BeginHorizontal();
             EditorGUI.BeginChangeCheck();
             {
-                m_ConcreteTarget.HistogramRefreshOnPlay = GUILayout.Toggle(m_ConcreteTarget.HistogramRefreshOnPlay, new GUIContent("Refresh on Play", "Keep refreshing the histogram in play mode; this may impact performances."), EditorStyles.miniButton);
+                concreteTarget.histogramRefreshOnPlay = GUILayout.Toggle(concreteTarget.histogramRefreshOnPlay, new GUIContent("Refresh on Play", "Keep refreshing the histogram in play mode; this may impact performances."), EditorStyles.miniButton);
                 GUILayout.FlexibleSpace();
                 m_HistogramMode = (HistogramMode)EditorGUILayout.EnumPopup(m_HistogramMode);
             }
@@ -388,12 +388,12 @@ namespace UnityStandardAssets.CinematicEffects
                 InternalEditorUtility.RepaintAllViews();
         }
 
-        void OnFrameEnd(RenderTexture source)
+        private void OnFrameEnd(RenderTexture source)
         {
-            if (Application.isPlaying && !m_ConcreteTarget.HistogramRefreshOnPlay)
+            if (Application.isPlaying && !concreteTarget.histogramRefreshOnPlay)
                 return;
             
-            if (Mathf.Approximately(m_HistogramRect.width, 0) || Mathf.Approximately(m_HistogramRect.height, 0) || !m_IsHistogramSupported)
+            if (Mathf.Approximately(m_HistogramRect.width, 0) || Mathf.Approximately(m_HistogramRect.height, 0) || !isHistogramSupported)
                 return;
 
             // No need to process the full frame to get an histogram, resize the input to a max-size of 512
@@ -406,24 +406,24 @@ namespace UnityStandardAssets.CinematicEffects
             RenderTexture.active = null;
         }
 
-        private static readonly int[] m_EmptyBuffer = new int[256 << 2];
+        private static readonly int[] k_EmptyBuffer = new int[256 << 2];
         void UpdateHistogram(RenderTexture source, Rect rect, HistogramMode mode)
         {
             if (m_HistogramMaterial == null)
-                m_HistogramMaterial = ImageEffectHelper.CheckShaderAndCreateMaterial(m_ConcreteTarget.HistogramShader);
+                m_HistogramMaterial = ImageEffectHelper.CheckShaderAndCreateMaterial(concreteTarget.histogramShader);
 
             if (m_HistogramBuffer == null)
                 m_HistogramBuffer = new ComputeBuffer(256, sizeof(uint) << 2);
 
-            m_HistogramBuffer.SetData(m_EmptyBuffer);
+            m_HistogramBuffer.SetData(k_EmptyBuffer);
 
-            ComputeShader cs = m_ConcreteTarget.HistogramComputeShader;
+            ComputeShader cs = concreteTarget.histogramComputeShader;
 
             int kernel = cs.FindKernel("KHistogramGather");
             cs.SetBuffer(kernel, "_Histogram", m_HistogramBuffer);
             cs.SetTexture(kernel, "_Source", source);
             cs.SetVector("_SourceSize", new Vector2(source.width, source.height));
-            cs.SetInt("_IsLinear", m_ConcreteTarget.IsGammaColorSpace ? 0 : 1);
+            cs.SetInt("_IsLinear", concreteTarget.isGammaColorSpace ? 0 : 1);
             cs.Dispatch(kernel, Mathf.CeilToInt(source.width / 16f), Mathf.CeilToInt(source.height / 16f), 1);
 
             kernel = cs.FindKernel("KHistogramScale");
@@ -440,10 +440,10 @@ namespace UnityStandardAssets.CinematicEffects
 
             m_HistogramMaterial.SetBuffer("_Histogram", m_HistogramBuffer);
             m_HistogramMaterial.SetVector("_Size", new Vector2(m_HistogramTexture.width, m_HistogramTexture.height));
-            m_HistogramMaterial.SetColor("_ColorR", RedCurveColor);
-            m_HistogramMaterial.SetColor("_ColorG", GreenCurveColor);
-            m_HistogramMaterial.SetColor("_ColorB", BlueCurveColor);
-            m_HistogramMaterial.SetColor("_ColorL", MasterCurveColor);
+            m_HistogramMaterial.SetColor("_ColorR", redCurveColor);
+            m_HistogramMaterial.SetColor("_ColorG", greenCurveColor);
+            m_HistogramMaterial.SetColor("_ColorB", blueCurveColor);
+            m_HistogramMaterial.SetColor("_ColorL", masterCurveColor);
             m_HistogramMaterial.SetInt("_Channel", (int)mode);
             Graphics.Blit(m_HistogramTexture, m_HistogramTexture, m_HistogramMaterial, (mode == HistogramMode.RGB) ? 1 : 0);
         }
@@ -451,28 +451,28 @@ namespace UnityStandardAssets.CinematicEffects
         public static class ColorWheel
         {
             // Constants
-            const float PI_2 = Mathf.PI / 2f;
-            const float PI2 = Mathf.PI * 2f;
+            private const float PI_2 = Mathf.PI / 2f;
+            private const float PI2 = Mathf.PI * 2f;
 
-            // Hue Wheel
-            static Texture2D s_WheelTexture;
-            static float s_LastDiameter;
-            private static GUIStyle s_centeredStyle;
+            // hue Wheel
+            private static Texture2D s_WheelTexture;
+            private static float s_LastDiameter;
+            private static GUIStyle s_CenteredStyle;
 
             public static Color DoGUI(Rect area, string title, Color color, float diameter)
             {
                 var labelrect = area;
                 labelrect.height = EditorGUIUtility.singleLineHeight;
 
-                if (s_centeredStyle == null)
+                if (s_CenteredStyle == null)
                 {
-                    s_centeredStyle = new GUIStyle(GUI.skin.GetStyle("Label"))
+                    s_CenteredStyle = new GUIStyle(GUI.skin.GetStyle("Label"))
                     {
                         alignment = TextAnchor.UpperCenter
                     };
                 }
 
-                GUI.Label(labelrect, title, s_centeredStyle);
+                GUI.Label(labelrect, title, s_CenteredStyle);
 
                 // Figure out the wheel draw area
                 var wheelDrawArea = area;
@@ -512,10 +512,10 @@ namespace UnityStandardAssets.CinematicEffects
                     Vector2 thumbSize = s_Styles.thumb2DSize;
                     Color oldColor = GUI.color;
                     GUI.color = Color.black;
-                    Vector2 thumbSize_h = thumbSize / 2f;
+                    Vector2 thumbSizeH = thumbSize / 2f;
                     Handles.color = Color.white;
-                    Handles.DrawAAPolyLine(new Vector2(wheelDrawArea.x + radius + thumbSize_h.x, wheelDrawArea.y + radius + thumbSize_h.y), new Vector2(wheelDrawArea.x + radius + thumbPos.x, wheelDrawArea.y + radius + thumbPos.y));
-                    s_Styles.thumb2D.Draw(new Rect(wheelDrawArea.x + radius + thumbPos.x - thumbSize_h.x, wheelDrawArea.y + radius + thumbPos.y - thumbSize_h.y, thumbSize.x, thumbSize.y), false, false, false, false);
+                    Handles.DrawAAPolyLine(new Vector2(wheelDrawArea.x + radius + thumbSizeH.x, wheelDrawArea.y + radius + thumbSizeH.y), new Vector2(wheelDrawArea.x + radius + thumbPos.x, wheelDrawArea.y + radius + thumbPos.y));
+                    s_Styles.thumb2D.Draw(new Rect(wheelDrawArea.x + radius + thumbPos.x - thumbSizeH.x, wheelDrawArea.y + radius + thumbPos.y - thumbSizeH.y, thumbSize.x, thumbSize.y), false, false, false, false);
                     GUI.color = oldColor;
                 }
                 hsv = GetInput(wheelDrawArea, hsv, radius);
@@ -529,12 +529,12 @@ namespace UnityStandardAssets.CinematicEffects
                 return color;
             }
 
-            static readonly int thumbHash = "colorWheelThumb".GetHashCode();
+            private static readonly int k_ThumbHash = "colorWheelThumb".GetHashCode();
 
-            static Vector3 GetInput(Rect bounds, Vector3 hsv, float radius)
+            private static Vector3 GetInput(Rect bounds, Vector3 hsv, float radius)
             {
                 Event e = Event.current;
-                var id = GUIUtility.GetControlID(thumbHash, FocusType.Passive, bounds);
+                var id = GUIUtility.GetControlID(k_ThumbHash, FocusType.Passive, bounds);
 
                 Vector2 mousePos = e.mousePosition;
                 Vector2 relativePos = mousePos - new Vector2(bounds.x, bounds.y);
@@ -574,7 +574,7 @@ namespace UnityStandardAssets.CinematicEffects
                 return hsv;
             }
 
-            static void GetWheelHueSaturation(float x, float y, float radius, out float hue, out float saturation)
+            private static void GetWheelHueSaturation(float x, float y, float radius, out float hue, out float saturation)
             {
                 float dx = (x - radius) / radius;
                 float dy = (y - radius) / radius;
@@ -584,7 +584,7 @@ namespace UnityStandardAssets.CinematicEffects
                 saturation = Mathf.Clamp01(d);
             }
 
-            static void UpdateHueWheel(int diameter)
+            private static void UpdateHueWheel(int diameter)
             {
                 CleanTexture(s_WheelTexture);
                 s_WheelTexture = MakeTexture(diameter);
@@ -609,7 +609,7 @@ namespace UnityStandardAssets.CinematicEffects
                             continue;
                         }
 
-                        // Red (0) on top, counter-clockwise (industry standard)
+                        // red (0) on top, counter-clockwise (industry standard)
                         float saturation = d;
                         float hue = Mathf.Atan2(dx, dy);
                         hue = 1f - ((hue > 0) ? hue : PI2 + hue) / PI2;
@@ -626,7 +626,7 @@ namespace UnityStandardAssets.CinematicEffects
                 s_WheelTexture.Apply();
             }
 
-            static Texture2D MakeTexture(int dimension)
+            private static Texture2D MakeTexture(int dimension)
             {
                 return new Texture2D(dimension, dimension, TextureFormat.ARGB32, false, true)
                 {
@@ -637,7 +637,7 @@ namespace UnityStandardAssets.CinematicEffects
                 };
             }
 
-            static void CleanTexture(Texture2D texture)
+            private static void CleanTexture(Texture2D texture)
             {
                 if (texture != null)
                     DestroyImmediate(texture);

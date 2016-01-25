@@ -22,13 +22,13 @@
  *    distribution.
  */
 
+using UnityEditor;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+
 namespace UnityStandardAssets.CinematicEffects
 {
-    using UnityEditor;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Reflection;
-
     [CustomEditor(typeof(AntiAliasing))]
     public class AntiAliasingEditor : Editor
     {

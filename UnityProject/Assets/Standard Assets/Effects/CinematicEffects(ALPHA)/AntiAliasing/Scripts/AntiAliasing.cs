@@ -22,12 +22,12 @@
  *    distribution.
  */
 
+using UnityEngine;
+using UnityEngine.Serialization;
+using System;
+
 namespace UnityStandardAssets.CinematicEffects
 {
-    using UnityEngine;
-    using UnityEngine.Serialization;
-    using System;
-
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
     [AddComponentMenu("Image Effects/Subpixel Morphological Anti-aliasing")]
@@ -77,14 +77,17 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("You've three edge detection methods to choose from: luma, color or depth.\nThey represent different quality/performance and anti-aliasing/sharpness tradeoffs, so our recommendation is for you to choose the one that best suits your particular scenario:\n\n- Depth edge detection is usually the fastest but it may miss some edges.\n- Luma edge detection is usually more expensive than depth edge detection, but catches visible edges that depth edge detection can miss.\n- Color edge detection is usually the most expensive one but catches chroma-only edges.")]
             public EdgeDetectionMethod edgeDetectionMethod;
 
-            public static GlobalSettings DefaultSettings()
+            public static GlobalSettings defaultSettings
             {
-                return new GlobalSettings
+                get
                 {
-                    debugPass = DebugPass.Off,
-                    quality = QualityPreset.High,
-                    edgeDetectionMethod = EdgeDetectionMethod.Color
-                };
+                    return new GlobalSettings
+                    {
+                        debugPass = DebugPass.Off,
+                        quality = QualityPreset.High,
+                        edgeDetectionMethod = EdgeDetectionMethod.Color
+                    };
+                }
             }
         }
 
@@ -186,13 +189,16 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("The size of the fuzz-displacement (jitter) in pixels applied to the camera's perspective projection matrix.\nUsed for 2x temporal anti-aliasing.")]
             public float fuzzSize;
 
-            public static TemporalSettings DefaultSettings()
+            public static TemporalSettings defaultSettings
             {
-                return new TemporalSettings
+                get
                 {
-                    enabled = true,
-                    fuzzSize = 2f
-                };
+                    return new TemporalSettings
+                    {
+                        enabled = true,
+                        fuzzSize = 2f
+                    };
+                }
             }
         }
 
@@ -214,29 +220,32 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("How much to locally decrease the threshold.")]
             public float strength;
 
-            public static PredicationSettings DefaultSettings()
+            public static PredicationSettings defaultSettings
             {
-                return new PredicationSettings
+                get
                 {
-                    enabled = false,
-                    threshold = 0.01f,
-                    scale = 2f,
-                    strength = 0.4f
-                };
+                    return new PredicationSettings
+                    {
+                        enabled = false,
+                        threshold = 0.01f,
+                        scale = 2f,
+                        strength = 0.4f
+                    };
+                }
             }
         }
 
         [TopLevelSettings]
-        public GlobalSettings settings = GlobalSettings.DefaultSettings();
+        public GlobalSettings settings = GlobalSettings.defaultSettings;
 
         [SettingsGroup]
         public QualitySettings quality = QualitySettings.presetQualitySettings[2];
 
         [SettingsGroup]
-        public PredicationSettings predication = PredicationSettings.DefaultSettings();
+        public PredicationSettings predication = PredicationSettings.defaultSettings;
 
         [SettingsGroup]
-        public TemporalSettings temporal = TemporalSettings.DefaultSettings();
+        public TemporalSettings temporal = TemporalSettings.defaultSettings;
         
         private Matrix4x4 m_ProjectionMatrix;
         private Matrix4x4 m_PreviousViewProjectionMatrix;
@@ -246,11 +255,11 @@ namespace UnityStandardAssets.CinematicEffects
         [FormerlySerializedAs("smaaShader")]
         public Shader shader;
         
-        public Texture2D areaTex;
-        public Texture2D searchTex;
+        public Texture2D areaTexture;
+        public Texture2D searchTexture;
         
         private Camera m_Camera;
-        public Camera cameraComp
+        public Camera cameraComponent
         {
             get
             {
@@ -282,11 +291,11 @@ namespace UnityStandardAssets.CinematicEffects
         private void OnEnable()
         {
             // Make sure the helper textures are set
-            if (areaTex == null)
-                areaTex = Resources.Load<Texture2D>("AreaTex");
+            if (areaTexture == null)
+                areaTexture = Resources.Load<Texture2D>("AreaTex");
 
-            if (searchTex == null)
-                searchTex = Resources.Load<Texture2D>("SearchTex");
+            if (searchTexture == null)
+                searchTexture = Resources.Load<Texture2D>("SearchTex");
         }
 
         private void OnDisable()
@@ -303,28 +312,28 @@ namespace UnityStandardAssets.CinematicEffects
         {
             if (temporal.enabled)
             {
-                m_ProjectionMatrix = cameraComp.projectionMatrix;
+                m_ProjectionMatrix = cameraComponent.projectionMatrix;
                 m_FlipFlop -= (2.0f * m_FlipFlop);
 
                 Matrix4x4 fuzz = Matrix4x4.identity;
 
-                fuzz.m03 = (0.25f * m_FlipFlop) * temporal.fuzzSize / cameraComp.pixelWidth;
-                fuzz.m13 = (-0.25f * m_FlipFlop) * temporal.fuzzSize / cameraComp.pixelHeight;
+                fuzz.m03 = (0.25f * m_FlipFlop) * temporal.fuzzSize / cameraComponent.pixelWidth;
+                fuzz.m13 = (-0.25f * m_FlipFlop) * temporal.fuzzSize / cameraComponent.pixelHeight;
 
-                cameraComp.projectionMatrix = fuzz * cameraComp.projectionMatrix;
+                cameraComponent.projectionMatrix = fuzz * cameraComponent.projectionMatrix;
             }
         }
 
         private void OnPostRender()
         {
             if (temporal.enabled)
-                cameraComp.ResetProjectionMatrix();
+                cameraComponent.ResetProjectionMatrix();
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            int width = cameraComp.pixelWidth;
-            int height = cameraComp.pixelHeight;
+            int width = cameraComponent.pixelWidth;
+            int height = cameraComponent.pixelHeight;
 
             bool isFirstFrame = false;
 
@@ -340,11 +349,11 @@ namespace UnityStandardAssets.CinematicEffects
             int passResolve = 6;
 
             // Reprojection setup
-            var viewProjectionMatrix = GL.GetGPUProjectionMatrix(m_ProjectionMatrix, true) * cameraComp.worldToCameraMatrix;
+            var viewProjectionMatrix = GL.GetGPUProjectionMatrix(m_ProjectionMatrix, true) * cameraComponent.worldToCameraMatrix;
 
             // Uniforms
-            material.SetTexture("_AreaTex", areaTex);
-            material.SetTexture("_SearchTex", searchTex);
+            material.SetTexture("_AreaTex", areaTexture);
+            material.SetTexture("_SearchTex", searchTexture);
 
             material.SetVector("_Metrics", new Vector4(1f / width, 1f / height, width, height));
             material.SetVector("_Params1", new Vector4(preset.threshold, preset.depthThreshold, preset.maxSearchSteps, preset.maxDiagonalSearchSteps));
@@ -360,11 +369,11 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (settings.edgeDetectionMethod == EdgeDetectionMethod.Depth)
             {
-                cameraComp.depthTextureMode |= DepthTextureMode.Depth;
+                cameraComponent.depthTextureMode |= DepthTextureMode.Depth;
             }
             else if (predication.enabled)
             {
-                cameraComp.depthTextureMode |= DepthTextureMode.Depth;
+                cameraComponent.depthTextureMode |= DepthTextureMode.Depth;
                 Shader.EnableKeyword("USE_PREDICATION");
                 material.SetVector("_Params3", new Vector3(predication.threshold, predication.scale, predication.strength));
             }

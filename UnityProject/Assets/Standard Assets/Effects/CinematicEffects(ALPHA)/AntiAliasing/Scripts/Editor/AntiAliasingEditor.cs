@@ -32,10 +32,10 @@ namespace UnityStandardAssets.CinematicEffects
     [CustomEditor(typeof(AntiAliasing))]
     public class AntiAliasingEditor : Editor
     {
-        List<SerializedProperty> m_TopLevelFields = new List<SerializedProperty>();
-        Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
+        private List<SerializedProperty> m_TopLevelFields = new List<SerializedProperty>();
+        private Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
 
-        void OnEnable()
+        private void OnEnable()
         {
             var topLevelSettings = typeof(AntiAliasing).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(AntiAliasing.TopLevelSettings), false).Any());
             var settingsGroups = typeof(AntiAliasing).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(AntiAliasing.SettingsGroup), false).Any());
@@ -81,14 +81,17 @@ namespace UnityStandardAssets.CinematicEffects
 
             foreach (var group in m_GroupFields)
             {
-                if (group.Key.FieldType == typeof(AntiAliasing.QualitySettings) && (target as AntiAliasing).Settings.Quality != AntiAliasing.QualityPreset.Custom)
+                if (group.Key.FieldType == typeof(AntiAliasing.QualitySettings) && (target as AntiAliasing).settings.quality != AntiAliasing.QualityPreset.Custom)
                     continue;
 
+                string title = group.Key.Name;
+                title = char.ToUpper(title[0]) + title.Substring(1);
+
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField(group.Key.Name, EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
 
-                var enabledField = group.Value.FirstOrDefault(x => x.propertyPath == group.Key.Name + ".Enabled");
+                var enabledField = group.Value.FirstOrDefault(x => x.propertyPath == group.Key.Name + ".enabled");
                 if (enabledField != null && !enabledField.boolValue)
                 {
                     EditorGUILayout.PropertyField(enabledField);

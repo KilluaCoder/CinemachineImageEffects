@@ -35,11 +35,11 @@ namespace UnityStandardAssets.CinematicEffects
     {
         [AttributeUsage(AttributeTargets.Field)]
         public class SettingsGroup : Attribute
-        { }
+        {}
 
         [AttributeUsage(AttributeTargets.Field)]
         public class TopLevelSettings : Attribute
-        { }
+        {}
 
         public enum DebugPass
         {
@@ -123,8 +123,9 @@ namespace UnityStandardAssets.CinematicEffects
             [Min(0f)]
             [Tooltip("If there is an neighbor edge that has a local contrast factor times bigger contrast than current edge, current edge will be discarded.\nThis allows to eliminate spurious crossing edges, and is based on the fact that, if there is too much contrast in a direction, that will hide perceptually contrast in the other neighbors.")]
             public float localContrastAdaptationFactor;
-            
-            public static QualitySettings[] presetQualitySettings = {
+
+            public static QualitySettings[] presetQualitySettings =
+            {
                 // Low
                 new QualitySettings
                 {
@@ -137,7 +138,7 @@ namespace UnityStandardAssets.CinematicEffects
                     cornerRounding = 25,
                     localContrastAdaptationFactor = 2f
                 },
-                
+
                 // Medium
                 new QualitySettings
                 {
@@ -150,7 +151,7 @@ namespace UnityStandardAssets.CinematicEffects
                     cornerRounding = 25,
                     localContrastAdaptationFactor = 2f
                 },
-                
+
                 // High
                 new QualitySettings
                 {
@@ -163,7 +164,7 @@ namespace UnityStandardAssets.CinematicEffects
                     cornerRounding = 25,
                     localContrastAdaptationFactor = 2f
                 },
-                
+
                 // Ultra
                 new QualitySettings
                 {
@@ -246,7 +247,7 @@ namespace UnityStandardAssets.CinematicEffects
 
         [SettingsGroup]
         public TemporalSettings temporal = TemporalSettings.defaultSettings;
-        
+
         private Matrix4x4 m_ProjectionMatrix;
         private Matrix4x4 m_PreviousViewProjectionMatrix;
         private float m_FlipFlop = 1.0f;
@@ -254,10 +255,10 @@ namespace UnityStandardAssets.CinematicEffects
 
         [FormerlySerializedAs("smaaShader")]
         public Shader shader;
-        
+
         public Texture2D areaTexture;
         public Texture2D searchTexture;
-        
+
         private Camera m_Camera;
         public Camera cameraComponent
         {
@@ -360,7 +361,7 @@ namespace UnityStandardAssets.CinematicEffects
             material.SetVector("_Params2", new Vector2(preset.cornerRounding, preset.localContrastAdaptationFactor));
 
             material.SetMatrix("_ReprojectionMatrix", m_PreviousViewProjectionMatrix * Matrix4x4.Inverse(viewProjectionMatrix));
-            
+
             float subsampleIndex = (m_FlipFlop < 0.0f) ? 2.0f : 1.0f;
             material.SetVector("_SubsampleIndices", new Vector4(subsampleIndex, subsampleIndex, subsampleIndex, 0.0f));
 
@@ -406,7 +407,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 isFirstFrame = true;
             }
-            
+
             RenderTexture rt1 = TempRT(width, height, source.format);
             Graphics.Blit(null, rt1, material, 0); // Clear
 
@@ -433,7 +434,7 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     // Neighborhood Blending
                     material.SetTexture("_BlendTex", rt2);
-                    
+
                     if (temporal.enabled)
                     {
                         // Temporal filtering
@@ -464,7 +465,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 RenderTexture.ReleaseTemporary(rt2);
             }
-            
+
             RenderTexture.ReleaseTemporary(rt1);
 
             // Store the future-previous frame's view-projection matrix

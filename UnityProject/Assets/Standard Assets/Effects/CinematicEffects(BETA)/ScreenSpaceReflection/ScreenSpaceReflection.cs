@@ -353,7 +353,7 @@ namespace UnityStandardAssets.CinematicEffects
         private Material m_SSRMaterial;
 
         [NonSerialized]
-        private RenderTexureUtility m_RTU = new RenderTexureUtility();
+        private RenderTextureUtility m_RTU = new RenderTextureUtility();
 
         public Material ssrMaterial
         {
@@ -700,7 +700,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             Graphics.Blit(source, destination, ssrMaterial, (int)PassIndex.CompositeFinal);
 
-            m_RTU.ReleaseAllTemporyRenderTexutres();
+            m_RTU.ReleaseAllTemporaryRenderTextures();
         }
     }
 }

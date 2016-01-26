@@ -32,13 +32,13 @@ namespace UnityStandardAssets.CinematicEffects
         #region Attributes
         [AttributeUsage(AttributeTargets.Field)]
         public class SettingsGroup : Attribute
-        { }
+        {}
 
         public class IndentedGroup : PropertyAttribute
-        { }
+        {}
 
         public class ChannelMixer : PropertyAttribute
-        { }
+        {}
 
         public class ColorWheelGroup : PropertyAttribute
         {
@@ -46,7 +46,7 @@ namespace UnityStandardAssets.CinematicEffects
             public int maxSizePerWheel = 150;
 
             public ColorWheelGroup()
-            { }
+            {}
 
             public ColorWheelGroup(int minSizePerWheel, int maxSizePerWheel)
             {
@@ -261,12 +261,20 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
+        public enum ColorGradingPrecision
+        {
+            Normal = 16,
+            High = 32
+        }
+
         [Serializable]
         public struct ColorGradingSettings
         {
             public bool enabled;
 
-            [ColorWheelGroup]
+            public ColorGradingPrecision precision;
+
+            [Space, ColorWheelGroup]
             public ColorWheelsSettings colorWheels;
 
             [Space, IndentedGroup]
@@ -285,6 +293,7 @@ namespace UnityStandardAssets.CinematicEffects
                     return new ColorGradingSettings
                     {
                         enabled = false,
+                        precision = ColorGradingPrecision.Normal,
                         colorWheels = ColorWheelsSettings.defaultSettings,
                         basics = BasicsSettings.defaultSettings,
                         channelMixer = ChannelMixerSettings.defaultSettings,
@@ -348,8 +357,9 @@ namespace UnityStandardAssets.CinematicEffects
         {
             get
             {
-                if (m_IdentityLut == null)
+                if (m_IdentityLut == null || m_IdentityLut.height != lutSize)
                 {
+                    DestroyImmediate(m_IdentityLut);
                     m_IdentityLut = GenerateIdentityLut(lutSize);
                     m_IdentityLut.name = "Identity LUT";
                     m_IdentityLut.filterMode = FilterMode.Bilinear;
@@ -365,8 +375,9 @@ namespace UnityStandardAssets.CinematicEffects
         {
             get
             {
-                if (m_InternalLut == null)
+                if (m_InternalLut == null || m_InternalLut.height != lutSize)
                 {
+                    DestroyImmediate(m_InternalLut);
                     m_InternalLut = new RenderTexture(lutSize * lutSize, lutSize, 0, RenderTextureFormat.ARGB32)
                     {
                         name = "Internal LUT",
@@ -419,6 +430,11 @@ namespace UnityStandardAssets.CinematicEffects
             get { return QualitySettings.activeColorSpace == ColorSpace.Gamma; }
         }
 
+        public int lutSize
+        {
+            get { return (int)colorGrading.precision; }
+        }
+
         private enum Pass
         {
             LutGen,
@@ -433,8 +449,7 @@ namespace UnityStandardAssets.CinematicEffects
             TonemappingReinhard,
             AdaptationDebug
         }
-        
-        public static readonly int lutSize = 16;
+
         public bool validRenderTextureFormat { get; private set; }
         public bool validUserLutSize { get; private set; }
 
@@ -584,7 +599,7 @@ namespace UnityStandardAssets.CinematicEffects
 
         private bool CheckUserLut()
         {
-            validUserLutSize = (lut.texture.height == Mathf.Sqrt(lut.texture.width));
+            validUserLutSize = (lut.texture.height == (int)Mathf.Sqrt(lut.texture.width));
             return validUserLutSize;
         }
 
@@ -800,7 +815,7 @@ namespace UnityStandardAssets.CinematicEffects
                 GL.LoadPixelMatrix(0f, Screen.width, Screen.height, 0f);
                 Graphics.DrawTexture(new Rect(0f, yoffset, lutSize * lutSize, lutSize), internalLutRt);
                 GL.PopMatrix();
-                yoffset += 16;
+                yoffset += lutSize;
             }
 
             if (m_CurveTexture != null && colorGrading.enabled)

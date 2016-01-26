@@ -94,7 +94,7 @@ namespace UnityStandardAssets.CinematicEffects
                 EditorGUILayout.BeginHorizontal();
                 {
                     EditorGUILayout.PrefixLabel("Channel");
-                    if (GUILayout.Toggle(intCurrentChannel == 0, "red", EditorStyles.miniButtonLeft)) intCurrentChannel = 0;
+                    if (GUILayout.Toggle(intCurrentChannel == 0, "Red", EditorStyles.miniButtonLeft)) intCurrentChannel = 0;
                     if (GUILayout.Toggle(intCurrentChannel == 1, "Green", EditorStyles.miniButtonMid)) intCurrentChannel = 1;
                     if (GUILayout.Toggle(intCurrentChannel == 2, "Blue", EditorStyles.miniButtonRight)) intCurrentChannel = 2;
                 }
@@ -104,7 +104,7 @@ namespace UnityStandardAssets.CinematicEffects
                 currentChannel.intValue = intCurrentChannel;
 
                 Vector3 v = serializedChannel.vector3Value;
-                v.x = EditorGUILayout.Slider("red", v.x, -2f, 2f);
+                v.x = EditorGUILayout.Slider("Red", v.x, -2f, 2f);
                 v.y = EditorGUILayout.Slider("Green", v.y, -2f, 2f);
                 v.z = EditorGUILayout.Slider("Blue", v.z, -2f, 2f);
                 serializedChannel.vector3Value = v;

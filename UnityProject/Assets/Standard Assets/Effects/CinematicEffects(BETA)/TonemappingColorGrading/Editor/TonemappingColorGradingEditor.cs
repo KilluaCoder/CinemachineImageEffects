@@ -112,6 +112,23 @@ namespace UnityStandardAssets.CinematicEffects
                 EditorGUI.indentLevel--;
             }
         }
+
+        [CustomPropertyDrawer(typeof(TonemappingColorGrading.Curve))]
+        private class CurveDrawer : PropertyDrawer
+        {
+            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            {
+                TonemappingColorGrading.Curve attribute = (TonemappingColorGrading.Curve)base.attribute;
+
+                if (property.propertyType != SerializedPropertyType.AnimationCurve)
+                {
+                    EditorGUI.LabelField(position, label.text, "Use ClampCurve with an AnimationCurve.");
+                    return;
+                }
+
+                property.animationCurveValue = EditorGUI.CurveField(position, label, property.animationCurveValue, attribute.color, new Rect(0f, 0f, 1f, 1f));
+            }
+        }
         #endregion
 
         #region Styling

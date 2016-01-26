@@ -54,6 +54,19 @@ namespace UnityStandardAssets.CinematicEffects
                 this.maxSizePerWheel = maxSizePerWheel;
             }
         }
+
+        public class Curve : PropertyAttribute
+        {
+            public Color color = Color.white;
+
+            public Curve()
+            {}
+
+            public Curve(float r, float g, float b, float a) // Can't pass a struct in an attribute
+            {
+                color = new Color(r, g, b, a);
+            }
+        }
         #endregion
 
         #region Settings
@@ -236,9 +249,16 @@ namespace UnityStandardAssets.CinematicEffects
         [Serializable]
         public struct CurvesSettings
         {
+            [Curve]
             public AnimationCurve master;
+            
+            [Curve(1f, 0f, 0f, 1f)]
             public AnimationCurve red;
+            
+            [Curve(0f, 1f, 0f, 1f)]
             public AnimationCurve green;
+            
+            [Curve(0f, 1f, 1f, 1f)]
             public AnimationCurve blue;
 
             public static CurvesSettings defaultSettings

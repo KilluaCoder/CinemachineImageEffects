@@ -1,13 +1,9 @@
-// Comment/uncomment the following line to show debugging features
-#define INTERNAL_DEBUG
-
 namespace UnityStandardAssets.CinematicEffects
 {
     using UnityEngine;
     using UnityEngine.Events;
     using System;
     
-    // TODO: Remove debugging stuff
     // TODO: Histogram optimizations, see HistogramCompute.compute
 
     [ExecuteInEditMode]
@@ -86,6 +82,9 @@ namespace UnityStandardAssets.CinematicEffects
 
             [Min(0f), Tooltip("Speed of linear adaptation. Higher is faster.")]
             public float speed;
+            
+            [Tooltip("Displays a luminosity helper in the GameView.")]
+            public bool showDebug;
 
             public static EyeAdaptationSettings defaultSettings
             {
@@ -94,6 +93,7 @@ namespace UnityStandardAssets.CinematicEffects
                     return new EyeAdaptationSettings
                     {
                         enabled = false,
+                        showDebug = false,
                         middleGrey = 0.5f,
                         min = -3f,
                         max = 3f,
@@ -292,6 +292,7 @@ namespace UnityStandardAssets.CinematicEffects
         {
             public bool enabled;
 
+            [Tooltip("Internal LUT precision. \"Normal\" is 256x16, \"High\" is 1024x32. Prefer \"Normal\" on mobile devices.")]
             public ColorGradingPrecision precision;
 
             [Space, ColorWheelGroup]
@@ -306,6 +307,9 @@ namespace UnityStandardAssets.CinematicEffects
             [Space, IndentedGroup]
             public CurvesSettings curves;
 
+            [Space, Tooltip("Displays the generated LUT in the top left corner of the GameView.")]
+            public bool showDebug;
+
             public static ColorGradingSettings defaultSettings
             {
                 get
@@ -313,6 +317,7 @@ namespace UnityStandardAssets.CinematicEffects
                     return new ColorGradingSettings
                     {
                         enabled = false,
+                        showDebug = false,
                         precision = ColorGradingPrecision.Normal,
                         colorWheels = ColorWheelsSettings.defaultSettings,
                         basics = BasicsSettings.defaultSettings,
@@ -478,10 +483,6 @@ namespace UnityStandardAssets.CinematicEffects
         private RenderTexture m_SmallAdaptiveRt;
         private RenderTextureFormat m_AdaptiveRtFormat;
 
-#if INTERNAL_DEBUG
-        private RenderTexture m_DebugAdaptiveRt;
-#endif
-
         public void SetDirty()
         {
             m_Dirty = true;
@@ -514,11 +515,6 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (m_CurveTexture != null)
                 DestroyImmediate(m_CurveTexture);
-
-#if INTERNAL_DEBUG
-            if (m_DebugAdaptiveRt != null)
-                DestroyImmediate(m_DebugAdaptiveRt);
-#endif
         }
 
         private void OnValidate()
@@ -636,12 +632,29 @@ namespace UnityStandardAssets.CinematicEffects
             m_SmallAdaptiveRt = new RenderTexture(1, 1, 0, m_AdaptiveRtFormat);
             m_SmallAdaptiveRt.hideFlags = HideFlags.DontSave;
 
-#if INTERNAL_DEBUG
-            m_DebugAdaptiveRt = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32);
-            m_DebugAdaptiveRt.hideFlags = HideFlags.DontSave;
-#endif
-
             return true;
+        }
+
+        private void OnGUI()
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            int yoffset = 0;
+            
+            // Color grading debug
+            if (m_InternalLut != null && colorGrading.enabled && colorGrading.showDebug)
+            {
+                Graphics.DrawTexture(new Rect(0f, yoffset, lutSize * lutSize, lutSize), internalLutRt);
+                yoffset += lutSize;
+            }
+
+            // Eye Adaptation debug
+            if (m_SmallAdaptiveRt != null && eyeAdaptation.enabled && eyeAdaptation.showDebug)
+            {
+                m_Material.SetPass((int)Pass.AdaptationDebug);
+                Graphics.DrawTexture(new Rect(0f, yoffset, 256, 16), m_SmallAdaptiveRt, m_Material);
+            }
         }
 
         [ImageEffectTransformsToLDR]
@@ -722,11 +735,6 @@ namespace UnityStandardAssets.CinematicEffects
                 material.SetFloat("_AdaptationMin", Mathf.Pow(2f, eyeAdaptation.min));
                 material.SetFloat("_AdaptationMax", Mathf.Pow(2f, eyeAdaptation.max));
                 material.SetTexture("_LumTex", m_SmallAdaptiveRt);
-
-#if INTERNAL_DEBUG
-                Graphics.Blit(m_SmallAdaptiveRt, m_DebugAdaptiveRt, material, (int)Pass.AdaptationDebug);
-#endif
-
                 material.EnableKeyword("ENABLE_EYE_ADAPTATION");
             }
 
@@ -744,7 +752,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 if (lut.texture == null || !CheckUserLut())
                     tex = identityLut;
-                
+
                 lutUsed = tex;
                 lutContrib = lut.contribution;
                 material.EnableKeyword("ENABLE_COLOR_GRADING");
@@ -754,15 +762,15 @@ namespace UnityStandardAssets.CinematicEffects
             {
                 if (m_Dirty)
                 {
-                    if (!lut.enabled || lut.texture == null)
+                    if (lutUsed == null)
                     {
-                        material.SetVector("_UserLutParams", new Vector4(1f / identityLut.width, 1f / identityLut.height, identityLut.height - 1f, lut.contribution));
+                        material.SetVector("_UserLutParams", new Vector4(1f / identityLut.width, 1f / identityLut.height, identityLut.height - 1f, 1f));
                         material.SetTexture("_UserLutTex", identityLut);
                     }
                     else
                     {
-                        material.SetVector("_UserLutParams", new Vector4(1f / lut.texture.width, 1f / lut.texture.height, lut.texture.height - 1f, lut.contribution));
-                        material.SetTexture("_UserLutTex", lut.texture);
+                        material.SetVector("_UserLutParams", new Vector4(1f / lutUsed.width, 1f / lutUsed.height, lutUsed.height - 1f, lut.contribution));
+                        material.SetTexture("_UserLutTex", lutUsed);
                     }
 
                     Color lift, gamma, gain;
@@ -823,37 +831,6 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     onFrameEndEditorOnly(destination);
                 }
-            }
-#endif
-
-#if INTERNAL_DEBUG
-            int yoffset = 0;
-
-            if (m_InternalLut != null && colorGrading.enabled)
-            {
-                GL.PushMatrix();
-                GL.LoadPixelMatrix(0f, Screen.width, Screen.height, 0f);
-                Graphics.DrawTexture(new Rect(0f, yoffset, lutSize * lutSize, lutSize), internalLutRt);
-                GL.PopMatrix();
-                yoffset += lutSize;
-            }
-
-            if (m_CurveTexture != null && colorGrading.enabled)
-            {
-                GL.PushMatrix();
-                GL.LoadPixelMatrix(0f, Screen.width, Screen.height, 0f);
-                Graphics.DrawTexture(new Rect(0f, yoffset, m_CurveTexture.width, 4f), m_CurveTexture);
-                GL.PopMatrix();
-                yoffset += 4;
-            }
-
-            if (m_DebugAdaptiveRt != null && eyeAdaptation.enabled)
-            {
-                GL.PushMatrix();
-                GL.LoadPixelMatrix(0f, Screen.width, Screen.height, 0f);
-                Graphics.DrawTexture(new Rect(0f, yoffset, 64f, 64f), m_DebugAdaptiveRt);
-                GL.PopMatrix();
-                yoffset += 64;
             }
 #endif
         }

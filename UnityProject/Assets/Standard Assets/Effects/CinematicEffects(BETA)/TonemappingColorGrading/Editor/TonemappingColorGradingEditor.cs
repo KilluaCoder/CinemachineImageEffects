@@ -316,37 +316,41 @@ namespace UnityStandardAssets.CinematicEffects
             if (concreteTarget.lut.enabled && concreteTarget.lut.texture != null)
             {
                 if (!concreteTarget.validUserLutSize)
-                    EditorGUILayout.HelpBox("Invalid LUT size. Should be \"height = sqrt(width)\" (e.g. 256x16).", MessageType.Warning);
-
-                // Checks import settings on the lut, offers to fix them if invalid
-                TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(concreteTarget.lut.texture));
-                bool valid = importer.anisoLevel == 0
-                    && importer.mipmapEnabled == false
-                    && importer.linearTexture == true
-                    && (importer.textureFormat == TextureImporterFormat.RGB24 || importer.textureFormat == TextureImporterFormat.AutomaticTruecolor);
-
-                if (!valid)
                 {
-                    EditorGUILayout.HelpBox("Invalid LUT import settings.", MessageType.Warning);
+                    EditorGUILayout.HelpBox("Invalid LUT size. Should be \"height = sqrt(width)\" (e.g. 256x16).", MessageType.Error);
+                }
+                else
+                {
+                    // Checks import settings on the lut, offers to fix them if invalid
+                    TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(concreteTarget.lut.texture));
+                    bool valid = importer.anisoLevel == 0
+                        && importer.mipmapEnabled == false
+                        && importer.linearTexture == true
+                        && (importer.textureFormat == TextureImporterFormat.RGB24 || importer.textureFormat == TextureImporterFormat.AutomaticTruecolor);
 
-                    GUILayout.Space(-32);
-                    EditorGUILayout.BeginHorizontal();
+                    if (!valid)
                     {
-                        GUILayout.FlexibleSpace();
-                        if (GUILayout.Button("Fix", GUILayout.Width(60)))
+                        EditorGUILayout.HelpBox("Invalid LUT import settings.", MessageType.Warning);
+
+                        GUILayout.Space(-32);
+                        EditorGUILayout.BeginHorizontal();
                         {
-                            importer.textureType = TextureImporterType.Advanced;
-                            importer.anisoLevel = 0;
-                            importer.mipmapEnabled = false;
-                            importer.linearTexture = true;
-                            importer.textureFormat = TextureImporterFormat.RGB24;
-                            importer.SaveAndReimport();
-                            AssetDatabase.Refresh();
+                            GUILayout.FlexibleSpace();
+                            if (GUILayout.Button("Fix", GUILayout.Width(60)))
+                            {
+                                importer.textureType = TextureImporterType.Advanced;
+                                importer.anisoLevel = 0;
+                                importer.mipmapEnabled = false;
+                                importer.linearTexture = true;
+                                importer.textureFormat = TextureImporterFormat.RGB24;
+                                importer.SaveAndReimport();
+                                AssetDatabase.Refresh();
+                            }
+                            GUILayout.Space(8);
                         }
-                        GUILayout.Space(8);
+                        EditorGUILayout.EndHorizontal();
+                        GUILayout.Space(11);
                     }
-                    EditorGUILayout.EndHorizontal();
-                    GUILayout.Space(11);
                 }
             }
 

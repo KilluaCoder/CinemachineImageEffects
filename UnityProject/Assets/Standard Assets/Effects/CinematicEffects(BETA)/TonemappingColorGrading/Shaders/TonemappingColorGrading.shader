@@ -214,16 +214,25 @@ Shader "Hidden/TonemappingColorGrading"
             ENDCG
         }
 
-        // Debug, to be removed
+        // Eye adaptation debug slider
         Pass
         {
             CGPROGRAM
                 #pragma fragment frag_debug
                 #include "TonemappingColorGrading.cginc"
+
                 half4 frag_debug(v2f_img i) : SV_Target
                 {
                     half lum = tex2D(_MainTex, i.uv).r;
-                    return half4(lum, lum, lum, 1.0);
+                    half grey = i.uv.x;
+
+                    int lum_px = floor(256.0 * lum);
+                    int g_px = floor(256.0 * grey);
+
+                    half3 color = half3(grey, grey, grey);
+                    color = lerp(color, half3(1.0, 0.0, 0.0), lum_px == g_px);
+
+                    return half4(color, 1.0);
                 }
             ENDCG
         }

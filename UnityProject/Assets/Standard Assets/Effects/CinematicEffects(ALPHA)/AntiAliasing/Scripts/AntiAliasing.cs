@@ -267,7 +267,7 @@ namespace UnityStandardAssets.CinematicEffects
                 return m_SearchTexture;
             }
         }
-        
+
         private Camera m_Camera;
         public Camera cameraComponent
         {
@@ -291,7 +291,7 @@ namespace UnityStandardAssets.CinematicEffects
                 return m_Material;
             }
         }
-        
+
         private void OnEnable()
         {
             if (!ImageEffectHelper.IsSupported(shader, true, false, this))

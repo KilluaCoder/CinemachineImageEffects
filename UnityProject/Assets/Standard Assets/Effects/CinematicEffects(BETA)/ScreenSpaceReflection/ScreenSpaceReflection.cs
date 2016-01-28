@@ -367,7 +367,7 @@ namespace UnityStandardAssets.CinematicEffects
                 return m_Shader;
             }
         }
-        
+
         private Material m_Material;
         public Material material
         {

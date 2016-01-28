@@ -3,7 +3,7 @@ namespace UnityStandardAssets.CinematicEffects
     using UnityEngine;
     using UnityEngine.Events;
     using System;
-    
+
     // TODO: Histogram optimizations, see HistogramCompute.compute
 
     [ExecuteInEditMode]
@@ -108,7 +108,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             [Min(0f), Tooltip("Speed of linear adaptation. Higher is faster.")]
             public float speed;
-            
+
             [Tooltip("Displays a luminosity helper in the GameView.")]
             public bool showDebug;
 
@@ -277,13 +277,13 @@ namespace UnityStandardAssets.CinematicEffects
         {
             [Curve]
             public AnimationCurve master;
-            
+
             [Curve(1f, 0f, 0f, 1f)]
             public AnimationCurve red;
-            
+
             [Curve(0f, 1f, 0f, 1f)]
             public AnimationCurve green;
-            
+
             [Curve(0f, 1f, 1f, 1f)]
             public AnimationCurve blue;
 
@@ -461,7 +461,7 @@ namespace UnityStandardAssets.CinematicEffects
                 return m_CurveTexture;
             }
         }
-        
+
         [SerializeField]
         private Shader m_Shader;
         public Shader shader
@@ -571,7 +571,7 @@ namespace UnityStandardAssets.CinematicEffects
                 for (int j = 0; j < dim; j++)
                     for (int k = 0; k < dim; k++)
                         newC[i + (j * dim) + (k * dim * dim)] = new Color(i * oneOverDim, Mathf.Abs(k * oneOverDim), j * oneOverDim, 1f);
-            
+
             Texture2D tex2D = new Texture2D(dim * dim, dim, TextureFormat.RGB24, false, true);
             tex2D.SetPixels(newC);
             tex2D.Apply();
@@ -665,7 +665,7 @@ namespace UnityStandardAssets.CinematicEffects
                 return false;
 
             m_AdaptiveRtFormat = RenderTextureFormat.ARGBHalf;
-            
+
             if (SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RGHalf))
                 m_AdaptiveRtFormat = RenderTextureFormat.RGHalf;
 
@@ -681,7 +681,7 @@ namespace UnityStandardAssets.CinematicEffects
                 return;
 
             int yoffset = 0;
-            
+
             // Color grading debug
             if (m_InternalLut != null && colorGrading.enabled && colorGrading.showDebug)
             {
@@ -734,7 +734,7 @@ namespace UnityStandardAssets.CinematicEffects
                 adaptiveSize |= (adaptiveSize >> 8);
                 adaptiveSize |= (adaptiveSize >> 16);
                 adaptiveSize -= (adaptiveSize >> 1);
-                
+
                 rtSquared = RenderTexture.GetTemporary(adaptiveSize, adaptiveSize, 0, m_AdaptiveRtFormat);
                 Graphics.Blit(source, rtSquared);
 
@@ -768,7 +768,7 @@ namespace UnityStandardAssets.CinematicEffects
                 else
                     Graphics.Blit(lumRt, m_SmallAdaptiveRt, material, (int)Pass.AdaptationExp);
 #else
-				Graphics.Blit(lumRt, m_SmallAdaptiveRt, material, freshlyBrewedSmallRt ? (int)Pass.AdaptationExp : (int)Pass.AdaptationExpBlend);
+                Graphics.Blit(lumRt, m_SmallAdaptiveRt, material, freshlyBrewedSmallRt ? (int)Pass.AdaptationExp : (int)Pass.AdaptationExpBlend);
 #endif
 
                 material.SetFloat("_MiddleGrey", eyeAdaptation.middleGrey);

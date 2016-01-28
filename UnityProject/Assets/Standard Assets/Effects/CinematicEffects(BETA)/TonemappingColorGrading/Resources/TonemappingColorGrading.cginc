@@ -112,7 +112,7 @@ half3 tonemapReinhard(half3 color)
     half scale = lumTm / (1.0 + lumTm);
     return color * scale / lum;
 }
-        
+
 half4 frag_tcg(v2f_img i) : SV_Target
 {
     half4 color = tex2D(_MainTex, i.uv);

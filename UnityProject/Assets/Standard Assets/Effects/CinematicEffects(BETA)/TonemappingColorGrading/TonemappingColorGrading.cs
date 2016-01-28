@@ -8,7 +8,7 @@ namespace UnityStandardAssets.CinematicEffects
 
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
-    [AddComponentMenu("Image Effects/Color Adjustments/Tonemapping and Color Grading")]
+    [AddComponentMenu("Image Effects/Cinematic/Tonemapping and Color Grading")]
     public class TonemappingColorGrading : MonoBehaviour
     {
 #if UNITY_EDITOR
@@ -16,10 +16,36 @@ namespace UnityStandardAssets.CinematicEffects
         public UnityAction<RenderTexture> onFrameEndEditorOnly;
 
         [SerializeField]
-        public ComputeShader histogramComputeShader;
+        private ComputeShader m_HistogramComputeShader;
+        public ComputeShader histogramComputeShader
+        {
+            get
+            {
+                if (m_HistogramComputeShader == null)
+                {
+                    m_HistogramComputeShader = Resources.Load<ComputeShader>("HistogramCompute");
+                    m_HistogramComputeShader.hideFlags = HideFlags.DontSave;
+                }
+
+                return m_HistogramComputeShader;
+            }
+        }
 
         [SerializeField]
-        public Shader histogramShader;
+        private Shader m_HistogramShader;
+        public Shader histogramShader
+        {
+            get
+            {
+                if (m_HistogramShader == null)
+                {
+                    m_HistogramShader = Shader.Find("Hidden/TonemappingColorGradingHistogram");
+                    m_HistogramShader.hideFlags = HideFlags.DontSave;
+                }
+
+                return m_HistogramShader;
+            }
+        }
 
         [SerializeField]
         public bool histogramRefreshOnPlay = true;
@@ -435,8 +461,22 @@ namespace UnityStandardAssets.CinematicEffects
                 return m_CurveTexture;
             }
         }
+        
+        [SerializeField]
+        private Shader m_Shader;
+        public Shader shader
+        {
+            get
+            {
+                if (m_Shader == null)
+                {
+                    m_Shader = Shader.Find("Hidden/TonemappingColorGrading");
+                    m_Shader.hideFlags = HideFlags.DontSave;
+                }
 
-        public Shader shader;
+                return m_Shader;
+            }
+        }
 
         private Material m_Material;
         public Material material

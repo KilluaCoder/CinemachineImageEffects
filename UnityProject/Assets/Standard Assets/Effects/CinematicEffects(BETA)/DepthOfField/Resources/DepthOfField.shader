@@ -234,62 +234,62 @@ half4 shapeDirectionalBlur(half2 uv, bool mergePass, int numSample, bool sampleD
     return half4(finalColor, (sampleDilatedFG||mergePass)?fgBlend:centerTap.a);
 }
 
-half4 fragShapeLowQuality(v2fDepth i) : COLOR
+half4 fragShapeLowQuality(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, false, SAMPLE_NUM_L, false);
 }
 
-half4 fragShapeLowQualityDilateFg(v2fDepth i) : COLOR
+half4 fragShapeLowQualityDilateFg(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, false, SAMPLE_NUM_L, true);
 }
 
-half4 fragShapeLowQualityMerge(v2fDepth i) : COLOR
+half4 fragShapeLowQualityMerge(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, true, SAMPLE_NUM_L, false);
 }
 
-half4 fragShapeLowQualityMergeDilateFg(v2fDepth i) : COLOR
+half4 fragShapeLowQualityMergeDilateFg(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, true, SAMPLE_NUM_L, true);
 }
 
-half4 fragShapeMediumQuality(v2fDepth i) : COLOR
+half4 fragShapeMediumQuality(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, false, SAMPLE_NUM_M, false);
 }
 
-half4 fragShapeMediumQualityDilateFg(v2fDepth i) : COLOR
+half4 fragShapeMediumQualityDilateFg(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, false, SAMPLE_NUM_M, true);
 }
 
-half4 fragShapeMediumQualityMerge(v2fDepth i) : COLOR
+half4 fragShapeMediumQualityMerge(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, true, SAMPLE_NUM_M, false);
 }
 
-half4 fragShapeMediumQualityMergeDilateFg(v2fDepth i) : COLOR
+half4 fragShapeMediumQualityMergeDilateFg(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, true, SAMPLE_NUM_M, true);
 }
 
-half4 fragShapeHighQuality(v2fDepth i) : COLOR
+half4 fragShapeHighQuality(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, false, SAMPLE_NUM_H, false);
 }
 
-half4 fragShapeHighQualityDilateFg(v2fDepth i) : COLOR
+half4 fragShapeHighQualityDilateFg(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, false, SAMPLE_NUM_H, true);
 }
 
-half4 fragShapeHighQualityMerge(v2fDepth i) : COLOR
+half4 fragShapeHighQualityMerge(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, true, SAMPLE_NUM_H, false);
 }
 
-half4 fragShapeHighQualityMergeDilateFg(v2fDepth i) : COLOR
+half4 fragShapeHighQualityMergeDilateFg(v2fDepth i) : SV_Target
 {
     return shapeDirectionalBlur(i.uv, true, SAMPLE_NUM_H, true);
 }

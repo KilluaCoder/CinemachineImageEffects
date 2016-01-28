@@ -538,7 +538,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             SetDirty();
         }
-        
+
         private void OnDisable()
         {
             if (m_Material != null)

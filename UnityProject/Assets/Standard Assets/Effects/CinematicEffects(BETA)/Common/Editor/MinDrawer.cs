@@ -21,11 +21,11 @@
  *    distribution.
  */
 
+using UnityEditor;
+using UnityEngine;
+
 namespace UnityStandardAssets.CinematicEffects
 {
-    using UnityEngine;
-    using UnityEditor;
-
     [CustomPropertyDrawer(typeof(MinAttribute))]
     internal sealed class MinDrawer : PropertyDrawer
     {

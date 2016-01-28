@@ -528,17 +528,17 @@ namespace UnityStandardAssets.CinematicEffects
             m_Dirty = true;
         }
 
-        private void Start()
-        {
-            if (!ImageEffectHelper.IsSupported(shader, false, true, this))
-                enabled = false;
-        }
-
         private void OnEnable()
         {
+            if (!ImageEffectHelper.IsSupported(shader, false, true, this))
+            {
+                enabled = false;
+                return;
+            }
+
             SetDirty();
         }
-
+        
         private void OnDisable()
         {
             if (m_Material != null)
@@ -555,6 +555,12 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (m_CurveTexture != null)
                 DestroyImmediate(m_CurveTexture);
+
+            m_Material = null;
+            m_IdentityLut = null;
+            m_InternalLut = null;
+            m_SmallAdaptiveRt = null;
+            m_CurveTexture = null;
         }
 
         private void OnValidate()

@@ -1,27 +1,3 @@
-/*
- * Copyright (c) 2015 Thomas Hourdel
- * Copyright (c) 2015 Goksel Goktas (Unity)
- *
- * This software is provided 'as-is', without any express or implied
- * warranty. In no event will the authors be held liable for any damages
- * arising from the use of this software.
- *
- * Permission is granted to anyone to use this software for any purpose,
- * including commercial applications, and to alter it and redistribute it
- * freely, subject to the following restrictions:
- *
- *    1. The origin of this software must not be misrepresented; you must not
- *    claim that you wrote the original software. If you use this software
- *    in a product, an acknowledgment in the product documentation would be
- *    appreciated but is not required.
- *
- *    2. Altered source versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.
- *
- *    3. This notice may not be removed or altered from any source
- *    distribution.
- */
-
 using UnityEngine;
 using UnityEngine.Serialization;
 using System;
@@ -253,12 +229,45 @@ namespace UnityStandardAssets.CinematicEffects
         private float m_FlipFlop = 1.0f;
         private RenderTexture m_Accumulation;
 
-        [FormerlySerializedAs("smaaShader")]
-        public Shader shader;
 
-        public Texture2D areaTexture;
-        public Texture2D searchTexture;
+        [SerializeField]
+        private Shader m_Shader;
+        public Shader shader
+        {
+            get
+            {
+                if (m_Shader == null)
+                {
+                    m_Shader = Shader.Find("Hidden/Subpixel Morphological Antialiasing");
+                    m_Shader.hideFlags = HideFlags.DontSave;
+                }
 
+                return m_Shader;
+            }
+        }
+
+        private Texture2D m_AreaTexture;
+        private Texture2D areaTexture
+        {
+            get
+            {
+                if (m_AreaTexture == null)
+                    m_AreaTexture = Resources.Load<Texture2D>("AreaTex");
+                return m_AreaTexture;
+            }
+        }
+
+        private Texture2D m_SearchTexture;
+        private Texture2D searchTexture
+        {
+            get
+            {
+                if (m_SearchTexture == null)
+                    m_SearchTexture = Resources.Load<Texture2D>("SearchTex");
+                return m_SearchTexture;
+            }
+        }
+        
         private Camera m_Camera;
         public Camera cameraComponent
         {
@@ -282,21 +291,11 @@ namespace UnityStandardAssets.CinematicEffects
                 return m_Material;
             }
         }
-
-        private void Start()
+        
+        private void OnEnable()
         {
             if (!ImageEffectHelper.IsSupported(shader, true, false, this))
                 enabled = false;
-        }
-
-        private void OnEnable()
-        {
-            // Make sure the helper textures are set
-            if (areaTexture == null)
-                areaTexture = Resources.Load<Texture2D>("AreaTex");
-
-            if (searchTexture == null)
-                searchTexture = Resources.Load<Texture2D>("SearchTex");
         }
 
         private void OnDisable()
@@ -307,6 +306,9 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (m_Accumulation != null)
                 DestroyImmediate(m_Accumulation);
+
+            m_Material = null;
+            m_Accumulation = null;
         }
 
         private void OnPreCull()

@@ -86,7 +86,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 SerializedProperty currentChannel = property.FindPropertyRelative("currentChannel");
                 int intCurrentChannel = currentChannel.intValue;
-                
+
                 EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
 
                 EditorGUI.indentLevel++;
@@ -153,7 +153,7 @@ namespace UnityStandardAssets.CinematicEffects
                 header.contentOffset = new Vector2(20f, -2f);
             }
         }
-        
+
         public static readonly Color masterCurveColor = new Color(1f, 1f, 1f, 2f);
         public static readonly Color redCurveColor = new Color(1f, 0f, 0f, 2f);
         public static readonly Color greenCurveColor = new Color(0f, 1f, 0f, 2f);
@@ -170,9 +170,9 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 return concreteTarget.histogramComputeShader != null
-                    && ImageEffectHelper.supportsDX11
-                    && concreteTarget.histogramShader != null
-                    && concreteTarget.histogramShader.isSupported;
+                       && ImageEffectHelper.supportsDX11
+                       && concreteTarget.histogramShader != null
+                       && concreteTarget.histogramShader.isSupported;
             }
         }
 
@@ -302,7 +302,7 @@ namespace UnityStandardAssets.CinematicEffects
             serializedObject.Update();
 
             GUILayout.Label("All following effects will use LDR color buffers.", EditorStyles.miniBoldLabel);
-            
+
             if (concreteTarget.tonemapping.enabled)
             {
                 Camera camera = concreteTarget.GetComponent<Camera>();
@@ -387,8 +387,8 @@ namespace UnityStandardAssets.CinematicEffects
                         Mathf.Floor(r.x + r.width / 2f - width / 2f),
                         Mathf.Floor(r.y + r.height / 2f - height / 2f),
                         width, height
-                    );
-                
+                        );
+
                 if (m_HistogramTexture != null)
                     GUI.DrawTexture(m_HistogramRect, m_HistogramTexture);
             }
@@ -413,7 +413,7 @@ namespace UnityStandardAssets.CinematicEffects
         {
             if (Application.isPlaying && !concreteTarget.histogramRefreshOnPlay)
                 return;
-            
+
             if (Mathf.Approximately(m_HistogramRect.width, 0) || Mathf.Approximately(m_HistogramRect.height, 0) || !isHistogramSupported)
                 return;
 

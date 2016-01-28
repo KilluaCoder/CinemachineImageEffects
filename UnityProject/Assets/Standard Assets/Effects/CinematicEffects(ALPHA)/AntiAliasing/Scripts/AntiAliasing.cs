@@ -1,27 +1,3 @@
-/*
- * Copyright (c) 2015 Thomas Hourdel
- * Copyright (c) 2015 Goksel Goktas (Unity)
- *
- * This software is provided 'as-is', without any express or implied
- * warranty. In no event will the authors be held liable for any damages
- * arising from the use of this software.
- *
- * Permission is granted to anyone to use this software for any purpose,
- * including commercial applications, and to alter it and redistribute it
- * freely, subject to the following restrictions:
- *
- *    1. The origin of this software must not be misrepresented; you must not
- *    claim that you wrote the original software. If you use this software
- *    in a product, an acknowledgment in the product documentation would be
- *    appreciated but is not required.
- *
- *    2. Altered source versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.
- *
- *    3. This notice may not be removed or altered from any source
- *    distribution.
- */
-
 using UnityEngine;
 using UnityEngine.Serialization;
 using System;
@@ -35,11 +11,11 @@ namespace UnityStandardAssets.CinematicEffects
     {
         [AttributeUsage(AttributeTargets.Field)]
         public class SettingsGroup : Attribute
-        { }
+        {}
 
         [AttributeUsage(AttributeTargets.Field)]
         public class TopLevelSettings : Attribute
-        { }
+        {}
 
         public enum DebugPass
         {
@@ -123,8 +99,9 @@ namespace UnityStandardAssets.CinematicEffects
             [Min(0f)]
             [Tooltip("If there is an neighbor edge that has a local contrast factor times bigger contrast than current edge, current edge will be discarded.\nThis allows to eliminate spurious crossing edges, and is based on the fact that, if there is too much contrast in a direction, that will hide perceptually contrast in the other neighbors.")]
             public float localContrastAdaptationFactor;
-            
-            public static QualitySettings[] presetQualitySettings = {
+
+            public static QualitySettings[] presetQualitySettings =
+            {
                 // Low
                 new QualitySettings
                 {
@@ -137,7 +114,7 @@ namespace UnityStandardAssets.CinematicEffects
                     cornerRounding = 25,
                     localContrastAdaptationFactor = 2f
                 },
-                
+
                 // Medium
                 new QualitySettings
                 {
@@ -150,7 +127,7 @@ namespace UnityStandardAssets.CinematicEffects
                     cornerRounding = 25,
                     localContrastAdaptationFactor = 2f
                 },
-                
+
                 // High
                 new QualitySettings
                 {
@@ -163,7 +140,7 @@ namespace UnityStandardAssets.CinematicEffects
                     cornerRounding = 25,
                     localContrastAdaptationFactor = 2f
                 },
-                
+
                 // Ultra
                 new QualitySettings
                 {
@@ -246,18 +223,51 @@ namespace UnityStandardAssets.CinematicEffects
 
         [SettingsGroup]
         public TemporalSettings temporal = TemporalSettings.defaultSettings;
-        
+
         private Matrix4x4 m_ProjectionMatrix;
         private Matrix4x4 m_PreviousViewProjectionMatrix;
         private float m_FlipFlop = 1.0f;
         private RenderTexture m_Accumulation;
 
-        [FormerlySerializedAs("smaaShader")]
-        public Shader shader;
-        
-        public Texture2D areaTexture;
-        public Texture2D searchTexture;
-        
+
+        [SerializeField]
+        private Shader m_Shader;
+        public Shader shader
+        {
+            get
+            {
+                if (m_Shader == null)
+                {
+                    m_Shader = Shader.Find("Hidden/Subpixel Morphological Antialiasing");
+                    m_Shader.hideFlags = HideFlags.DontSave;
+                }
+
+                return m_Shader;
+            }
+        }
+
+        private Texture2D m_AreaTexture;
+        private Texture2D areaTexture
+        {
+            get
+            {
+                if (m_AreaTexture == null)
+                    m_AreaTexture = Resources.Load<Texture2D>("AreaTex");
+                return m_AreaTexture;
+            }
+        }
+
+        private Texture2D m_SearchTexture;
+        private Texture2D searchTexture
+        {
+            get
+            {
+                if (m_SearchTexture == null)
+                    m_SearchTexture = Resources.Load<Texture2D>("SearchTex");
+                return m_SearchTexture;
+            }
+        }
+
         private Camera m_Camera;
         public Camera cameraComponent
         {
@@ -282,20 +292,10 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        private void Start()
+        private void OnEnable()
         {
             if (!ImageEffectHelper.IsSupported(shader, true, false, this))
                 enabled = false;
-        }
-
-        private void OnEnable()
-        {
-            // Make sure the helper textures are set
-            if (areaTexture == null)
-                areaTexture = Resources.Load<Texture2D>("AreaTex");
-
-            if (searchTexture == null)
-                searchTexture = Resources.Load<Texture2D>("SearchTex");
         }
 
         private void OnDisable()
@@ -306,6 +306,9 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (m_Accumulation != null)
                 DestroyImmediate(m_Accumulation);
+
+            m_Material = null;
+            m_Accumulation = null;
         }
 
         private void OnPreCull()
@@ -360,7 +363,7 @@ namespace UnityStandardAssets.CinematicEffects
             material.SetVector("_Params2", new Vector2(preset.cornerRounding, preset.localContrastAdaptationFactor));
 
             material.SetMatrix("_ReprojectionMatrix", m_PreviousViewProjectionMatrix * Matrix4x4.Inverse(viewProjectionMatrix));
-            
+
             float subsampleIndex = (m_FlipFlop < 0.0f) ? 2.0f : 1.0f;
             material.SetVector("_SubsampleIndices", new Vector4(subsampleIndex, subsampleIndex, subsampleIndex, 0.0f));
 
@@ -406,7 +409,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 isFirstFrame = true;
             }
-            
+
             RenderTexture rt1 = TempRT(width, height, source.format);
             Graphics.Blit(null, rt1, material, 0); // Clear
 
@@ -433,7 +436,7 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     // Neighborhood Blending
                     material.SetTexture("_BlendTex", rt2);
-                    
+
                     if (temporal.enabled)
                     {
                         // Temporal filtering
@@ -464,7 +467,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 RenderTexture.ReleaseTemporary(rt2);
             }
-            
+
             RenderTexture.ReleaseTemporary(rt1);
 
             // Store the future-previous frame's view-projection matrix

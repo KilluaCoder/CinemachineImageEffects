@@ -228,7 +228,7 @@ half4 shapeDirectionalBlur(half2 uv, bool mergePass, int numSample, bool sampleD
     {
         finalColor = min(finalColor, tex2Dlod(_ThirdTex, half4(uv,0,0)).rgb);
     }
-    
+
     finalColor = lerp(centerTap.rgb, finalColor, saturate(bgBlend+fgBlend));
     fgBlend = max(fgBlendFromPreviousPass, fgBlend);
     return half4(finalColor, (sampleDilatedFG||mergePass)?fgBlend:centerTap.a);

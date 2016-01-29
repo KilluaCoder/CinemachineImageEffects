@@ -137,7 +137,7 @@ namespace UnityStandardAssets.CinematicEffects
         [Serializable]
         public struct GlobalSettings
         {
-            [Tooltip("Allow to view where the blur will be applied. Yellow for near blur, Blue for far blur.")]
+            [Tooltip("Allows to view where the blur will be applied. Yellow for near blur, blue for far blur.")]
             public bool visualizeBluriness;
             
             [Tooltip("Setup mode. Use \"Advanced\" if you need more control on blur settings and/or want to use a bokeh texture. \"Explicit\" is the same as \"Advanced\" but makes use of \"Near Plane\" and \"Far Plane\" values instead of \"F-Stop\".")]
@@ -171,7 +171,7 @@ namespace UnityStandardAssets.CinematicEffects
         [Serializable]
         public struct QualitySettings
         {
-            [Tooltip("Smooth bokeh.")]
+            [Tooltip("Enable this to get smooth bokeh.")]
             public bool prefilterBlur;
             
             [Tooltip("Applies a median filter for even smoother bokeh.")]
@@ -256,7 +256,7 @@ namespace UnityStandardAssets.CinematicEffects
             [Explicit, Range(0f, 1f), Tooltip("Far focus distance.")]
             public float farPlane;
 
-            [Basic, Advanced, Range(0f, 32f), Tooltip("Simulate focal ratio. Lower values will result in a narrow depth of field.")]
+            [Basic, Advanced, Range(0f, 32f), Tooltip("Simulates focal ratio. Lower values will result in a narrow depth of field.")]
             public float fStops;
 
             [Basic, Advanced, Explicit, Range(0f, 1f), Tooltip("Focus range/spread. Use this to fine-tune the F-Stop range.")]

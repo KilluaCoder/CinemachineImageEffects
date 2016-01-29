@@ -86,7 +86,7 @@ namespace UnityStandardAssets.CinematicEffects
             Performance,
             Custom,
         }
-        
+
         [NonSerialized]
         private List<SerializedProperty> m_Properties = new List<SerializedProperty>();
 

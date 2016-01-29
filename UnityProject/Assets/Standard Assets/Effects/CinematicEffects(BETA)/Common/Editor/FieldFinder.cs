@@ -11,12 +11,12 @@ namespace UnityStandardAssets.CinematicEffects
             Expression body = selector;
             if (body is LambdaExpression)
             {
-                body = ((LambdaExpression) body).Body;
+                body = ((LambdaExpression)body).Body;
             }
             switch (body.NodeType)
             {
                 case ExpressionType.MemberAccess:
-                    return (FieldInfo) ((MemberExpression) body).Member;
+                    return (FieldInfo)((MemberExpression)body).Member;
                 default:
                     throw new InvalidOperationException();
             }

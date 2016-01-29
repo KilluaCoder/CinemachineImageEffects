@@ -28,7 +28,7 @@ namespace UnityStandardAssets.CinematicEffects
             [SerializeField, Range(0, 5)]
             [Tooltip("Changes extent of veiling effects in a screen resolution-independent fashion.")]
             public float radius;
-            
+
             [SerializeField, Range(0, 2)]
             [Tooltip("Blend factor of the result image.")]
             public float intensity;
@@ -36,7 +36,7 @@ namespace UnityStandardAssets.CinematicEffects
             [SerializeField]
             [Tooltip("Resolution of temporary render textures.")]
             public QualityLevel quality;
-            
+
             [SerializeField]
             [Tooltip("Reduces flashing noise with a median filter.")]
             public bool antiFlicker;
@@ -63,11 +63,12 @@ namespace UnityStandardAssets.CinematicEffects
 
         [SerializeField]
         public Settings settings = Settings.defaultSettings;
-        
+
         #endregion
 
         [SerializeField, HideInInspector]
-        Shader m_Shader;
+        private Shader m_Shader;
+
         public Shader shader
         {
             get
@@ -83,7 +84,7 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        Material m_Material;
+        private Material m_Material;
         public Material material
         {
             get
@@ -94,21 +95,22 @@ namespace UnityStandardAssets.CinematicEffects
                 return m_Material;
             }
         }
-        
+
         #region Private Members
-        void OnEnable()
+
+        private void OnEnable()
         {
             if (!ImageEffectHelper.IsSupported(shader, true, false, this))
                 enabled = false;
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             DestroyImmediate(m_Material);
             m_Material = null;
         }
 
-        void OnRenderImage(RenderTexture source, RenderTexture destination)
+        private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
             var isGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma;
 
@@ -182,7 +184,7 @@ namespace UnityStandardAssets.CinematicEffects
             for (var i = iteration - 1; i > 1; i--)
             {
                 material.SetTexture("_BaseTex", rt1[i - 1]);
-                Graphics.Blit(rt2[i],  rt2[i - 1], material, 2);
+                Graphics.Blit(rt2[i], rt2[i - 1], material, 2);
             }
 
             // finish process

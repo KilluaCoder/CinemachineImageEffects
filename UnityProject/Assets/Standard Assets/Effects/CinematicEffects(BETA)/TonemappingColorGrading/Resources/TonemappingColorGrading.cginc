@@ -75,7 +75,7 @@ half3 tonemapPhotographic(half3 color)
     return 1.0 - exp2(-color);
 }
 
-half3 tonemapHabble(half3 color)
+half3 tonemapHable(half3 color)
 {
     const half a = 0.15;
     const half b = 0.50;
@@ -130,8 +130,8 @@ half4 frag_tcg(v2f_img i) : SV_Target
 
 #if defined(TONEMAPPING_ACES)
     color.rgb = tonemapACES(color.rgb);
-#elif defined(TONEMAPPING_HABBLE)
-    color.rgb = tonemapHabble(color.rgb);
+#elif defined(TONEMAPPING_HABLE)
+    color.rgb = tonemapHable(color.rgb);
 #elif defined(TONEMAPPING_HEJI_DAWSON)
     color.rgb = tonemapHejiDawson(color.rgb);
 #elif defined(TONEMAPPING_PHOTOGRAPHIC)

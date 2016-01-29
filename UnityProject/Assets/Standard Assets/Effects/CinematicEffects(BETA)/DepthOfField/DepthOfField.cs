@@ -508,14 +508,18 @@ namespace UnityStandardAssets.CinematicEffects
         {
             ReleaseComputeResources();
 
-            if (m_FilmicDepthOfFieldMaterial == null)
+            if (m_FilmicDepthOfFieldMaterial != null)
                 DestroyImmediate(m_FilmicDepthOfFieldMaterial);
 
-            if (m_TextureBokehMaterial == null)
+            if (m_TextureBokehMaterial != null)
                 DestroyImmediate(m_TextureBokehMaterial);
 
-            if (m_MedianFilterMaterial == null)
+            if (m_MedianFilterMaterial != null)
                 DestroyImmediate(m_MedianFilterMaterial);
+
+            m_FilmicDepthOfFieldMaterial = null;
+            m_TextureBokehMaterial = null;
+            m_MedianFilterMaterial = null;
 
             m_RTU.ReleaseAllTemporaryRenderTextures();
         }

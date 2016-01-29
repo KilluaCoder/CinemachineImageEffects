@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using System;
+using UnityEngine;
 
 namespace UnityStandardAssets.CinematicEffects
 {
@@ -7,91 +8,104 @@ namespace UnityStandardAssets.CinematicEffects
     [AddComponentMenu("Image Effects/Cinematic/Bloom")]
     public class Bloom : MonoBehaviour
     {
+        public enum QualityLevel
+        {
+            Low,
+            Normal
+        }
+
+        [Serializable]
+        public struct Settings
+        {
+            [SerializeField, Range(0, 1)]
+            [Tooltip("Filters out pixels under this level of brightness.")]
+            public float threshold;
+
+            [SerializeField, Range(0, 1)]
+            [Tooltip("Sensitivity of the effect\n(0=less sensitive, 1=fully sensitive).")]
+            public float exposure;
+
+            [SerializeField, Range(0, 5)]
+            [Tooltip("Changes extent of veiling effects in a screen resolution-independent fashion.")]
+            public float radius;
+            
+            [SerializeField, Range(0, 2)]
+            [Tooltip("Blend factor of the result image.")]
+            public float intensity;
+
+            [SerializeField]
+            [Tooltip("Resolution of temporary render textures.")]
+            public QualityLevel quality;
+            
+            [SerializeField]
+            [Tooltip("Reduces flashing noise with a median filter.")]
+            public bool antiFlicker;
+
+            public static Settings defaultSettings
+            {
+                get
+                {
+                    var settings = new Settings
+                    {
+                        threshold = 0.9f,
+                        exposure = 0.3f,
+                        radius = 2.0f,
+                        intensity = 1.0f,
+                        quality = QualityLevel.Normal,
+                        antiFlicker = false
+                    };
+                    return settings;
+                }
+            }
+        }
+
         #region Public Properties
 
-        /// Prefilter threshold value
-        public float threshold {
-            get { return m_threshold; }
-            set { m_threshold = value; }
-        }
-
-        [SerializeField, Range(0, 1)]
-        [Tooltip("Filters out pixels under this level of brightness.")]
-        float m_threshold = 0.0f;
-
-        /// Prefilter exposure value
-        public float exposure {
-            get { return m_exposure; }
-            set { m_exposure = value; }
-        }
-
-        [SerializeField, Range(0, 1)]
-        [Tooltip("Sensitivity of the effect\n(0=less sensitive, 1=fully sensitive).")]
-        float m_exposure = 0.3f;
-
-        /// Bloom radius
-        public float radius {
-            get { return m_radius; }
-            set { m_radius = value; }
-        }
-
-        [SerializeField, Range(0, 5)]
-        [Tooltip("Changes extent of veiling effects in a screen resolution-independent fashion.")]
-        float m_radius = 2;
-
-        /// Blend factor of result image
-        public float intensity {
-            get { return m_intensity; }
-            set { m_intensity = value; }
-        }
-
-        [SerializeField, Range(0, 2)]
-        [Tooltip("Blend factor of the result image.")]
-        float m_intensity = 1.0f;
-
-        /// Quality level options
-        public QualityLevel quality {
-            get { return m_quality; }
-            set { m_quality = value; }
-        }
-
         [SerializeField]
-        [Tooltip("Resolution of temporary render textures.")]
-        QualityLevel m_quality = QualityLevel.Normal;
-
-        public enum QualityLevel {
-            Low, Normal
-        }
-
-        /// Anti-flicker median filter
-        [SerializeField]
-        [Tooltip("Reduces flashing noise with a median filter.")]
-        bool m_antiFlicker = false;
-
-        public bool antiFlicker {
-            get { return m_antiFlicker; }
-            set { m_antiFlicker = value; }
-        }
-
+        public Settings settings = Settings.defaultSettings;
+        
         #endregion
 
-        #region Private Members
-
         [SerializeField, HideInInspector]
-        Shader m_shader;
+        Shader m_Shader;
+        public Shader shader
+        {
+            get
+            {
+                if (m_Shader == null)
+                {
+                    const string shaderName = "Hidden/Image Effects/Cinematic/Bloom";
+                    m_Shader = Shader.Find(shaderName);
+                    m_Shader.hideFlags = HideFlags.DontSave;
+                }
 
-        Material m_material;
+                return m_Shader;
+            }
+        }
 
+        Material m_Material;
+        public Material material
+        {
+            get
+            {
+                if (m_Material == null)
+                    m_Material = ImageEffectHelper.CheckShaderAndCreateMaterial(shader);
+
+                return m_Material;
+            }
+        }
+        
+        #region Private Members
         void OnEnable()
         {
-            const string shaderName = "Hidden/Image Effects/Cinematic/Bloom";
-            m_material = new Material(m_shader ? m_shader : Shader.Find(shaderName));
-            m_material.hideFlags = HideFlags.DontSave;
+            if (!ImageEffectHelper.IsSupported(shader, true, false, this))
+                enabled = false;
         }
 
         void OnDisable()
         {
-            DestroyImmediate(m_material);
+            DestroyImmediate(m_Material);
+            m_Material = null;
         }
 
         void OnRenderImage(RenderTexture source, RenderTexture destination)
@@ -102,43 +116,43 @@ namespace UnityStandardAssets.CinematicEffects
             var tw = source.width;
             var th = source.height;
 
-            if (m_quality == QualityLevel.Low)
+            if (settings.quality == QualityLevel.Low)
             {
                 tw /= 2;
                 th /= 2;
             }
 
             // determine the iteration count
-            var logh = Mathf.Log(th, 2) + m_radius - 6;
+            var logh = Mathf.Log(th, 2) + settings.radius - 6;
             var logh_i = (int)logh;
             var iteration = Mathf.Max(2, logh_i);
 
             // update the shader properties
-            m_material.SetFloat("_Threshold", m_threshold);
+            material.SetFloat("_Threshold", settings.threshold);
 
-            var pfc = -Mathf.Log(Mathf.Lerp(1e-2f, 1 - 1e-5f, m_exposure), 10);
-            m_material.SetFloat("_Cutoff", m_threshold + pfc * 10);
+            var pfc = -Mathf.Log(Mathf.Lerp(1e-2f, 1 - 1e-5f, settings.exposure), 10);
+            material.SetFloat("_Cutoff", settings.threshold + pfc * 10);
 
-            var pfo = m_quality == QualityLevel.Low && m_antiFlicker;
-            m_material.SetFloat("_PrefilterOffs", pfo ? -0.5f : 0.0f);
+            var pfo = settings.quality == QualityLevel.Low && settings.antiFlicker;
+            material.SetFloat("_PrefilterOffs", pfo ? -0.5f : 0.0f);
 
-            m_material.SetFloat("_SampleScale", 0.5f + logh - logh_i);
-            m_material.SetFloat("_Intensity", m_intensity);
+            material.SetFloat("_SampleScale", 0.5f + logh - logh_i);
+            material.SetFloat("_Intensity", settings.intensity);
 
-            if (m_antiFlicker)
-                m_material.EnableKeyword("PREFILTER_MEDIAN");
+            if (settings.antiFlicker)
+                material.EnableKeyword("PREFILTER_MEDIAN");
             else
-                m_material.DisableKeyword("PREFILTER_MEDIAN");
+                material.DisableKeyword("PREFILTER_MEDIAN");
 
             if (isGamma)
             {
-                m_material.DisableKeyword("LINEAR_COLOR");
-                m_material.EnableKeyword("GAMMA_COLOR");
+                material.DisableKeyword("LINEAR_COLOR");
+                material.EnableKeyword("GAMMA_COLOR");
             }
             else
             {
-                m_material.EnableKeyword("LINEAR_COLOR");
-                m_material.DisableKeyword("GAMMA_COLOR");
+                material.EnableKeyword("LINEAR_COLOR");
+                material.DisableKeyword("GAMMA_COLOR");
             }
 
             // allocate temporary buffers
@@ -155,25 +169,25 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
             // apply the prefilter
-            Graphics.Blit(source, rt1[0], m_material, 0);
+            Graphics.Blit(source, rt1[0], material, 0);
 
             // create a mip pyramid
             for (var i = 0; i < iteration; i++)
-                Graphics.Blit(rt1[i], rt1[i + 1], m_material, 1);
+                Graphics.Blit(rt1[i], rt1[i + 1], material, 1);
 
             // blur and combine loop
-            m_material.SetTexture("_BaseTex", rt1[iteration - 1]);
-            Graphics.Blit(rt1[iteration], rt2[iteration - 1], m_material, 2);
+            material.SetTexture("_BaseTex", rt1[iteration - 1]);
+            Graphics.Blit(rt1[iteration], rt2[iteration - 1], material, 2);
 
             for (var i = iteration - 1; i > 1; i--)
             {
-                m_material.SetTexture("_BaseTex", rt1[i - 1]);
-                Graphics.Blit(rt2[i],  rt2[i - 1], m_material, 2);
+                material.SetTexture("_BaseTex", rt1[i - 1]);
+                Graphics.Blit(rt2[i],  rt2[i - 1], material, 2);
             }
 
             // finish process
-            m_material.SetTexture("_BaseTex", source);
-            Graphics.Blit(rt2[1], destination, m_material, 3);
+            material.SetTexture("_BaseTex", source);
+            Graphics.Blit(rt2[1], destination, material, 3);
 
             // release the temporary buffers
             for (var i = 0; i < iteration + 1; i++)

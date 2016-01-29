@@ -1,42 +1,31 @@
-using UnityEngine;
+using System;
+using System.Collections.Generic;
 using UnityEditor;
 
 namespace UnityStandardAssets.CinematicEffects
 {
     [CanEditMultipleObjects]
     [CustomEditor(typeof(Bloom))]
-    public class Bloomditor : Editor
+    public class BloomEditor : Editor
     {
-        SerializedProperty m_threshold;
-        SerializedProperty m_exposure;
-        SerializedProperty m_radius;
-        SerializedProperty m_intensity;
-        SerializedProperty m_quality;
-        SerializedProperty m_antiFlicker;
-
-        static GUIContent m_antiFlickerLabel = new GUIContent("Anti-Flicker");
+        [NonSerialized]
+        private List<SerializedProperty> m_Properties = new List<SerializedProperty>();
 
         void OnEnable()
         {
-            m_threshold = serializedObject.FindProperty("m_threshold");
-            m_exposure = serializedObject.FindProperty("m_exposure");
-            m_radius = serializedObject.FindProperty("m_radius");
-            m_intensity = serializedObject.FindProperty("m_intensity");
-            m_quality = serializedObject.FindProperty("m_quality");
-            m_antiFlicker = serializedObject.FindProperty("m_antiFlicker");
+            var settings = FieldFinder<Bloom>.GetField(x => x.settings);
+            foreach (var setting in settings.FieldType.GetFields())
+            {
+                var prop = settings.Name + "." + setting.Name;
+                m_Properties.Add(serializedObject.FindProperty(prop));
+            }
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
-            EditorGUILayout.PropertyField(m_threshold);
-            EditorGUILayout.PropertyField(m_exposure);
-            EditorGUILayout.PropertyField(m_radius);
-            EditorGUILayout.PropertyField(m_intensity);
-            EditorGUILayout.PropertyField(m_quality);
-            EditorGUILayout.PropertyField(m_antiFlicker, m_antiFlickerLabel);
-
+            foreach (var property in m_Properties)
+                EditorGUILayout.PropertyField(property);
             serializedObject.ApplyModifiedProperties();
         }
     }

@@ -456,7 +456,11 @@ namespace UnityStandardAssets.CinematicEffects
             {
                 if (m_ComputeBufferDrawArgs == null)
                 {
+#if (UNITY_5_0 || UNITY_5_1 || UNITY_5_2 || UNITY_5_3)
                     m_ComputeBufferDrawArgs = new ComputeBuffer(1, 16, ComputeBufferType.DrawIndirect);
+#else
+                    m_ComputeBufferDrawArgs = new ComputeBuffer(1, 16, ComputeBufferType.IndirectArguments);
+#endif
                     m_ComputeBufferDrawArgs.SetData(new[] { 0, 1, 0, 0 });
                 }
 

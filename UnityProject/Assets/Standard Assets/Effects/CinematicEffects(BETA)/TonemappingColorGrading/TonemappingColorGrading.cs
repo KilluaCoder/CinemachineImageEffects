@@ -22,10 +22,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_HistogramComputeShader == null)
-                {
                     m_HistogramComputeShader = Resources.Load<ComputeShader>("HistogramCompute");
-                    m_HistogramComputeShader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_HistogramComputeShader;
             }
@@ -38,10 +35,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_HistogramShader == null)
-                {
                     m_HistogramShader = Shader.Find("Hidden/TonemappingColorGradingHistogram");
-                    m_HistogramShader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_HistogramShader;
             }
@@ -469,10 +463,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_Shader == null)
-                {
                     m_Shader = Shader.Find("Hidden/TonemappingColorGrading");
-                    m_Shader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_Shader;
             }

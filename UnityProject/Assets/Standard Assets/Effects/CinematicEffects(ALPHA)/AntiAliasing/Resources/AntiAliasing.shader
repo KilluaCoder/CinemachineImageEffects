@@ -83,7 +83,7 @@ Shader "Hidden/Subpixel Morphological Antialiasing"
 
             #if UNITY_UV_STARTS_AT_TOP
             if (_MainTex_TexelSize.y < 0)
-                o.uv.y = 1.0 - o.uv.y;
+                o.uv.y = 1.0 - i.uv.y;
             #endif
 
             o.offset[0] = mad(SMAA_RT_METRICS.xyxy, float4(-1.0, 0.0, 0.0, -1.0), o.uv.xyxy);

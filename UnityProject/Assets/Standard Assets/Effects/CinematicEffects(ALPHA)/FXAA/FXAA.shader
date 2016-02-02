@@ -8,7 +8,20 @@
 	CGINCLUDE
 		#pragma fragmentoption ARB_precision_hint_fastest
 
-		#define FXAA_PC 1
+		#if defined(SHADER_API_PS3)
+			#define FXAA_PS3 1
+
+			// Shaves off 2 cycles from the shader
+			#define FXAA_EARLY_EXIT 0
+		#elif defined(SHADER_API_XBOX360)
+			#define FXAA_360 1
+
+			// Shaves off 10ms from the shader's execution time
+			#define FXAA_EARLY_EXIT 1
+		#else
+			#define FXAA_PC 1
+		#endif
+
   		#define FXAA_HLSL_3 1
   		#define FXAA_QUALITY__PRESET 39
 

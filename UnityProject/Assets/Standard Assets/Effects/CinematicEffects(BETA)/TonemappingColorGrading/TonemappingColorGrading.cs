@@ -406,10 +406,6 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     DestroyImmediate(m_IdentityLut);
                     m_IdentityLut = GenerateIdentityLut(lutSize);
-                    m_IdentityLut.name = "Identity LUT";
-                    m_IdentityLut.filterMode = FilterMode.Bilinear;
-                    m_IdentityLut.anisoLevel = 0;
-                    m_IdentityLut.hideFlags = HideFlags.DontSave;
                 }
 
                 return m_IdentityLut;
@@ -562,16 +558,23 @@ namespace UnityStandardAssets.CinematicEffects
         private static Texture2D GenerateIdentityLut(int dim)
         {
             Color[] newC = new Color[dim * dim * dim];
-            float oneOverDim = 1f / (dim - 1f);
+            float oneOverDim = 1f / ((float)dim - 1f);
 
             for (int i = 0; i < dim; i++)
                 for (int j = 0; j < dim; j++)
                     for (int k = 0; k < dim; k++)
-                        newC[i + (j * dim) + (k * dim * dim)] = new Color(i * oneOverDim, Mathf.Abs(k * oneOverDim), j * oneOverDim, 1f);
+                        newC[i + (j * dim) + (k * dim * dim)] = new Color((float)i * oneOverDim, Mathf.Abs((float)k * oneOverDim), (float)j * oneOverDim, 1f);
 
-            Texture2D tex2D = new Texture2D(dim * dim, dim, TextureFormat.RGB24, false, true);
+            Texture2D tex2D = new Texture2D (dim * dim, dim, TextureFormat.RGB24, false, true)
+            {
+                name = "Identity LUT",
+                filterMode = FilterMode.Bilinear,
+                anisoLevel = 0,
+                hideFlags = HideFlags.DontSave
+            };
             tex2D.SetPixels(newC);
             tex2D.Apply();
+
             return tex2D;
         }
 
@@ -824,6 +827,7 @@ namespace UnityStandardAssets.CinematicEffects
                     material.SetVector("_ChannelMixerGreen", colorGrading.channelMixer.channels[1]);
                     material.SetVector("_ChannelMixerBlue", colorGrading.channelMixer.channels[2]);
                     material.SetTexture("_CurveTex", curveTexture);
+                    internalLutRt.MarkRestoreExpected();
                     Graphics.Blit(identityLut, internalLutRt, material, (int)Pass.LutGen);
                     m_Dirty = false;
                 }

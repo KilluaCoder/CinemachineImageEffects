@@ -162,7 +162,7 @@ Shader "Hidden/TonemappingColorGrading"
             ENDCG
         }
 
-        // Tonemapping (Habble)
+        // Tonemapping (Hable)
         Pass
         {
             CGPROGRAM
@@ -170,7 +170,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma fragment frag_tcg
-                #define TONEMAPPING_HABBLE
+                #define TONEMAPPING_HABLE
                 #include "TonemappingColorGrading.cginc"
             ENDCG
         }

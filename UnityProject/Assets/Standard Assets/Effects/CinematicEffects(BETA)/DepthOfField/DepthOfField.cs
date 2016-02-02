@@ -370,10 +370,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_FilmicDepthOfFieldShader == null)
-                {
                     m_FilmicDepthOfFieldShader = Shader.Find("Hidden/DepthOfField/DepthOfField");
-                    m_FilmicDepthOfFieldShader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_FilmicDepthOfFieldShader;
             }
@@ -386,10 +383,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_MedianFilterShader == null)
-                {
                     m_MedianFilterShader = Shader.Find("Hidden/DepthOfField/MedianFilter");
-                    m_MedianFilterShader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_MedianFilterShader;
             }
@@ -402,10 +396,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_TextureBokehShader == null)
-                {
                     m_TextureBokehShader = Shader.Find("Hidden/DepthOfField/BokehSplatting");
-                    m_TextureBokehShader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_TextureBokehShader;
             }

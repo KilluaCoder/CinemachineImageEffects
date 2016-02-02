@@ -132,7 +132,7 @@ namespace UnityStandardAssets.CinematicEffects
         public enum Tonemapper
         {
             ACES,
-            Habble,
+            Hable,
             HejiDawson,
             Photographic,
             Reinhard
@@ -508,7 +508,7 @@ namespace UnityStandardAssets.CinematicEffects
             AdaptationExp,
             TonemappingOff,
             TonemappingACES,
-            TonemappingHabble,
+            TonemappingHable,
             TonemappingHejiDawson,
             TonemappingPhotographic,
             TonemappingReinhard,

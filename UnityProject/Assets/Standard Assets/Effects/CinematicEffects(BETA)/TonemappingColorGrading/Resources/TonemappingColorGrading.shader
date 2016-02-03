@@ -169,6 +169,19 @@ Shader "Hidden/TonemappingColorGrading"
             ENDCG
         }
 
+        // Tonemapping (Curve)
+        Pass
+        {
+            CGPROGRAM
+                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ ENABLE_COLOR_GRADING
+                #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma fragment frag_tcg
+                #define TONEMAPPING_CURVE
+                #include "TonemappingColorGrading.cginc"
+            ENDCG
+        }
+
         // Tonemapping (Hable)
         Pass
         {

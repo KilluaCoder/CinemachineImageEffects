@@ -87,7 +87,7 @@ Shader "Hidden/TonemappingColorGrading"
 
                     // Vibrance
                     half sat = max(final_lut.r, max(final_lut.g, final_lut.b)) - min(final_lut.r, min(final_lut.g, final_lut.b));
-                    final_lut = lerp(Luminance(final_lut), final_lut, (1.0 + (_Vibrance * (1.0 - (sign(_Vibrance) * sat)))));
+                    final_lut = lerp(Luminance(final_lut).xxx, final_lut, (1.0 + (_Vibrance * (1.0 - (sign(_Vibrance) * sat)))));
 
                     // Color mixer
                     final_lut = (final_lut.rrr * _ChannelMixerRed) + (final_lut.ggg * _ChannelMixerGreen) + (final_lut.bbb * _ChannelMixerBlue);

@@ -8,12 +8,6 @@ namespace UnityStandardAssets.CinematicEffects
     [AddComponentMenu("Image Effects/Cinematic/Bloom")]
     public class Bloom : MonoBehaviour
     {
-        public enum QualityLevel
-        {
-            Low,
-            Normal
-        }
-
         [Serializable]
         public struct Settings
         {
@@ -34,8 +28,8 @@ namespace UnityStandardAssets.CinematicEffects
             public float intensity;
 
             [SerializeField]
-            [Tooltip("Resolution of temporary render textures.")]
-            public QualityLevel quality;
+            [Tooltip("Controls filter quality and buffer resolution.")]
+            public bool highQuality;
 
             [SerializeField]
             [Tooltip("Reduces flashing noise with a median filter.")]
@@ -51,7 +45,7 @@ namespace UnityStandardAssets.CinematicEffects
                         exposure = 0.3f,
                         radius = 2.0f,
                         intensity = 1.0f,
-                        quality = QualityLevel.Normal,
+                        highQuality = true,
                         antiFlicker = false
                     };
                     return settings;
@@ -106,23 +100,32 @@ namespace UnityStandardAssets.CinematicEffects
 
         private void OnDisable()
         {
-            DestroyImmediate(m_Material);
-            m_Material = null;
+            if (m_Material != null)
+            {
+                DestroyImmediate(m_Material);
+                m_Material = null;
+            }
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
+            var useRGBM = Application.isMobilePlatform;
             var isGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma;
 
-            // source texture size (half it when in the low quality mode)
+            // source texture size
             var tw = source.width;
             var th = source.height;
 
-            if (settings.quality == QualityLevel.Low)
+            // halve the texture size for the low quality mode
+            if (!settings.highQuality)
             {
                 tw /= 2;
                 th /= 2;
             }
+
+            // blur buffer format
+            var rtFormat = useRGBM ?
+                RenderTextureFormat.Default : RenderTextureFormat.DefaultHDR;
 
             // determine the iteration count
             var logh = Mathf.Log(th, 2) + settings.radius - 6;
@@ -135,11 +138,16 @@ namespace UnityStandardAssets.CinematicEffects
             var pfc = -Mathf.Log(Mathf.Lerp(1e-2f, 1 - 1e-5f, settings.exposure), 10);
             material.SetFloat("_Cutoff", settings.threshold + pfc * 10);
 
-            var pfo = settings.quality == QualityLevel.Low && settings.antiFlicker;
+            var pfo = !settings.highQuality && settings.antiFlicker;
             material.SetFloat("_PrefilterOffs", pfo ? -0.5f : 0.0f);
 
             material.SetFloat("_SampleScale", 0.5f + logh - logh_i);
             material.SetFloat("_Intensity", settings.intensity);
+
+            if (settings.highQuality)
+                material.EnableKeyword("HIGH_QUALITY");
+            else
+                material.DisableKeyword("HIGH_QUALITY");
 
             if (settings.antiFlicker)
                 material.EnableKeyword("PREFILTER_MEDIAN");
@@ -163,9 +171,9 @@ namespace UnityStandardAssets.CinematicEffects
 
             for (var i = 0; i < iteration + 1; i++)
             {
-                rt1[i] = RenderTexture.GetTemporary(tw, th, 0, source.format);
+                rt1[i] = RenderTexture.GetTemporary(tw, th, 0, rtFormat);
                 if (i > 0 && i < iteration)
-                    rt2[i] = RenderTexture.GetTemporary(tw, th, 0, source.format);
+                    rt2[i] = RenderTexture.GetTemporary(tw, th, 0, rtFormat);
                 tw /= 2;
                 th /= 2;
             }

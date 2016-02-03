@@ -101,10 +101,9 @@ namespace UnityStandardAssets.CinematicEffects
         private void OnDisable()
         {
             if (m_Material != null)
-            {
                 DestroyImmediate(m_Material);
-                m_Material = null;
-            }
+
+            m_Material = null;
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
@@ -124,8 +123,7 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
             // blur buffer format
-            var rtFormat = useRGBM ?
-                RenderTextureFormat.Default : RenderTextureFormat.DefaultHDR;
+            var rtFormat = useRGBM ? RenderTextureFormat.Default : RenderTextureFormat.DefaultHDR;
 
             // determine the iteration count
             var logh = Mathf.Log(th, 2) + settings.radius - 6;

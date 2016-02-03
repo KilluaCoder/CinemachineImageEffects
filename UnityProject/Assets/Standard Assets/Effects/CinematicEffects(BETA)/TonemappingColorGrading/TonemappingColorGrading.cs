@@ -883,5 +883,14 @@ namespace UnityStandardAssets.CinematicEffects
             }
 #endif
         }
+
+        public Texture2D BakeLUT()
+        {
+            Texture2D lut = new Texture2D(internalLutRt.width, internalLutRt.height, TextureFormat.RGB24, false, true);
+            RenderTexture.active = internalLutRt;
+            lut.ReadPixels(new Rect(0f, 0f, lut.width, lut.height), 0, 0);
+            RenderTexture.active = null;
+            return lut;
+        }
     }
 }

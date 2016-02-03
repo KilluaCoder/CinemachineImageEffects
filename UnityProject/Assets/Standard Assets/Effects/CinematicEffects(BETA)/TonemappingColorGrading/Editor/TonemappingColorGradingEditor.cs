@@ -249,6 +249,16 @@ namespace UnityStandardAssets.CinematicEffects
                 m_HistogramBuffer.Release();
         }
 
+        private void SetLUTImportSettings(TextureImporter importer)
+        {
+            importer.textureType = TextureImporterType.Advanced;
+            importer.anisoLevel = 0;
+            importer.mipmapEnabled = false;
+            importer.linearTexture = true;
+            importer.textureFormat = TextureImporterFormat.RGB24;
+            importer.SaveAndReimport();
+        }
+
         private bool Header(SerializedProperty group, SerializedProperty enabledField)
         {
             var display = group == null || group.isExpanded;
@@ -300,6 +310,43 @@ namespace UnityStandardAssets.CinematicEffects
                         GUILayout.Space(3);
                         foreach (var field in group.Value.Where(x => x.propertyPath != group.Key.Name + ".enabled"))
                             EditorGUILayout.PropertyField(field);
+
+                        // Bake button
+                        if (group.Key.FieldType == typeof(TonemappingColorGrading.ColorGradingSettings))
+                        {
+                            EditorGUI.BeginDisabledGroup(!enabledField.boolValue);
+
+                            if (GUILayout.Button("Export LUT as PNG", EditorStyles.miniButton))
+                            {
+                                string path = EditorUtility.SaveFilePanelInProject("Export LUT as PNG", "LUT.png", "png", "Please enter a file name to save the LUT texture to");
+
+                                if (!string.IsNullOrEmpty(path))
+                                {
+                                    Texture2D lut = concreteTarget.BakeLUT();
+                                    
+                                    if (!concreteTarget.isGammaColorSpace)
+                                    {
+                                        var pixels = lut.GetPixels();
+
+                                        for (int i = 0; i < pixels.Length; i++)
+                                            pixels[i] = pixels[i].linear;
+
+                                        lut.SetPixels(pixels);
+                                        lut.Apply();
+                                    }
+
+                                    byte[] bytes = lut.EncodeToPNG();
+                                    System.IO.File.WriteAllBytes(path, bytes);
+                                    DestroyImmediate(lut);
+
+                                    AssetDatabase.Refresh();
+                                    TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(path);
+                                    SetLUTImportSettings(importer);
+                                }
+                            }
+
+                            EditorGUI.EndDisabledGroup();
+                        }
                     }
                     GUILayout.EndVertical();
                 }
@@ -351,12 +398,7 @@ namespace UnityStandardAssets.CinematicEffects
                             GUILayout.FlexibleSpace();
                             if (GUILayout.Button("Fix", GUILayout.Width(60)))
                             {
-                                importer.textureType = TextureImporterType.Advanced;
-                                importer.anisoLevel = 0;
-                                importer.mipmapEnabled = false;
-                                importer.linearTexture = true;
-                                importer.textureFormat = TextureImporterFormat.RGB24;
-                                importer.SaveAndReimport();
+                                SetLUTImportSettings(importer);
                                 AssetDatabase.Refresh();
                             }
                             GUILayout.Space(8);

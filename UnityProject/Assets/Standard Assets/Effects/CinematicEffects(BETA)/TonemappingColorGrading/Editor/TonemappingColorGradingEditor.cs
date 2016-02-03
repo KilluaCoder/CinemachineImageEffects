@@ -28,6 +28,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 m_RenderSizePerWheel = Mathf.FloorToInt((EditorGUIUtility.currentViewWidth) / m_NumberOfWheels) - 30;
                 m_RenderSizePerWheel = Mathf.Clamp(m_RenderSizePerWheel, wheelAttribute.minSizePerWheel, wheelAttribute.maxSizePerWheel);
+                m_RenderSizePerWheel = Mathf.FloorToInt(pixelRatio * m_RenderSizePerWheel);
                 return ColorWheel.GetColorWheelHeight(m_RenderSizePerWheel);
             }
 
@@ -163,6 +164,18 @@ namespace UnityStandardAssets.CinematicEffects
         private TonemappingColorGrading concreteTarget
         {
             get { return target as TonemappingColorGrading; }
+        }
+
+        private static float pixelRatio
+        {
+            get
+            {
+                #if !(UNITY_3 || UNITY_4 || UNITY_5_0 || UNITY_5_1 || UNITY_5_2 || UNITY_5_3)
+                return EditorGUIUtility.pixelsPerPoint;
+                #else
+                return 1f;
+                #endif
+            }
         }
 
         private bool isHistogramSupported
@@ -512,6 +525,11 @@ namespace UnityStandardAssets.CinematicEffects
                 Vector3 hsv;
                 Color.RGBToHSV(color, out hsv.x, out hsv.y, out hsv.z);
 
+                // Retina/HDPI screens handling
+                wheelDrawArea.width /= pixelRatio;
+                wheelDrawArea.height /= pixelRatio;
+                float scaledRadius = radius / pixelRatio;
+
                 if (Event.current.type == EventType.Repaint)
                 {
                     if (!Mathf.Approximately(diameter, s_LastDiameter))
@@ -526,7 +544,7 @@ namespace UnityStandardAssets.CinematicEffects
                     // Thumb
                     Vector2 thumbPos = Vector2.zero;
                     float theta = hsv.x * PI2;
-                    float len = hsv.y * radius;
+                    float len = hsv.y * scaledRadius;
                     thumbPos.x = Mathf.Cos(theta + PI_2);
                     thumbPos.y = Mathf.Sin(theta - PI_2);
                     thumbPos *= len;
@@ -535,11 +553,11 @@ namespace UnityStandardAssets.CinematicEffects
                     GUI.color = Color.black;
                     Vector2 thumbSizeH = thumbSize / 2f;
                     Handles.color = Color.white;
-                    Handles.DrawAAPolyLine(new Vector2(wheelDrawArea.x + radius + thumbSizeH.x, wheelDrawArea.y + radius + thumbSizeH.y), new Vector2(wheelDrawArea.x + radius + thumbPos.x, wheelDrawArea.y + radius + thumbPos.y));
-                    s_Styles.thumb2D.Draw(new Rect(wheelDrawArea.x + radius + thumbPos.x - thumbSizeH.x, wheelDrawArea.y + radius + thumbPos.y - thumbSizeH.y, thumbSize.x, thumbSize.y), false, false, false, false);
+                    Handles.DrawAAPolyLine(new Vector2(wheelDrawArea.x + scaledRadius + thumbSizeH.x, wheelDrawArea.y + scaledRadius + thumbSizeH.y), new Vector2(wheelDrawArea.x + scaledRadius + thumbPos.x, wheelDrawArea.y + scaledRadius + thumbPos.y));
+                    s_Styles.thumb2D.Draw(new Rect(wheelDrawArea.x + scaledRadius + thumbPos.x - thumbSizeH.x, wheelDrawArea.y + scaledRadius + thumbPos.y - thumbSizeH.y, thumbSize.x, thumbSize.y), false, false, false, false);
                     GUI.color = oldColor;
                 }
-                hsv = GetInput(wheelDrawArea, hsv, radius);
+                hsv = GetInput(wheelDrawArea, hsv, scaledRadius);
 
                 var sliderDrawArea = wheelDrawArea;
                 sliderDrawArea.y = sliderDrawArea.yMax;

@@ -1,5 +1,4 @@
 using UnityEditor;
-using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -15,7 +14,7 @@ namespace UnityStandardAssets.CinematicEffects
 
         private DepthOfField.TweakMode tweakMode
         {
-            get { return (target as DepthOfField).settings.tweakMode; }
+            get { return ((DepthOfField)target).settings.tweakMode; }
         }
 
         private void OnEnable()
@@ -34,7 +33,7 @@ namespace UnityStandardAssets.CinematicEffects
                         m_TopLevelFields.Add(property);
                 }
             }
-            
+
             var basicFields = new List<SerializedProperty>();
             var advancedFields = new List<SerializedProperty>();
             var explicitFields = new List<SerializedProperty>();
@@ -65,7 +64,7 @@ namespace UnityStandardAssets.CinematicEffects
                     }
                 }
             }
-                
+
             m_AccessFields[DepthOfField.TweakMode.Basic] = basicFields;
             m_AccessFields[DepthOfField.TweakMode.Advanced] = advancedFields;
             m_AccessFields[DepthOfField.TweakMode.Explicit] = explicitFields;
@@ -79,12 +78,12 @@ namespace UnityStandardAssets.CinematicEffects
                 EditorGUILayout.PropertyField(setting);
 
             List<SerializedProperty> accessList = m_AccessFields[tweakMode];
-            
+
             foreach (var group in m_GroupFields)
             {
-                if (group.Key.FieldType == typeof(DepthOfField.QualitySettings) && (target as DepthOfField).settings.quality != DepthOfField.QualityPreset.Custom)
+                if (group.Key.FieldType == typeof(DepthOfField.QualitySettings) && ((DepthOfField)target).settings.quality != DepthOfField.QualityPreset.Custom)
                     continue;
-                
+
                 bool forceInclude = group.Key.GetCustomAttributes(typeof(DepthOfField.AllTweakModes), false).Length > 0;
 
                 int count = group.Value.Count(x => accessList.Contains(x));

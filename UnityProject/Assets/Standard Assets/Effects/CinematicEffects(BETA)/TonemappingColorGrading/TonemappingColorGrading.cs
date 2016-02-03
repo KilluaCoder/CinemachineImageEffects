@@ -207,7 +207,7 @@ namespace UnityStandardAssets.CinematicEffects
                 }
             }
         }
-        
+
         [Serializable]
         public struct BasicsSettings
         {
@@ -228,7 +228,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             [Range(0.01f, 5f), Tooltip("Contrast gain curve. Controls the steepness of the curve.")]
             public float gain;
-            
+
             [Range(0.01f, 5f), Tooltip("Applies a pow function to the source.")]
             public float gamma;
 
@@ -573,7 +573,7 @@ namespace UnityStandardAssets.CinematicEffects
                     for (int k = 0; k < dim; k++)
                         newC[i + (j * dim) + (k * dim * dim)] = new Color((float)i * oneOverDim, Mathf.Abs((float)k * oneOverDim), (float)j * oneOverDim, 1f);
 
-            Texture2D tex2D = new Texture2D (dim * dim, dim, TextureFormat.RGB24, false, true)
+            Texture2D tex2D = new Texture2D(dim * dim, dim, TextureFormat.RGB24, false, true)
             {
                 name = "Identity LUT",
                 filterMode = FilterMode.Bilinear,

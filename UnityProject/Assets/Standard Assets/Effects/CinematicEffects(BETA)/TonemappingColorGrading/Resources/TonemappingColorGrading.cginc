@@ -4,6 +4,9 @@ sampler2D _MainTex;
 half4 _MainTex_TexelSize;
 
 half _Exposure;
+half _ToneCurveRange;
+sampler2D _ToneCurve;
+
 sampler2D _LutTex;
 half4 _LutParams;
 
@@ -54,6 +57,44 @@ half3 apply_lut(sampler2D tex, half3 uv, half3 scaleOffset)
     uv.x += shift * scaleOffset.y;
     uv.xyz = lerp(tex2D(tex, uv.xy).rgb, tex2D(tex, uv.xy + half2(scaleOffset.y, 0)).rgb, uv.z - shift);
     return uv;
+}
+
+half3 ToCIE(half3 color)
+{
+    // RGB -> XYZ conversion
+    // http://www.w3.org/Graphics/Color/sRGB
+    // The official sRGB to XYZ conversion matrix is (following ITU-R BT.709)
+    // 0.4125 0.3576 0.1805
+    // 0.2126 0.7152 0.0722
+    // 0.0193 0.1192 0.9505
+    half3x3 RGB2XYZ = { 0.5141364, 0.3238786, 0.16036376, 0.265068, 0.67023428, 0.06409157, 0.0241188, 0.1228178, 0.84442666 };
+    half3 XYZ = mul(RGB2XYZ, color.rgb);
+
+    // XYZ -> Yxy conversion
+    half3 Yxy;
+    Yxy.r = XYZ.g;
+    half temp = dot(half3(1.0, 1.0, 1.0), XYZ.rgb);
+    Yxy.gb = XYZ.rg / temp;
+    return Yxy;
+}
+
+half3 FromCIE(half3 Yxy)
+{
+    // Yxy -> XYZ conversion
+    half3 XYZ;
+    XYZ.r = Yxy.r * Yxy.g / Yxy.b;
+    XYZ.g = Yxy.r;
+
+    // Copy luminance Y 
+    XYZ.b = Yxy.r * (1 - Yxy.g - Yxy.b) / Yxy.b;
+
+    // XYZ -> RGB conversion
+    // The official XYZ to sRGB conversion matrix is (following ITU-R BT.709)
+    //  3.2410 -1.5374 -0.4986
+    // -0.9692  1.8760  0.0416
+    //  0.0556 -0.2040  1.0570
+    half3x3 XYZ2RGB = { 2.5651, -1.1665, -0.3986, -1.0217, 1.9777, 0.0439, 0.0753, -0.2543, 1.1892 };
+    return mul(XYZ2RGB, XYZ);
 }
 
 half3 tonemapACES(half3 color)
@@ -113,6 +154,15 @@ half3 tonemapReinhard(half3 color)
     return color * scale / lum;
 }
 
+half3 tonemapCurve(half3 color)
+{
+    color *= _Exposure;
+    half3 cie = ToCIE(color);
+    half newLum = tex2D(_ToneCurve, half2(cie.r * _ToneCurveRange, 0.5)).r;
+    cie.r = newLum;
+    return FromCIE(cie);
+}
+
 half4 frag_tcg(v2f_img i) : SV_Target
 {
     half4 color = tex2D(_MainTex, i.uv);
@@ -130,6 +180,8 @@ half4 frag_tcg(v2f_img i) : SV_Target
 
 #if defined(TONEMAPPING_ACES)
     color.rgb = tonemapACES(color.rgb);
+#elif defined(TONEMAPPING_CURVE)
+    color.rgb = tonemapCurve(color.rgb);
 #elif defined(TONEMAPPING_HABLE)
     color.rgb = tonemapHable(color.rgb);
 #elif defined(TONEMAPPING_HEJI_DAWSON)

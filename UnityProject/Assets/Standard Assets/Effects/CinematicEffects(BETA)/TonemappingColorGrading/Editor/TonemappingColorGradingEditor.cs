@@ -309,7 +309,15 @@ namespace UnityStandardAssets.CinematicEffects
                     {
                         GUILayout.Space(3);
                         foreach (var field in group.Value.Where(x => x.propertyPath != group.Key.Name + ".enabled"))
+                        {
+                            // Special case for the tonemapping curve field
+                            if (group.Key.FieldType == typeof(TonemappingColorGrading.TonemappingSettings) &&
+                                field.propertyType == SerializedPropertyType.AnimationCurve &&
+                                concreteTarget.tonemapping.tonemapper != TonemappingColorGrading.Tonemapper.Curve)
+                                continue;
+
                             EditorGUILayout.PropertyField(field);
+                        }
 
                         // Bake button
                         if (group.Key.FieldType == typeof(TonemappingColorGrading.ColorGradingSettings))

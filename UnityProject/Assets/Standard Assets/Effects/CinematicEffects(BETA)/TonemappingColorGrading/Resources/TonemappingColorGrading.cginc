@@ -85,7 +85,7 @@ half3 FromCIE(half3 Yxy)
     XYZ.r = Yxy.r * Yxy.g / Yxy.b;
     XYZ.g = Yxy.r;
 
-    // Copy luminance Y 
+    // Copy luminance Y
     XYZ.b = Yxy.r * (1 - Yxy.g - Yxy.b) / Yxy.b;
 
     // XYZ -> RGB conversion

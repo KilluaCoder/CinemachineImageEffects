@@ -8,80 +8,47 @@ namespace UnityStandardAssets.CinematicEffects
     [CustomEditor(typeof(AntiAliasing))]
     public class AntiAliasingEditor : Editor
     {
-        private List<SerializedProperty> m_TopLevelFields = new List<SerializedProperty>();
-        private Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
+        private string[] methodNames = new string[]
+        {
+            "Subpixel Morphological Anti-aliasing",
+            "Fast Approximate Anti-aliasing"
+        };
+
+        private int selectedMethod = 0;
+
+        private SMAAEditor m_SMAAEditor = new SMAAEditor();
+        private FXAAEditor m_FXAAEditor = new FXAAEditor();
+
+        IAntiAliasingEditor antiAliasingEditor = null;
 
         private void OnEnable()
         {
-            var topLevelSettings = typeof(AntiAliasing).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(AntiAliasing.TopLevelSettings), false).Any());
-            var settingsGroups = typeof(AntiAliasing).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(AntiAliasing.SettingsGroup), false).Any());
-
-            foreach (var group in topLevelSettings)
-            {
-                var searchPath = group.Name + ".";
-
-                foreach (var setting in group.FieldType.GetFields(BindingFlags.Instance | BindingFlags.Public))
-                {
-                    var property = serializedObject.FindProperty(searchPath + setting.Name);
-                    if (property != null)
-                        m_TopLevelFields.Add(property);
-                }
-            }
-
-            foreach (var group in settingsGroups)
-            {
-                var searchPath = group.Name + ".";
-
-                foreach (var setting in group.FieldType.GetFields(BindingFlags.Instance | BindingFlags.Public))
-                {
-                    List<SerializedProperty> settingsGroup;
-                    if (!m_GroupFields.TryGetValue(group, out settingsGroup))
-                    {
-                        settingsGroup = new List<SerializedProperty>();
-                        m_GroupFields[group] = settingsGroup;
-                    }
-
-                    var property = serializedObject.FindProperty(searchPath + setting.Name);
-                    if (property != null)
-                        settingsGroup.Add(property);
-                }
-            }
+                m_SMAAEditor.OnEnable(serializedObject, "m_SMAA");
+                m_FXAAEditor.OnEnable(serializedObject, "m_FXAA");
         }
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
+                serializedObject.Update();
+                var antiAliasingTarget = (AntiAliasing)target;
 
-            foreach (var setting in m_TopLevelFields)
-                EditorGUILayout.PropertyField(setting);
+                selectedMethod = antiAliasingTarget.method;
+                selectedMethod = EditorGUILayout.Popup("Method", selectedMethod, methodNames);
 
-            foreach (var group in m_GroupFields)
-            {
-                if (group.Key.FieldType == typeof(AntiAliasing.QualitySettings) && (target as AntiAliasing).settings.quality != AntiAliasing.QualityPreset.Custom)
-                    continue;
+                if (selectedMethod < 0)
+                    selectedMethod = 0;
+                else if (selectedMethod > 1)
+                    selectedMethod = 1;
 
-                string title = group.Key.Name;
-                title = char.ToUpper(title[0]) + title.Substring(1);
+                if (selectedMethod == 0)
+                    antiAliasingEditor = m_SMAAEditor;
+                else
+                    antiAliasingEditor = m_FXAAEditor;
 
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-                EditorGUI.indentLevel++;
+                antiAliasingTarget.method = selectedMethod;
 
-                var enabledField = group.Value.FirstOrDefault(x => x.propertyPath == group.Key.Name + ".enabled");
-                if (enabledField != null && !enabledField.boolValue)
-                {
-                    EditorGUILayout.PropertyField(enabledField);
-                    EditorGUI.indentLevel--;
-                    continue;
-                }
-
-                foreach (var field in group.Value)
-                    EditorGUILayout.PropertyField(field);
-
-                EditorGUI.indentLevel--;
-            }
-
-            serializedObject.ApplyModifiedProperties();
+                antiAliasingEditor.OnInspectorGUI(antiAliasingTarget.current);
+                serializedObject.ApplyModifiedProperties();
         }
     }
 }

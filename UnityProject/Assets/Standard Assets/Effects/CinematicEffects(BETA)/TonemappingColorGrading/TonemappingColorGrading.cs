@@ -482,7 +482,7 @@ namespace UnityStandardAssets.CinematicEffects
                         format = TextureFormat.RFloat;
                     else if (SystemInfo.SupportsTextureFormat(TextureFormat.RHalf))
                         format = TextureFormat.RHalf;
-                    
+
                     m_TonemapperCurve = new Texture2D(256, 1, format, false, true)
                     {
                         name = "Tonemapper curve texture",

@@ -331,7 +331,7 @@ namespace UnityStandardAssets.CinematicEffects
                                 if (!string.IsNullOrEmpty(path))
                                 {
                                     Texture2D lut = concreteTarget.BakeLUT();
-                                    
+
                                     if (!concreteTarget.isGammaColorSpace)
                                     {
                                         var pixels = lut.GetPixels();

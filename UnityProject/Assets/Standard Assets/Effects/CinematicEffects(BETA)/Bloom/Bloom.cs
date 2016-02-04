@@ -32,7 +32,7 @@ namespace UnityStandardAssets.CinematicEffects
             public bool highQuality;
 
             [SerializeField]
-            [Tooltip("Reduces flashing noise with a median filter.")]
+            [Tooltip("Reduces flashing noise with an additional filter.")]
             public bool antiFlicker;
 
             public static Settings defaultSettings
@@ -148,9 +148,9 @@ namespace UnityStandardAssets.CinematicEffects
                 material.DisableKeyword("HIGH_QUALITY");
 
             if (settings.antiFlicker)
-                material.EnableKeyword("PREFILTER_MEDIAN");
+                material.EnableKeyword("ANTI_FLICKER");
             else
-                material.DisableKeyword("PREFILTER_MEDIAN");
+                material.DisableKeyword("ANTI_FLICKER");
 
             if (isGamma)
             {
@@ -180,22 +180,24 @@ namespace UnityStandardAssets.CinematicEffects
             Graphics.Blit(source, rt1[0], material, 0);
 
             // create a mip pyramid
-            for (var i = 0; i < iteration; i++)
-                Graphics.Blit(rt1[i], rt1[i + 1], material, 1);
+            Graphics.Blit(rt1[0], rt1[1], material, 1);
+
+            for (var i = 1; i < iteration; i++)
+                Graphics.Blit(rt1[i], rt1[i + 1], material, 2);
 
             // blur and combine loop
             material.SetTexture("_BaseTex", rt1[iteration - 1]);
-            Graphics.Blit(rt1[iteration], rt2[iteration - 1], material, 2);
+            Graphics.Blit(rt1[iteration], rt2[iteration - 1], material, 3);
 
             for (var i = iteration - 1; i > 1; i--)
             {
                 material.SetTexture("_BaseTex", rt1[i - 1]);
-                Graphics.Blit(rt2[i], rt2[i - 1], material, 2);
+                Graphics.Blit(rt2[i], rt2[i - 1], material, 3);
             }
 
             // finish process
             material.SetTexture("_BaseTex", source);
-            Graphics.Blit(rt2[1], destination, material, 3);
+            Graphics.Blit(rt2[1], destination, material, 4);
 
             // release the temporary buffers
             for (var i = 0; i < iteration + 1; i++)

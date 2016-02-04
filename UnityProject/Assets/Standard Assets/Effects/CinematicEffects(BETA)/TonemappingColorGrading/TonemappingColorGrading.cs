@@ -126,6 +126,7 @@ namespace UnityStandardAssets.CinematicEffects
         public enum Tonemapper
         {
             ACES,
+            Curve,
             Hable,
             HejiDawson,
             Photographic,
@@ -143,6 +144,9 @@ namespace UnityStandardAssets.CinematicEffects
             [Min(0f), Tooltip("Adjusts the overall exposure of the scene.")]
             public float exposure;
 
+            [Tooltip("Custom tonemapping curve.")]
+            public AnimationCurve curve;
+
             public static TonemappingSettings defaultSettings
             {
                 get
@@ -151,7 +155,8 @@ namespace UnityStandardAssets.CinematicEffects
                     {
                         enabled = false,
                         tonemapper = Tonemapper.ACES,
-                        exposure = 1f
+                        exposure = 1f,
+                        curve = CurvesSettings.defaultCurve
                     };
                 }
             }
@@ -374,7 +379,11 @@ namespace UnityStandardAssets.CinematicEffects
         public TonemappingSettings tonemapping
         {
             get { return m_Tonemapping; }
-            set { m_Tonemapping = value; }
+            set
+            {
+                m_Tonemapping = value;
+                SetTonemapperDirty();
+            }
         }
 
         [SerializeField, SettingsGroup]
@@ -405,6 +414,8 @@ namespace UnityStandardAssets.CinematicEffects
         private Texture2D m_IdentityLut;
         private RenderTexture m_InternalLut;
         private Texture2D m_CurveTexture;
+        private Texture2D m_TonemapperCurve;
+        private float m_TonemapperCurveRange;
 
         private Texture2D identityLut
         {
@@ -460,6 +471,32 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
+        private Texture2D tonemapperCurve
+        {
+            get
+            {
+                if (m_TonemapperCurve == null)
+                {
+                    TextureFormat format = TextureFormat.RGB24;
+                    if (SystemInfo.SupportsTextureFormat(TextureFormat.RFloat))
+                        format = TextureFormat.RFloat;
+                    else if (SystemInfo.SupportsTextureFormat(TextureFormat.RHalf))
+                        format = TextureFormat.RHalf;
+                    
+                    m_TonemapperCurve = new Texture2D(256, 1, format, false, true)
+                    {
+                        name = "Tonemapper curve texture",
+                        wrapMode = TextureWrapMode.Clamp,
+                        filterMode = FilterMode.Bilinear,
+                        anisoLevel = 0,
+                        hideFlags = HideFlags.DontSave
+                    };
+                }
+
+                return m_TonemapperCurve;
+            }
+        }
+
         [SerializeField]
         private Shader m_Shader;
         public Shader shader
@@ -503,6 +540,7 @@ namespace UnityStandardAssets.CinematicEffects
             AdaptationExp,
             TonemappingOff,
             TonemappingACES,
+            TonemappingCurve,
             TonemappingHable,
             TonemappingHejiDawson,
             TonemappingPhotographic,
@@ -514,6 +552,7 @@ namespace UnityStandardAssets.CinematicEffects
         public bool validUserLutSize { get; private set; }
 
         private bool m_Dirty = true;
+        private bool m_TonemapperDirty = true;
 
         private RenderTexture m_SmallAdaptiveRt;
         private RenderTextureFormat m_AdaptiveRtFormat;
@@ -521,6 +560,11 @@ namespace UnityStandardAssets.CinematicEffects
         public void SetDirty()
         {
             m_Dirty = true;
+        }
+
+        public void SetTonemapperDirty()
+        {
+            m_TonemapperDirty = true;
         }
 
         private void OnEnable()
@@ -532,6 +576,7 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
             SetDirty();
+            SetTonemapperDirty();
         }
 
         private void OnDisable()
@@ -551,16 +596,21 @@ namespace UnityStandardAssets.CinematicEffects
             if (m_CurveTexture != null)
                 DestroyImmediate(m_CurveTexture);
 
+            if (m_TonemapperCurve != null)
+                DestroyImmediate(m_TonemapperCurve);
+
             m_Material = null;
             m_IdentityLut = null;
             m_InternalLut = null;
             m_SmallAdaptiveRt = null;
             m_CurveTexture = null;
+            m_TonemapperCurve = null;
         }
 
         private void OnValidate()
         {
             SetDirty();
+            SetTonemapperDirty();
         }
 
         private static Texture2D GenerateIdentityLut(int dim)
@@ -790,6 +840,33 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (tonemapping.enabled)
             {
+                if (tonemapping.tonemapper == Tonemapper.Curve)
+                {
+                    if (m_TonemapperDirty)
+                    {
+                        float range = 1f;
+
+                        if (tonemapping.curve.length > 0)
+                        {
+                            range = tonemapping.curve[tonemapping.curve.length - 1].time;
+
+                            for (float i = 0f; i <= 1f; i += 1f / 255f)
+                            {
+                                float c = tonemapping.curve.Evaluate(i * range);
+                                tonemapperCurve.SetPixel(Mathf.FloorToInt(i * 255f), 0, new Color(c, c, c));
+                            }
+
+                            tonemapperCurve.Apply();
+                        }
+
+                        m_TonemapperCurveRange = 1f / range;
+                        m_TonemapperDirty = false;
+                    }
+
+                    material.SetFloat("_ToneCurveRange", m_TonemapperCurveRange);
+                    material.SetTexture("_ToneCurve", tonemapperCurve);
+                }
+
                 material.SetFloat("_Exposure", tonemapping.exposure);
                 renderPass += (int)tonemapping.tonemapper + 1;
             }

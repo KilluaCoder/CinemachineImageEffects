@@ -5,8 +5,7 @@ using System.Reflection;
 
 namespace UnityStandardAssets.CinematicEffects
 {
-    [CustomEditor(typeof(FXAA))]
-    public class FXAAEditor : Editor
+    public class FXAAEditor : IAntiAliasingEditor
     {
         private string[] presetNames = new string[]
         {
@@ -19,15 +18,13 @@ namespace UnityStandardAssets.CinematicEffects
 
         private int selectedPreset = 2;
 
-        public override void OnInspectorGUI()
+        public void OnEnable(SerializedObject serializedObject, string path)
         {
-            serializedObject.Update();
+        }
 
+        public void OnInspectorGUI(IAntiAliasing target)
+        {
             var fxaaTarget = (FXAA)target;
-
-            EditorGUILayout.LabelField("Fast approximate anti-aliasing", EditorStyles.miniBoldLabel);
-
-//figutre out the preset;
 
             if (fxaaTarget.preset.Equals(FXAA.Preset.extremePerformancePreset))
                 selectedPreset = 0;
@@ -48,7 +45,6 @@ namespace UnityStandardAssets.CinematicEffects
                 selectedPreset = 4;
 
             fxaaTarget.preset = FXAA.availablePresets[selectedPreset];
-            serializedObject.ApplyModifiedProperties();
         }
     }
 }

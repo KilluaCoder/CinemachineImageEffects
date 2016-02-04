@@ -1,4 +1,4 @@
-Shader "Hidden/Subpixel Morphological Antialiasing"
+Shader "Hidden/Subpixel Morphological Anti-aliasing"
 {
     Properties
     {

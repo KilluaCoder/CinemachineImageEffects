@@ -133,7 +133,7 @@ half3 tonemapHable(half3 color)
     return curr * whiteScale;
 }
 
-half3 tonemapHejiDawson(half3 color)
+half3 tonemapHejlDawson(half3 color)
 {
     const half a = 6.2;
     const half b = 0.5;
@@ -184,8 +184,8 @@ half4 frag_tcg(v2f_img i) : SV_Target
     color.rgb = tonemapCurve(color.rgb);
 #elif defined(TONEMAPPING_HABLE)
     color.rgb = tonemapHable(color.rgb);
-#elif defined(TONEMAPPING_HEJI_DAWSON)
-    color.rgb = tonemapHejiDawson(color.rgb);
+#elif defined(TONEMAPPING_HEJL_DAWSON)
+    color.rgb = tonemapHejlDawson(color.rgb);
 #elif defined(TONEMAPPING_PHOTOGRAPHIC)
     color.rgb = tonemapPhotographic(color.rgb);
 #elif defined(TONEMAPPING_REINHARD)

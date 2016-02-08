@@ -12,6 +12,10 @@ namespace UnityStandardAssets.CinematicEffects
         [AttributeUsage(AttributeTargets.Field)]
         public class SettingsGroup : Attribute
         {}
+        
+        [AttributeUsage(AttributeTargets.Field)]
+        public class AdvancedSetting : Attribute
+        {}
         #endregion
 
         #region Settings
@@ -69,10 +73,10 @@ namespace UnityStandardAssets.CinematicEffects
             [Range(-2f, 2f)]
             public float tangential;
 
-            [Range(0f, 2f)]
+            [AdvancedSetting, Range(0f, 2f)]
             public float axial;
             
-            [Range(0f, 2f)]
+            [AdvancedSetting, Range(0f, 2f)]
             public float contrastDependency;
 
             public static ChromaticAberrationSettings defaultSettings

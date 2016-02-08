@@ -195,7 +195,7 @@ Shader "Hidden/TonemappingColorGrading"
             ENDCG
         }
 
-        // Tonemapping (Heji-Dawson)
+        // Tonemapping (Hejl-Dawson)
         Pass
         {
             CGPROGRAM
@@ -203,7 +203,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma fragment frag_tcg
-                #define TONEMAPPING_HEJI_DAWSON
+                #define TONEMAPPING_HEJL_DAWSON
                 #include "TonemappingColorGrading.cginc"
             ENDCG
         }

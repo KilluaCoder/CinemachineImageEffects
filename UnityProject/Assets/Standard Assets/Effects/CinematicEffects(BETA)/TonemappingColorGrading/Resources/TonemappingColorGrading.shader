@@ -80,7 +80,7 @@ Shader "Hidden/TonemappingColorGrading"
                     half3 hsv = rgb_to_hsv(final_lut);
                     hsv.x = gmod(hsv.x + _HSV.x, 1.0);
                     hsv.yz *= _HSV.yz;
-                    final_lut = hsv_to_rgb(hsv);
+                    final_lut = saturate(hsv_to_rgb(hsv));
 
                     // Vibrance
                     half sat = max(final_lut.r, max(final_lut.g, final_lut.b)) - min(final_lut.r, min(final_lut.g, final_lut.b));

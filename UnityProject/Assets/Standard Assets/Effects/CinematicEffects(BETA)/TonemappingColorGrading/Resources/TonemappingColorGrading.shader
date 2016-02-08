@@ -80,7 +80,7 @@ Shader "Hidden/TonemappingColorGrading"
                     half3 hsv = rgb_to_hsv(final_lut);
                     hsv.x = gmod(hsv.x + _HSV.x, 1.0);
                     hsv.yz *= _HSV.yz;
-                    final_lut = hsv_to_rgb(hsv);
+                    final_lut = saturate(hsv_to_rgb(hsv));
 
                     // Vibrance
                     half sat = max(final_lut.r, max(final_lut.g, final_lut.b)) - min(final_lut.r, min(final_lut.g, final_lut.b));
@@ -195,7 +195,7 @@ Shader "Hidden/TonemappingColorGrading"
             ENDCG
         }
 
-        // Tonemapping (Heji-Dawson)
+        // Tonemapping (Hejl-Dawson)
         Pass
         {
             CGPROGRAM
@@ -203,7 +203,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma fragment frag_tcg
-                #define TONEMAPPING_HEJI_DAWSON
+                #define TONEMAPPING_HEJL_DAWSON
                 #include "TonemappingColorGrading.cginc"
             ENDCG
         }

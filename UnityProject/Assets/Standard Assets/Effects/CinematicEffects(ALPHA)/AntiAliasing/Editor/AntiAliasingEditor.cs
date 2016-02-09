@@ -13,7 +13,7 @@ namespace UnityStandardAssets.CinematicEffects
         };
 
         private int m_SelectedMethod;
-        
+
         private SMAAEditor m_SMAAEditor = new SMAAEditor();
         private FXAAEditor m_FXAAEditor = new FXAAEditor();
 
@@ -27,7 +27,7 @@ namespace UnityStandardAssets.CinematicEffects
 
         public override void OnInspectorGUI()
         {
-            var antiAliasingTarget = (AntiAliasing) target;
+            var antiAliasingTarget = (AntiAliasing)target;
 
             m_SelectedMethod = antiAliasingTarget.method;
 

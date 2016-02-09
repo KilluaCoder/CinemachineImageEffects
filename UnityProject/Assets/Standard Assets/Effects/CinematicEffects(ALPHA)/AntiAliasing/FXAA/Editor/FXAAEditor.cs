@@ -4,7 +4,8 @@ namespace UnityStandardAssets.CinematicEffects
 {
     public class FXAAEditor : IAntiAliasingEditor
     {
-        private string[] presetNames = {
+        private string[] presetNames =
+        {
             "Extreme performance",
             "Performance",
             "Default",
@@ -12,14 +13,14 @@ namespace UnityStandardAssets.CinematicEffects
             "Extreme quality"
         };
 
-        
+
         public void OnEnable(SerializedObject serializedObject, string path)
         {
         }
 
         public bool OnInspectorGUI(IAntiAliasing target)
         {
-            var fxaaTarget = (FXAA) target;
+            var fxaaTarget = (FXAA)target;
             int selectedPreset = 2;
 
             if (fxaaTarget.preset.Equals(FXAA.Preset.extremePerformancePreset))

@@ -12,7 +12,7 @@ namespace UnityStandardAssets.CinematicEffects
         [AttributeUsage(AttributeTargets.Field)]
         public class SettingsGroup : Attribute
         {}
-        
+
         [AttributeUsage(AttributeTargets.Field)]
         public class AdvancedSetting : Attribute
         {}
@@ -24,7 +24,7 @@ namespace UnityStandardAssets.CinematicEffects
             Simple,
             Advanced
         }
-        
+
         [Serializable]
         public struct VignetteSettings
         {
@@ -38,10 +38,10 @@ namespace UnityStandardAssets.CinematicEffects
 
             [Range(0.1f, 3f), Tooltip("Smoothness of the vignette borders.")]
             public float smoothness;
-            
+
             [Range(0f, 1f), Tooltip("Blurs the corners of the screen. Leave this at 0 to disable it.")]
             public float blur;
-            
+
             [Range(0f, 1f), Tooltip("Desaturate the corners of the screen. Leave this to 0 to disable it.")]
             public float desaturate;
 
@@ -50,14 +50,14 @@ namespace UnityStandardAssets.CinematicEffects
                 get
                 {
                     return new VignetteSettings
-                    {
-                        enabled = false,
-                        color = Color.black,
-                        intensity = 1.2f,
-                        smoothness = 1.5f,
-                        blur = 0f,
-                        desaturate = 0f
-                    };
+                           {
+                               enabled = false,
+                               color = Color.black,
+                               intensity = 1.2f,
+                               smoothness = 1.5f,
+                               blur = 0f,
+                               desaturate = 0f
+                           };
                 }
             }
         }
@@ -75,7 +75,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             [AdvancedSetting, Range(0f, 2f)]
             public float axial;
-            
+
             [AdvancedSetting, Range(0f, 2f)]
             public float contrastDependency;
 
@@ -84,24 +84,24 @@ namespace UnityStandardAssets.CinematicEffects
                 get
                 {
                     return new ChromaticAberrationSettings
-                    {
-                        enabled = false,
-                        mode = ChromaticAberrationMode.Simple,
-                        tangential = 0f,
-                        axial = 0f,
-                        contrastDependency = 0f
-                    };
+                           {
+                               enabled = false,
+                               mode = ChromaticAberrationMode.Simple,
+                               tangential = 0f,
+                               axial = 0f,
+                               contrastDependency = 0f
+                           };
                 }
             }
         }
         #endregion
-        
+
         [SettingsGroup]
         public VignetteSettings vignette = VignetteSettings.defaultSettings;
-        
+
         [SettingsGroup]
         public ChromaticAberrationSettings chromaticAberration = ChromaticAberrationSettings.defaultSettings;
-        
+
         private enum Pass
         {
             BlurPrePass,
@@ -158,10 +158,10 @@ namespace UnityStandardAssets.CinematicEffects
                 Graphics.Blit(source, destination);
                 return;
             }
-            
+
             material.SetVector("_Vignette", new Vector4(vignette.intensity, vignette.smoothness, vignette.blur, 1f - vignette.desaturate));
             material.SetColor("_VignetteColor", vignette.color);
-            
+
             material.DisableKeyword("CHROMATIC_SIMPLE");
             material.DisableKeyword("CHROMATIC_ADVANCED");
 
@@ -171,9 +171,9 @@ namespace UnityStandardAssets.CinematicEffects
                     material.EnableKeyword("CHROMATIC_ADVANCED");
                 else
                     material.EnableKeyword("CHROMATIC_SIMPLE");
-                
-			    Vector4 chromaParams = new Vector4(2.5f * chromaticAberration.tangential, 5f * chromaticAberration.axial, 5f / Mathf.Max(Mathf.Epsilon, chromaticAberration.contrastDependency), 5f);
-			    material.SetVector("_ChromaticAberration", chromaParams);
+
+                Vector4 chromaParams = new Vector4(2.5f * chromaticAberration.tangential, 5f * chromaticAberration.axial, 5f / Mathf.Max(Mathf.Epsilon, chromaticAberration.contrastDependency), 5f);
+                material.SetVector("_ChromaticAberration", chromaParams);
             }
 
             if (vignette.enabled && vignette.blur > 0f)
@@ -183,16 +183,16 @@ namespace UnityStandardAssets.CinematicEffects
                 int h = source.height / 2;
                 RenderTexture tmp1 = RenderTexture.GetTemporary(w, h, 0, source.format);
                 RenderTexture tmp2 = RenderTexture.GetTemporary(w, h, 0, source.format);
-                
+
                 material.SetVector("_BlurPass", new Vector2(1f / w, 0f));
-			    Graphics.Blit(source, tmp1, material, (int)Pass.BlurPrePass);
-			    material.SetVector("_BlurPass", new Vector2(0f, 1f / h));
-			    Graphics.Blit(tmp1, tmp2, material, (int)Pass.BlurPrePass);
-                
+                Graphics.Blit(source, tmp1, material, (int)Pass.BlurPrePass);
+                material.SetVector("_BlurPass", new Vector2(0f, 1f / h));
+                Graphics.Blit(tmp1, tmp2, material, (int)Pass.BlurPrePass);
+
                 material.SetVector("_BlurPass", new Vector2(1f / w, 0f));
-			    Graphics.Blit(tmp2, tmp1, material, (int)Pass.BlurPrePass);
-			    material.SetVector("_BlurPass", new Vector2(0f, 1f / h));
-			    Graphics.Blit(tmp1, tmp2, material, (int)Pass.BlurPrePass);
+                Graphics.Blit(tmp2, tmp1, material, (int)Pass.BlurPrePass);
+                material.SetVector("_BlurPass", new Vector2(0f, 1f / h));
+                Graphics.Blit(tmp1, tmp2, material, (int)Pass.BlurPrePass);
 
                 material.SetTexture("_BlurTex", tmp2);
 

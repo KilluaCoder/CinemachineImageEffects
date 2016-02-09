@@ -10,6 +10,12 @@ namespace UnityStandardAssets.CinematicEffects
     public class LensAberrationsEditor : Editor
     {
         private Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
+        private List<SerializedProperty> m_AdvancedProperties = new List<SerializedProperty>();
+
+        private LensAberrations concreteTarget
+        {
+            get { return target as LensAberrations; }
+        }
 
         private void PopulateMap(FieldInfo group)
         {
@@ -25,7 +31,11 @@ namespace UnityStandardAssets.CinematicEffects
 
                 var property = serializedObject.FindProperty(searchPath + setting.Name);
                 if (property != null)
+                {
                     settingsGroup.Add(property);
+                    if (setting.GetCustomAttributes(typeof(LensAberrations.AdvancedSetting), false).Length > 0)
+                        m_AdvancedProperties.Add(property);
+                }
             }
         }
 
@@ -56,7 +66,12 @@ namespace UnityStandardAssets.CinematicEffects
                     {
                         GUILayout.Space(3);
                         foreach (var field in group.Value.Where(x => x.propertyPath != group.Key.Name + ".enabled"))
+                        {
+                            if (m_AdvancedProperties.Contains(field) && concreteTarget.chromaticAberration.mode != LensAberrations.ChromaticAberrationMode.Advanced)
+                                continue;
+
                             EditorGUILayout.PropertyField(field);
+                        }
                     }
                     GUILayout.EndVertical();
                 }

@@ -5,8 +5,8 @@ using Object = UnityEngine.Object;
 
 namespace UnityStandardAssets.CinematicEffects
 {
-	[Serializable]
-	public class FXAA : IAntiAliasing
+    [Serializable]
+    public class FXAA : IAntiAliasing
     {
         private Shader m_Shader;
         private Shader shader
@@ -200,10 +200,11 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        [SerializeField,HideInInspector]
+        [SerializeField, HideInInspector]
         public Preset preset = Preset.defaultPreset;
 
-        public static Preset[] availablePresets = {
+        public static Preset[] availablePresets =
+        {
             Preset.extremePerformancePreset,
             Preset.performancePreset,
             Preset.defaultPreset,
@@ -213,8 +214,8 @@ namespace UnityStandardAssets.CinematicEffects
 
         public void OnEnable(AntiAliasing owner)
         {
-                if (!ImageEffectHelper.IsSupported(shader, true, false, owner))
-                        owner.enabled = false;
+            if (!ImageEffectHelper.IsSupported(shader, true, false, owner))
+                owner.enabled = false;
         }
 
         public void OnDisable()
@@ -234,11 +235,11 @@ namespace UnityStandardAssets.CinematicEffects
         public void OnRenderImage(Camera camera, RenderTexture source, RenderTexture destination)
         {
             material.SetVector("_QualitySettings", new Vector3(preset.qualitySettings.subpixelAliasingRemovalAmount,
-                preset.qualitySettings.edgeDetectionThreshold, preset.qualitySettings.minimumRequiredLuminance));
+                    preset.qualitySettings.edgeDetectionThreshold, preset.qualitySettings.minimumRequiredLuminance));
 
             material.SetVector("_ConsoleSettings", new Vector4(preset.consoleSettings.subpixelSpreadAmount,
-                preset.consoleSettings.edgeSharpnessAmount, preset.consoleSettings.edgeDetectionThreshold,
-                preset.consoleSettings.minimumRequiredLuminance));
+                    preset.consoleSettings.edgeSharpnessAmount, preset.consoleSettings.edgeDetectionThreshold,
+                    preset.consoleSettings.minimumRequiredLuminance));
 
             Graphics.Blit(source, destination, material, 0);
         }

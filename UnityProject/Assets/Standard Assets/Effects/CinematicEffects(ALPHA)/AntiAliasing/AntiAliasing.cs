@@ -21,7 +21,7 @@ namespace UnityStandardAssets.CinematicEffects
         [SerializeField]
         private FXAA m_FXAA = new FXAA();
 
-        [SerializeField,HideInInspector]
+        [SerializeField, HideInInspector]
         private int m_Method = (int)Method.Smaa;
         public int method
         {

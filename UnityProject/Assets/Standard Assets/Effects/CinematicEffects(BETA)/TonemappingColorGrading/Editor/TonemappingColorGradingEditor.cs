@@ -28,6 +28,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 m_RenderSizePerWheel = Mathf.FloorToInt((EditorGUIUtility.currentViewWidth) / m_NumberOfWheels) - 30;
                 m_RenderSizePerWheel = Mathf.Clamp(m_RenderSizePerWheel, wheelAttribute.minSizePerWheel, wheelAttribute.maxSizePerWheel);
+                m_RenderSizePerWheel = Mathf.FloorToInt(pixelRatio * m_RenderSizePerWheel);
                 return ColorWheel.GetColorWheelHeight(m_RenderSizePerWheel);
             }
 
@@ -136,8 +137,6 @@ namespace UnityStandardAssets.CinematicEffects
         private class Styles
         {
             public GUIStyle thumb2D = "ColorPicker2DThumb";
-            public GUIStyle header = "ShurikenModuleTitle";
-            public GUIStyle headerCheckbox = "ShurikenCheckMark";
             public Vector2 thumb2DSize;
 
             internal Styles()
@@ -146,11 +145,6 @@ namespace UnityStandardAssets.CinematicEffects
                         !Mathf.Approximately(thumb2D.fixedWidth, 0f) ? thumb2D.fixedWidth : thumb2D.padding.horizontal,
                         !Mathf.Approximately(thumb2D.fixedHeight, 0f) ? thumb2D.fixedHeight : thumb2D.padding.vertical
                         );
-
-                header.font = (new GUIStyle("Label")).font;
-                header.border = new RectOffset(15, 7, 4, 4);
-                header.fixedHeight = 22;
-                header.contentOffset = new Vector2(20f, -2f);
             }
         }
 
@@ -163,6 +157,18 @@ namespace UnityStandardAssets.CinematicEffects
         private TonemappingColorGrading concreteTarget
         {
             get { return target as TonemappingColorGrading; }
+        }
+
+        private static float pixelRatio
+        {
+            get
+            {
+                #if !(UNITY_3 || UNITY_4 || UNITY_5_0 || UNITY_5_1 || UNITY_5_2 || UNITY_5_3)
+                return EditorGUIUtility.pixelsPerPoint;
+                #else
+                return 1f;
+                #endif
+            }
         }
 
         private bool isHistogramSupported
@@ -236,35 +242,14 @@ namespace UnityStandardAssets.CinematicEffects
                 m_HistogramBuffer.Release();
         }
 
-        private bool Header(SerializedProperty group, SerializedProperty enabledField)
+        private void SetLUTImportSettings(TextureImporter importer)
         {
-            var display = group == null || group.isExpanded;
-            var enabled = enabledField != null && enabledField.boolValue;
-            var title = group == null ? "Unknown Group" : ObjectNames.NicifyVariableName(group.displayName);
-
-            Rect rect = GUILayoutUtility.GetRect(16f, 22f, s_Styles.header);
-            GUI.Box(rect, title, s_Styles.header);
-
-            Rect toggleRect = new Rect(rect.x + 4f, rect.y + 4f, 13f, 13f);
-            if (Event.current.type == EventType.Repaint)
-                s_Styles.headerCheckbox.Draw(toggleRect, false, false, enabled, false);
-
-            Event e = Event.current;
-            if (e.type == EventType.MouseDown)
-            {
-                if (toggleRect.Contains(e.mousePosition) && enabledField != null)
-                {
-                    enabledField.boolValue = !enabledField.boolValue;
-                    e.Use();
-                }
-                else if (rect.Contains(e.mousePosition) && group != null)
-                {
-                    display = !display;
-                    group.isExpanded = !group.isExpanded;
-                    e.Use();
-                }
-            }
-            return display;
+            importer.textureType = TextureImporterType.Advanced;
+            importer.anisoLevel = 0;
+            importer.mipmapEnabled = false;
+            importer.linearTexture = true;
+            importer.textureFormat = TextureImporterFormat.RGB24;
+            importer.SaveAndReimport();
         }
 
         private void DrawFields()
@@ -275,7 +260,7 @@ namespace UnityStandardAssets.CinematicEffects
                 var groupProperty = serializedObject.FindProperty(group.Key.Name);
 
                 GUILayout.Space(5);
-                bool display = Header(groupProperty, enabledField);
+                bool display = EditorGUIHelper.Header(groupProperty, enabledField);
                 if (!display)
                     continue;
 
@@ -286,7 +271,52 @@ namespace UnityStandardAssets.CinematicEffects
                     {
                         GUILayout.Space(3);
                         foreach (var field in group.Value.Where(x => x.propertyPath != group.Key.Name + ".enabled"))
+                        {
+                            // Special case for the tonemapping curve field
+                            if (group.Key.FieldType == typeof(TonemappingColorGrading.TonemappingSettings) &&
+                                field.propertyType == SerializedPropertyType.AnimationCurve &&
+                                concreteTarget.tonemapping.tonemapper != TonemappingColorGrading.Tonemapper.Curve)
+                                continue;
+
                             EditorGUILayout.PropertyField(field);
+                        }
+
+                        // Bake button
+                        if (group.Key.FieldType == typeof(TonemappingColorGrading.ColorGradingSettings))
+                        {
+                            EditorGUI.BeginDisabledGroup(!enabledField.boolValue);
+
+                            if (GUILayout.Button("Export LUT as PNG", EditorStyles.miniButton))
+                            {
+                                string path = EditorUtility.SaveFilePanelInProject("Export LUT as PNG", "LUT.png", "png", "Please enter a file name to save the LUT texture to");
+
+                                if (!string.IsNullOrEmpty(path))
+                                {
+                                    Texture2D lut = concreteTarget.BakeLUT();
+
+                                    if (!concreteTarget.isGammaColorSpace)
+                                    {
+                                        var pixels = lut.GetPixels();
+
+                                        for (int i = 0; i < pixels.Length; i++)
+                                            pixels[i] = pixels[i].linear;
+
+                                        lut.SetPixels(pixels);
+                                        lut.Apply();
+                                    }
+
+                                    byte[] bytes = lut.EncodeToPNG();
+                                    System.IO.File.WriteAllBytes(path, bytes);
+                                    DestroyImmediate(lut);
+
+                                    AssetDatabase.Refresh();
+                                    TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(path);
+                                    SetLUTImportSettings(importer);
+                                }
+                            }
+
+                            EditorGUI.EndDisabledGroup();
+                        }
                     }
                     GUILayout.EndVertical();
                 }
@@ -338,12 +368,7 @@ namespace UnityStandardAssets.CinematicEffects
                             GUILayout.FlexibleSpace();
                             if (GUILayout.Button("Fix", GUILayout.Width(60)))
                             {
-                                importer.textureType = TextureImporterType.Advanced;
-                                importer.anisoLevel = 0;
-                                importer.mipmapEnabled = false;
-                                importer.linearTexture = true;
-                                importer.textureFormat = TextureImporterFormat.RGB24;
-                                importer.SaveAndReimport();
+                                SetLUTImportSettings(importer);
                                 AssetDatabase.Refresh();
                             }
                             GUILayout.Space(8);
@@ -512,6 +537,11 @@ namespace UnityStandardAssets.CinematicEffects
                 Vector3 hsv;
                 Color.RGBToHSV(color, out hsv.x, out hsv.y, out hsv.z);
 
+                // Retina/HDPI screens handling
+                wheelDrawArea.width /= pixelRatio;
+                wheelDrawArea.height /= pixelRatio;
+                float scaledRadius = radius / pixelRatio;
+
                 if (Event.current.type == EventType.Repaint)
                 {
                     if (!Mathf.Approximately(diameter, s_LastDiameter))
@@ -526,7 +556,7 @@ namespace UnityStandardAssets.CinematicEffects
                     // Thumb
                     Vector2 thumbPos = Vector2.zero;
                     float theta = hsv.x * PI2;
-                    float len = hsv.y * radius;
+                    float len = hsv.y * scaledRadius;
                     thumbPos.x = Mathf.Cos(theta + PI_2);
                     thumbPos.y = Mathf.Sin(theta - PI_2);
                     thumbPos *= len;
@@ -535,11 +565,11 @@ namespace UnityStandardAssets.CinematicEffects
                     GUI.color = Color.black;
                     Vector2 thumbSizeH = thumbSize / 2f;
                     Handles.color = Color.white;
-                    Handles.DrawAAPolyLine(new Vector2(wheelDrawArea.x + radius + thumbSizeH.x, wheelDrawArea.y + radius + thumbSizeH.y), new Vector2(wheelDrawArea.x + radius + thumbPos.x, wheelDrawArea.y + radius + thumbPos.y));
-                    s_Styles.thumb2D.Draw(new Rect(wheelDrawArea.x + radius + thumbPos.x - thumbSizeH.x, wheelDrawArea.y + radius + thumbPos.y - thumbSizeH.y, thumbSize.x, thumbSize.y), false, false, false, false);
+                    Handles.DrawAAPolyLine(new Vector2(wheelDrawArea.x + scaledRadius + thumbSizeH.x, wheelDrawArea.y + scaledRadius + thumbSizeH.y), new Vector2(wheelDrawArea.x + scaledRadius + thumbPos.x, wheelDrawArea.y + scaledRadius + thumbPos.y));
+                    s_Styles.thumb2D.Draw(new Rect(wheelDrawArea.x + scaledRadius + thumbPos.x - thumbSizeH.x, wheelDrawArea.y + scaledRadius + thumbPos.y - thumbSizeH.y, thumbSize.x, thumbSize.y), false, false, false, false);
                     GUI.color = oldColor;
                 }
-                hsv = GetInput(wheelDrawArea, hsv, radius);
+                hsv = GetInput(wheelDrawArea, hsv, scaledRadius);
 
                 var sliderDrawArea = wheelDrawArea;
                 sliderDrawArea.y = sliderDrawArea.yMax;

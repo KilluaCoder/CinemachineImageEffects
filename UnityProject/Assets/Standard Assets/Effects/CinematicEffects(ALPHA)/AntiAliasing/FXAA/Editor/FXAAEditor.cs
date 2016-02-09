@@ -1,14 +1,10 @@
 using UnityEditor;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 
 namespace UnityStandardAssets.CinematicEffects
 {
     public class FXAAEditor : IAntiAliasingEditor
     {
-        private string[] presetNames = new string[]
-        {
+        private string[] presetNames = {
             "Extreme performance",
             "Performance",
             "Default",
@@ -16,15 +12,15 @@ namespace UnityStandardAssets.CinematicEffects
             "Extreme quality"
         };
 
-        private int selectedPreset = 2;
-
+        
         public void OnEnable(SerializedObject serializedObject, string path)
         {
         }
 
-        public void OnInspectorGUI(IAntiAliasing target)
+        public bool OnInspectorGUI(IAntiAliasing target)
         {
-            var fxaaTarget = (FXAA)target;
+            var fxaaTarget = (FXAA) target;
+            int selectedPreset = 2;
 
             if (fxaaTarget.preset.Equals(FXAA.Preset.extremePerformancePreset))
                 selectedPreset = 0;
@@ -37,14 +33,20 @@ namespace UnityStandardAssets.CinematicEffects
             else if (fxaaTarget.preset.Equals(FXAA.Preset.extremeQualityPreset))
                 selectedPreset = 4;
 
+            EditorGUI.BeginChangeCheck();
             selectedPreset = EditorGUILayout.Popup("Preset", selectedPreset, presetNames);
 
-            if (selectedPreset < 0)
-                selectedPreset = 0;
-            else if (selectedPreset > 4)
-                selectedPreset = 4;
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (selectedPreset < 0)
+                    selectedPreset = 0;
+                else if (selectedPreset > 4)
+                    selectedPreset = 4;
 
-            fxaaTarget.preset = FXAA.availablePresets[selectedPreset];
+                fxaaTarget.preset = FXAA.availablePresets[selectedPreset];
+                return true;
+            }
+            return false;
         }
     }
 }

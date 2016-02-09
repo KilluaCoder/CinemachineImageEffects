@@ -1,12 +1,12 @@
-﻿using UnityEngine;
-using UnityEngine.Serialization;
+using UnityEngine;
 using System;
 
 using Object = UnityEngine.Object;
 
 namespace UnityStandardAssets.CinematicEffects
 {
-    public class FXAA : IAntiAliasing
+	[Serializable]
+	public class FXAA : IAntiAliasing
     {
         private Shader m_Shader;
         private Shader shader
@@ -203,8 +203,7 @@ namespace UnityStandardAssets.CinematicEffects
         [SerializeField,HideInInspector]
         public Preset preset = Preset.defaultPreset;
 
-        public static Preset[] availablePresets = new Preset[]
-        {
+        public static Preset[] availablePresets = {
             Preset.extremePerformancePreset,
             Preset.performancePreset,
             Preset.defaultPreset,

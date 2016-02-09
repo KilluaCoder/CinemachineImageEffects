@@ -47,8 +47,10 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        public void OnInspectorGUI(IAntiAliasing target)
+        public bool OnInspectorGUI(IAntiAliasing target)
         {
+            EditorGUI.BeginChangeCheck();
+
             foreach (var setting in m_TopLevelFields)
                 EditorGUILayout.PropertyField(setting);
 
@@ -77,6 +79,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 EditorGUI.indentLevel--;
             }
+            return EditorGUI.EndChangeCheck();
         }
     }
 }

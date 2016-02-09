@@ -32,7 +32,7 @@ Shader "Hidden/TonemappingColorGrading"
                 half3 _Lift;
                 half3 _Gamma;
                 half3 _Gain;
-                half _Contrast;
+                half3 _ContrastGainGamma;
                 half _Vibrance;
                 half3 _HSV;
                 half3 _ChannelMixerRed;
@@ -80,14 +80,21 @@ Shader "Hidden/TonemappingColorGrading"
                     half3 hsv = rgb_to_hsv(final_lut);
                     hsv.x = gmod(hsv.x + _HSV.x, 1.0);
                     hsv.yz *= _HSV.yz;
-                    final_lut = hsv_to_rgb(hsv);
-
-                    // Contrast
-                    final_lut = saturate((final_lut - 0.5) * _Contrast + 0.5);
+                    final_lut = saturate(hsv_to_rgb(hsv));
 
                     // Vibrance
                     half sat = max(final_lut.r, max(final_lut.g, final_lut.b)) - min(final_lut.r, min(final_lut.g, final_lut.b));
-                    final_lut = lerp(Luminance(final_lut), final_lut, (1.0 + (_Vibrance * (1.0 - (sign(_Vibrance) * sat)))));
+                    final_lut = lerp(Luminance(final_lut).xxx, final_lut, (1.0 + (_Vibrance * (1.0 - (sign(_Vibrance) * sat)))));
+
+                    // Contrast
+                    final_lut = saturate((final_lut - 0.5) * _ContrastGainGamma.x + 0.5);
+
+                    // Gain
+                    half f = pow(2.0, _ContrastGainGamma.y) * 0.5;
+                    final_lut = (final_lut < 0.5) ? pow(final_lut, _ContrastGainGamma.y) * f : 1.0 - pow(1.0 - final_lut, _ContrastGainGamma.y) * f;
+
+                    // Gamma
+                    final_lut = pow(final_lut, _ContrastGainGamma.z);
 
                     // Color mixer
                     final_lut = (final_lut.rrr * _ChannelMixerRed) + (final_lut.ggg * _ChannelMixerGreen) + (final_lut.bbb * _ChannelMixerBlue);
@@ -162,6 +169,19 @@ Shader "Hidden/TonemappingColorGrading"
             ENDCG
         }
 
+        // Tonemapping (Curve)
+        Pass
+        {
+            CGPROGRAM
+                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ ENABLE_COLOR_GRADING
+                #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma fragment frag_tcg
+                #define TONEMAPPING_CURVE
+                #include "TonemappingColorGrading.cginc"
+            ENDCG
+        }
+
         // Tonemapping (Hable)
         Pass
         {
@@ -175,7 +195,7 @@ Shader "Hidden/TonemappingColorGrading"
             ENDCG
         }
 
-        // Tonemapping (Heji-Dawson)
+        // Tonemapping (Hejl-Dawson)
         Pass
         {
             CGPROGRAM
@@ -183,7 +203,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma fragment frag_tcg
-                #define TONEMAPPING_HEJI_DAWSON
+                #define TONEMAPPING_HEJL_DAWSON
                 #include "TonemappingColorGrading.cginc"
             ENDCG
         }

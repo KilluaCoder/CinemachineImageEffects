@@ -22,10 +22,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_HistogramComputeShader == null)
-                {
                     m_HistogramComputeShader = Resources.Load<ComputeShader>("HistogramCompute");
-                    m_HistogramComputeShader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_HistogramComputeShader;
             }
@@ -38,10 +35,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_HistogramShader == null)
-                {
                     m_HistogramShader = Shader.Find("Hidden/TonemappingColorGradingHistogram");
-                    m_HistogramShader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_HistogramShader;
             }
@@ -132,8 +126,9 @@ namespace UnityStandardAssets.CinematicEffects
         public enum Tonemapper
         {
             ACES,
+            Curve,
             Hable,
-            HejiDawson,
+            HejlDawson,
             Photographic,
             Reinhard
         }
@@ -149,6 +144,9 @@ namespace UnityStandardAssets.CinematicEffects
             [Min(0f), Tooltip("Adjusts the overall exposure of the scene.")]
             public float exposure;
 
+            [Tooltip("Custom tonemapping curve.")]
+            public AnimationCurve curve;
+
             public static TonemappingSettings defaultSettings
             {
                 get
@@ -157,7 +155,8 @@ namespace UnityStandardAssets.CinematicEffects
                     {
                         enabled = false,
                         tonemapper = Tonemapper.ACES,
-                        exposure = 1f
+                        exposure = 1f,
+                        curve = CurvesSettings.defaultCurve
                     };
                 }
             }
@@ -223,14 +222,20 @@ namespace UnityStandardAssets.CinematicEffects
             [Range(0f, 2f), Tooltip("Pushes the intensity of all colors.")]
             public float saturation;
 
+            [Range(-1f, 1f), Tooltip("Adjusts the saturation so that clipping is minimized as colors approach full saturation.")]
+            public float vibrance;
+
             [Range(0f, 5f), Tooltip("Brightens or darkens all colors.")]
             public float value;
 
             [Space, Range(0f, 2f), Tooltip("Expands or shrinks the overall range of tonal values.")]
             public float contrast;
 
-            [Range(-1f, 1f), Tooltip("Adjusts the saturation so that clipping is minimized as colors approach full saturation.")]
-            public float vibrance;
+            [Range(0.01f, 5f), Tooltip("Contrast gain curve. Controls the steepness of the curve.")]
+            public float gain;
+
+            [Range(0.01f, 5f), Tooltip("Applies a pow function to the source.")]
+            public float gamma;
 
             public static BasicsSettings defaultSettings
             {
@@ -242,7 +247,9 @@ namespace UnityStandardAssets.CinematicEffects
                         hue = 0f,
                         saturation = 1f,
                         value = 1f,
-                        vibrance = 0f
+                        vibrance = 0f,
+                        gain = 1f,
+                        gamma = 1f
                     };
                 }
             }
@@ -372,7 +379,11 @@ namespace UnityStandardAssets.CinematicEffects
         public TonemappingSettings tonemapping
         {
             get { return m_Tonemapping; }
-            set { m_Tonemapping = value; }
+            set
+            {
+                m_Tonemapping = value;
+                SetTonemapperDirty();
+            }
         }
 
         [SerializeField, SettingsGroup]
@@ -403,6 +414,8 @@ namespace UnityStandardAssets.CinematicEffects
         private Texture2D m_IdentityLut;
         private RenderTexture m_InternalLut;
         private Texture2D m_CurveTexture;
+        private Texture2D m_TonemapperCurve;
+        private float m_TonemapperCurveRange;
 
         private Texture2D identityLut
         {
@@ -412,10 +425,6 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     DestroyImmediate(m_IdentityLut);
                     m_IdentityLut = GenerateIdentityLut(lutSize);
-                    m_IdentityLut.name = "Identity LUT";
-                    m_IdentityLut.filterMode = FilterMode.Bilinear;
-                    m_IdentityLut.anisoLevel = 0;
-                    m_IdentityLut.hideFlags = HideFlags.DontSave;
                 }
 
                 return m_IdentityLut;
@@ -462,6 +471,32 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
+        private Texture2D tonemapperCurve
+        {
+            get
+            {
+                if (m_TonemapperCurve == null)
+                {
+                    TextureFormat format = TextureFormat.RGB24;
+                    if (SystemInfo.SupportsTextureFormat(TextureFormat.RFloat))
+                        format = TextureFormat.RFloat;
+                    else if (SystemInfo.SupportsTextureFormat(TextureFormat.RHalf))
+                        format = TextureFormat.RHalf;
+
+                    m_TonemapperCurve = new Texture2D(256, 1, format, false, true)
+                    {
+                        name = "Tonemapper curve texture",
+                        wrapMode = TextureWrapMode.Clamp,
+                        filterMode = FilterMode.Bilinear,
+                        anisoLevel = 0,
+                        hideFlags = HideFlags.DontSave
+                    };
+                }
+
+                return m_TonemapperCurve;
+            }
+        }
+
         [SerializeField]
         private Shader m_Shader;
         public Shader shader
@@ -469,10 +504,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_Shader == null)
-                {
                     m_Shader = Shader.Find("Hidden/TonemappingColorGrading");
-                    m_Shader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_Shader;
             }
@@ -508,8 +540,9 @@ namespace UnityStandardAssets.CinematicEffects
             AdaptationExp,
             TonemappingOff,
             TonemappingACES,
+            TonemappingCurve,
             TonemappingHable,
-            TonemappingHejiDawson,
+            TonemappingHejlDawson,
             TonemappingPhotographic,
             TonemappingReinhard,
             AdaptationDebug
@@ -519,6 +552,7 @@ namespace UnityStandardAssets.CinematicEffects
         public bool validUserLutSize { get; private set; }
 
         private bool m_Dirty = true;
+        private bool m_TonemapperDirty = true;
 
         private RenderTexture m_SmallAdaptiveRt;
         private RenderTextureFormat m_AdaptiveRtFormat;
@@ -526,6 +560,11 @@ namespace UnityStandardAssets.CinematicEffects
         public void SetDirty()
         {
             m_Dirty = true;
+        }
+
+        public void SetTonemapperDirty()
+        {
+            m_TonemapperDirty = true;
         }
 
         private void OnEnable()
@@ -537,6 +576,7 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
             SetDirty();
+            SetTonemapperDirty();
         }
 
         private void OnDisable()
@@ -556,31 +596,43 @@ namespace UnityStandardAssets.CinematicEffects
             if (m_CurveTexture != null)
                 DestroyImmediate(m_CurveTexture);
 
+            if (m_TonemapperCurve != null)
+                DestroyImmediate(m_TonemapperCurve);
+
             m_Material = null;
             m_IdentityLut = null;
             m_InternalLut = null;
             m_SmallAdaptiveRt = null;
             m_CurveTexture = null;
+            m_TonemapperCurve = null;
         }
 
         private void OnValidate()
         {
             SetDirty();
+            SetTonemapperDirty();
         }
 
         private static Texture2D GenerateIdentityLut(int dim)
         {
             Color[] newC = new Color[dim * dim * dim];
-            float oneOverDim = 1f / (dim - 1f);
+            float oneOverDim = 1f / ((float)dim - 1f);
 
             for (int i = 0; i < dim; i++)
                 for (int j = 0; j < dim; j++)
                     for (int k = 0; k < dim; k++)
-                        newC[i + (j * dim) + (k * dim * dim)] = new Color(i * oneOverDim, Mathf.Abs(k * oneOverDim), j * oneOverDim, 1f);
+                        newC[i + (j * dim) + (k * dim * dim)] = new Color((float)i * oneOverDim, Mathf.Abs((float)k * oneOverDim), (float)j * oneOverDim, 1f);
 
-            Texture2D tex2D = new Texture2D(dim * dim, dim, TextureFormat.RGB24, false, true);
+            Texture2D tex2D = new Texture2D(dim * dim, dim, TextureFormat.RGB24, false, true)
+            {
+                name = "Identity LUT",
+                filterMode = FilterMode.Bilinear,
+                anisoLevel = 0,
+                hideFlags = HideFlags.DontSave
+            };
             tex2D.SetPixels(newC);
             tex2D.Apply();
+
             return tex2D;
         }
 
@@ -788,6 +840,33 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (tonemapping.enabled)
             {
+                if (tonemapping.tonemapper == Tonemapper.Curve)
+                {
+                    if (m_TonemapperDirty)
+                    {
+                        float range = 1f;
+
+                        if (tonemapping.curve.length > 0)
+                        {
+                            range = tonemapping.curve[tonemapping.curve.length - 1].time;
+
+                            for (float i = 0f; i <= 1f; i += 1f / 255f)
+                            {
+                                float c = tonemapping.curve.Evaluate(i * range);
+                                tonemapperCurve.SetPixel(Mathf.FloorToInt(i * 255f), 0, new Color(c, c, c));
+                            }
+
+                            tonemapperCurve.Apply();
+                        }
+
+                        m_TonemapperCurveRange = 1f / range;
+                        m_TonemapperDirty = false;
+                    }
+
+                    material.SetFloat("_ToneCurveRange", m_TonemapperCurveRange);
+                    material.SetTexture("_ToneCurve", tonemapperCurve);
+                }
+
                 material.SetFloat("_Exposure", tonemapping.exposure);
                 renderPass += (int)tonemapping.tonemapper + 1;
             }
@@ -826,13 +905,14 @@ namespace UnityStandardAssets.CinematicEffects
                     material.SetVector("_Lift", lift);
                     material.SetVector("_Gamma", gamma);
                     material.SetVector("_Gain", gain);
-                    material.SetFloat("_Contrast", colorGrading.basics.contrast);
+                    material.SetVector("_ContrastGainGamma", new Vector3(colorGrading.basics.contrast, colorGrading.basics.gain, colorGrading.basics.gamma));
                     material.SetFloat("_Vibrance", colorGrading.basics.vibrance);
                     material.SetVector("_HSV", new Vector4(colorGrading.basics.hue, colorGrading.basics.saturation, colorGrading.basics.value));
                     material.SetVector("_ChannelMixerRed", colorGrading.channelMixer.channels[0]);
                     material.SetVector("_ChannelMixerGreen", colorGrading.channelMixer.channels[1]);
                     material.SetVector("_ChannelMixerBlue", colorGrading.channelMixer.channels[2]);
                     material.SetTexture("_CurveTex", curveTexture);
+                    internalLutRt.MarkRestoreExpected();
                     Graphics.Blit(identityLut, internalLutRt, material, (int)Pass.LutGen);
                     m_Dirty = false;
                 }
@@ -879,6 +959,15 @@ namespace UnityStandardAssets.CinematicEffects
                 }
             }
 #endif
+        }
+
+        public Texture2D BakeLUT()
+        {
+            Texture2D lut = new Texture2D(internalLutRt.width, internalLutRt.height, TextureFormat.RGB24, false, true);
+            RenderTexture.active = internalLutRt;
+            lut.ReadPixels(new Rect(0f, 0f, lut.width, lut.height), 0, 0);
+            RenderTexture.active = null;
+            return lut;
         }
     }
 }

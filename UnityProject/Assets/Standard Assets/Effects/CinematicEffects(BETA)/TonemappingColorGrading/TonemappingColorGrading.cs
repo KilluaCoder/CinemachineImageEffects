@@ -128,7 +128,7 @@ namespace UnityStandardAssets.CinematicEffects
             ACES,
             Curve,
             Hable,
-            HejiDawson,
+            HejlDawson,
             Photographic,
             Reinhard
         }
@@ -542,7 +542,7 @@ namespace UnityStandardAssets.CinematicEffects
             TonemappingACES,
             TonemappingCurve,
             TonemappingHable,
-            TonemappingHejiDawson,
+            TonemappingHejlDawson,
             TonemappingPhotographic,
             TonemappingReinhard,
             AdaptationDebug

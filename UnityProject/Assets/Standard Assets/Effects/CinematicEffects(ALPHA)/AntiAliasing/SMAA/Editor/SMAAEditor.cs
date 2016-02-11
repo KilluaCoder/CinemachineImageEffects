@@ -5,20 +5,19 @@ using System.Reflection;
 
 namespace UnityStandardAssets.CinematicEffects
 {
-    [CustomEditor(typeof(AntiAliasing))]
-    public class AntiAliasingEditor : Editor
+    public class SMAAEditor : IAntiAliasingEditor
     {
         private List<SerializedProperty> m_TopLevelFields = new List<SerializedProperty>();
         private Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
 
-        private void OnEnable()
+        public void OnEnable(SerializedObject serializedObject, string path)
         {
-            var topLevelSettings = typeof(AntiAliasing).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(AntiAliasing.TopLevelSettings), false).Any());
-            var settingsGroups = typeof(AntiAliasing).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(AntiAliasing.SettingsGroup), false).Any());
+            var topLevelSettings = typeof(SMAA).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(SMAA.TopLevelSettings), false).Any());
+            var settingsGroups = typeof(SMAA).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(SMAA.SettingsGroup), false).Any());
 
             foreach (var group in topLevelSettings)
             {
-                var searchPath = group.Name + ".";
+                var searchPath = path + "." + group.Name + ".";
 
                 foreach (var setting in group.FieldType.GetFields(BindingFlags.Instance | BindingFlags.Public))
                 {
@@ -30,7 +29,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             foreach (var group in settingsGroups)
             {
-                var searchPath = group.Name + ".";
+                var searchPath = path + "." + group.Name + ".";
 
                 foreach (var setting in group.FieldType.GetFields(BindingFlags.Instance | BindingFlags.Public))
                 {
@@ -48,16 +47,16 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        public override void OnInspectorGUI()
+        public bool OnInspectorGUI(IAntiAliasing target)
         {
-            serializedObject.Update();
+            EditorGUI.BeginChangeCheck();
 
             foreach (var setting in m_TopLevelFields)
                 EditorGUILayout.PropertyField(setting);
 
             foreach (var group in m_GroupFields)
             {
-                if (group.Key.FieldType == typeof(AntiAliasing.QualitySettings) && (target as AntiAliasing).settings.quality != AntiAliasing.QualityPreset.Custom)
+                if (group.Key.FieldType == typeof(SMAA.QualitySettings) && (target as SMAA).settings.quality != SMAA.QualityPreset.Custom)
                     continue;
 
                 string title = group.Key.Name;
@@ -80,8 +79,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 EditorGUI.indentLevel--;
             }
-
-            serializedObject.ApplyModifiedProperties();
+            return EditorGUI.EndChangeCheck();
         }
     }
 }

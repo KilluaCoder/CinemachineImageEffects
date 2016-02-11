@@ -4,8 +4,6 @@ namespace UnityStandardAssets.CinematicEffects
     using UnityEngine.Events;
     using System;
 
-    // TODO: Histogram optimizations, see HistogramCompute.compute
-
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
     [AddComponentMenu("Image Effects/Cinematic/Tonemapping and Color Grading")]
@@ -435,7 +433,7 @@ namespace UnityStandardAssets.CinematicEffects
         {
             get
             {
-                if (m_InternalLut == null || m_InternalLut.height != lutSize)
+                if (m_InternalLut == null || !m_InternalLut.IsCreated() || m_InternalLut.height != lutSize)
                 {
                     DestroyImmediate(m_InternalLut);
                     m_InternalLut = new RenderTexture(lutSize * lutSize, lutSize, 0, RenderTextureFormat.ARGB32)
@@ -885,7 +883,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (colorGrading.enabled)
             {
-                if (m_Dirty)
+                if (m_Dirty || !m_InternalLut.IsCreated())
                 {
                     if (lutUsed == null)
                     {

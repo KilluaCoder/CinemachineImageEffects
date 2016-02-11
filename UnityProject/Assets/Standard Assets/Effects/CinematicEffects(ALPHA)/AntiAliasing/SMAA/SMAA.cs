@@ -2,12 +2,12 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using System;
 
+using Object = UnityEngine.Object;
+
 namespace UnityStandardAssets.CinematicEffects
 {
-    [ExecuteInEditMode]
-    [RequireComponent(typeof(Camera))]
-    [AddComponentMenu("Image Effects/Subpixel Morphological Anti-aliasing")]
-    public class AntiAliasing : MonoBehaviour
+    [Serializable]
+    public class SMAA : IAntiAliasing
     {
         [AttributeUsage(AttributeTargets.Field)]
         public class SettingsGroup : Attribute
@@ -229,18 +229,13 @@ namespace UnityStandardAssets.CinematicEffects
         private float m_FlipFlop = 1.0f;
         private RenderTexture m_Accumulation;
 
-
-        [SerializeField]
         private Shader m_Shader;
         public Shader shader
         {
             get
             {
                 if (m_Shader == null)
-                {
-                    m_Shader = Shader.Find("Hidden/Subpixel Morphological Antialiasing");
-                    m_Shader.hideFlags = HideFlags.DontSave;
-                }
+                    m_Shader = Shader.Find("Hidden/Subpixel Morphological Anti-aliasing");
 
                 return m_Shader;
             }
@@ -268,20 +263,8 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        private Camera m_Camera;
-        public Camera cameraComponent
-        {
-            get
-            {
-                if (m_Camera == null)
-                    m_Camera = GetComponent<Camera>();
-
-                return m_Camera;
-            }
-        }
-
         private Material m_Material;
-        public Material material
+        private Material material
         {
             get
             {
@@ -292,51 +275,51 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        private void OnEnable()
+        public void OnEnable(AntiAliasing owner)
         {
-            if (!ImageEffectHelper.IsSupported(shader, true, false, this))
-                enabled = false;
+            if (!ImageEffectHelper.IsSupported(shader, true, false, owner))
+                owner.enabled = false;
         }
 
-        private void OnDisable()
+        public void OnDisable()
         {
             // Cleanup
             if (m_Material != null)
-                DestroyImmediate(m_Material);
+                Object.DestroyImmediate(m_Material);
 
             if (m_Accumulation != null)
-                DestroyImmediate(m_Accumulation);
+                Object.DestroyImmediate(m_Accumulation);
 
             m_Material = null;
             m_Accumulation = null;
         }
 
-        private void OnPreCull()
+        public void OnPreCull(Camera camera)
         {
             if (temporal.enabled)
             {
-                m_ProjectionMatrix = cameraComponent.projectionMatrix;
+                m_ProjectionMatrix = camera.projectionMatrix;
                 m_FlipFlop -= (2.0f * m_FlipFlop);
 
                 Matrix4x4 fuzz = Matrix4x4.identity;
 
-                fuzz.m03 = (0.25f * m_FlipFlop) * temporal.fuzzSize / cameraComponent.pixelWidth;
-                fuzz.m13 = (-0.25f * m_FlipFlop) * temporal.fuzzSize / cameraComponent.pixelHeight;
+                fuzz.m03 = (0.25f * m_FlipFlop) * temporal.fuzzSize / camera.pixelWidth;
+                fuzz.m13 = (-0.25f * m_FlipFlop) * temporal.fuzzSize / camera.pixelHeight;
 
-                cameraComponent.projectionMatrix = fuzz * cameraComponent.projectionMatrix;
+                camera.projectionMatrix = fuzz * camera.projectionMatrix;
             }
         }
 
-        private void OnPostRender()
+        public void OnPostRender(Camera camera)
         {
             if (temporal.enabled)
-                cameraComponent.ResetProjectionMatrix();
+                camera.ResetProjectionMatrix();
         }
 
-        private void OnRenderImage(RenderTexture source, RenderTexture destination)
+        public void OnRenderImage(Camera camera, RenderTexture source, RenderTexture destination)
         {
-            int width = cameraComponent.pixelWidth;
-            int height = cameraComponent.pixelHeight;
+            int width = camera.pixelWidth;
+            int height = camera.pixelHeight;
 
             bool isFirstFrame = false;
 
@@ -352,7 +335,7 @@ namespace UnityStandardAssets.CinematicEffects
             int passResolve = 6;
 
             // Reprojection setup
-            var viewProjectionMatrix = GL.GetGPUProjectionMatrix(m_ProjectionMatrix, true) * cameraComponent.worldToCameraMatrix;
+            var viewProjectionMatrix = GL.GetGPUProjectionMatrix(m_ProjectionMatrix, true) * camera.worldToCameraMatrix;
 
             // Uniforms
             material.SetTexture("_AreaTex", areaTexture);
@@ -372,11 +355,11 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (settings.edgeDetectionMethod == EdgeDetectionMethod.Depth)
             {
-                cameraComponent.depthTextureMode |= DepthTextureMode.Depth;
+                camera.depthTextureMode |= DepthTextureMode.Depth;
             }
             else if (predication.enabled)
             {
-                cameraComponent.depthTextureMode |= DepthTextureMode.Depth;
+                camera.depthTextureMode |= DepthTextureMode.Depth;
                 Shader.EnableKeyword("USE_PREDICATION");
                 material.SetVector("_Params3", new Vector3(predication.threshold, predication.scale, predication.strength));
             }

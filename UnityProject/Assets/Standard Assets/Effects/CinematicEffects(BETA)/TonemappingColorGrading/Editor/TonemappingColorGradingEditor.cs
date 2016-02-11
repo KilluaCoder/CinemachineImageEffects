@@ -137,8 +137,6 @@ namespace UnityStandardAssets.CinematicEffects
         private class Styles
         {
             public GUIStyle thumb2D = "ColorPicker2DThumb";
-            public GUIStyle header = "ShurikenModuleTitle";
-            public GUIStyle headerCheckbox = "ShurikenCheckMark";
             public Vector2 thumb2DSize;
 
             internal Styles()
@@ -147,11 +145,6 @@ namespace UnityStandardAssets.CinematicEffects
                         !Mathf.Approximately(thumb2D.fixedWidth, 0f) ? thumb2D.fixedWidth : thumb2D.padding.horizontal,
                         !Mathf.Approximately(thumb2D.fixedHeight, 0f) ? thumb2D.fixedHeight : thumb2D.padding.vertical
                         );
-
-                header.font = (new GUIStyle("Label")).font;
-                header.border = new RectOffset(15, 7, 4, 4);
-                header.fixedHeight = 22;
-                header.contentOffset = new Vector2(20f, -2f);
             }
         }
 
@@ -259,37 +252,6 @@ namespace UnityStandardAssets.CinematicEffects
             importer.SaveAndReimport();
         }
 
-        private bool Header(SerializedProperty group, SerializedProperty enabledField)
-        {
-            var display = group == null || group.isExpanded;
-            var enabled = enabledField != null && enabledField.boolValue;
-            var title = group == null ? "Unknown Group" : ObjectNames.NicifyVariableName(group.displayName);
-
-            Rect rect = GUILayoutUtility.GetRect(16f, 22f, s_Styles.header);
-            GUI.Box(rect, title, s_Styles.header);
-
-            Rect toggleRect = new Rect(rect.x + 4f, rect.y + 4f, 13f, 13f);
-            if (Event.current.type == EventType.Repaint)
-                s_Styles.headerCheckbox.Draw(toggleRect, false, false, enabled, false);
-
-            Event e = Event.current;
-            if (e.type == EventType.MouseDown)
-            {
-                if (toggleRect.Contains(e.mousePosition) && enabledField != null)
-                {
-                    enabledField.boolValue = !enabledField.boolValue;
-                    e.Use();
-                }
-                else if (rect.Contains(e.mousePosition) && group != null)
-                {
-                    display = !display;
-                    group.isExpanded = !group.isExpanded;
-                    e.Use();
-                }
-            }
-            return display;
-        }
-
         private void DrawFields()
         {
             foreach (var group in m_GroupFields)
@@ -298,7 +260,7 @@ namespace UnityStandardAssets.CinematicEffects
                 var groupProperty = serializedObject.FindProperty(group.Key.Name);
 
                 GUILayout.Space(5);
-                bool display = Header(groupProperty, enabledField);
+                bool display = EditorGUIHelper.Header(groupProperty, enabledField);
                 if (!display)
                     continue;
 
@@ -508,7 +470,7 @@ namespace UnityStandardAssets.CinematicEffects
             cs.SetTexture(kernel, "_Source", source);
             cs.SetVector("_SourceSize", new Vector2(source.width, source.height));
             cs.SetInt("_IsLinear", concreteTarget.isGammaColorSpace ? 0 : 1);
-            cs.Dispatch(kernel, Mathf.CeilToInt(source.width / 16f), Mathf.CeilToInt(source.height / 16f), 1);
+            cs.Dispatch(kernel, Mathf.CeilToInt(source.width / 32f), Mathf.CeilToInt(source.height / 32f), 1);
 
             kernel = cs.FindKernel("KHistogramScale");
             cs.SetBuffer(kernel, "_Histogram", m_HistogramBuffer);

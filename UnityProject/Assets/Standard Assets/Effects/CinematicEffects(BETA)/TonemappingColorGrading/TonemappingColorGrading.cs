@@ -4,8 +4,6 @@ namespace UnityStandardAssets.CinematicEffects
     using UnityEngine.Events;
     using System;
 
-    // TODO: Histogram optimizations, see HistogramCompute.compute
-
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
     [AddComponentMenu("Image Effects/Cinematic/Tonemapping and Color Grading")]

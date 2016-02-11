@@ -470,7 +470,7 @@ namespace UnityStandardAssets.CinematicEffects
             cs.SetTexture(kernel, "_Source", source);
             cs.SetVector("_SourceSize", new Vector2(source.width, source.height));
             cs.SetInt("_IsLinear", concreteTarget.isGammaColorSpace ? 0 : 1);
-            cs.Dispatch(kernel, Mathf.CeilToInt(source.width / 16f), Mathf.CeilToInt(source.height / 16f), 1);
+            cs.Dispatch(kernel, Mathf.CeilToInt(source.width / 32f), Mathf.CeilToInt(source.height / 32f), 1);
 
             kernel = cs.FindKernel("KHistogramScale");
             cs.SetBuffer(kernel, "_Histogram", m_HistogramBuffer);

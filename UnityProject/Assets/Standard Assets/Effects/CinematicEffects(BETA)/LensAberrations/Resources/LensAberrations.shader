@@ -14,6 +14,7 @@ Shader "Hidden/LensAberrations"
             #pragma fragmentoption ARB_precision_hint_fastest
             #pragma multi_compile __ CHROMATIC_SIMPLE CHROMATIC_ADVANCED
             #include "UnityCG.cginc"
+            #pragma target 3.0
 
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;

@@ -27,6 +27,7 @@ Shader "Hidden/Fast Approximate Anti-aliasing"
 
         #define FXAA_GREEN_AS_LUMA 1
 
+        #pragma target 3.0
         #include "FXAA3.cginc"
 
         float4 _MainTex_TexelSize;

@@ -235,10 +235,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_Shader == null)
-                {
                     m_Shader = Shader.Find("Hidden/Subpixel Morphological Anti-aliasing");
-                    m_Shader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_Shader;
             }

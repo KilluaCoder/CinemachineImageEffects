@@ -71,7 +71,6 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     const string shaderName = "Hidden/Image Effects/Cinematic/Bloom";
                     m_Shader = Shader.Find(shaderName);
-                    m_Shader.hideFlags = HideFlags.DontSave;
                 }
 
                 return m_Shader;

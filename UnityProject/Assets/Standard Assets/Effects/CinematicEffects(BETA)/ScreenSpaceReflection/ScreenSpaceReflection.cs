@@ -359,10 +359,7 @@ namespace UnityStandardAssets.CinematicEffects
             get
             {
                 if (m_Shader == null)
-                {
                     m_Shader = Shader.Find("Hidden/ScreenSpaceReflection");
-                    m_Shader.hideFlags = HideFlags.DontSave;
-                }
 
                 return m_Shader;
             }

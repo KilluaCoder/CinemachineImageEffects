@@ -151,6 +151,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #include "TonemappingColorGrading.cginc"
             ENDCG
@@ -163,6 +164,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_ACES
                 #include "TonemappingColorGrading.cginc"
@@ -176,6 +178,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_CURVE
                 #include "TonemappingColorGrading.cginc"
@@ -189,6 +192,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_HABLE
                 #include "TonemappingColorGrading.cginc"
@@ -202,6 +206,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_HEJL_DAWSON
                 #include "TonemappingColorGrading.cginc"
@@ -215,6 +220,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_PHOTOGRAPHIC
                 #include "TonemappingColorGrading.cginc"
@@ -228,6 +234,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_REINHARD
                 #include "TonemappingColorGrading.cginc"

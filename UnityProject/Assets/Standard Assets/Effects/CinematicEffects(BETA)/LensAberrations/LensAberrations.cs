@@ -37,17 +37,17 @@ namespace UnityStandardAssets.CinematicEffects
             [Range(-100f, 100f), Tooltip("Distortion amount.")]
             public float amount;
 
-		    [Range(0f, 1f), Tooltip("Distortion center point (X axis).")]
-		    public float centerX;
+            [Range(0f, 1f), Tooltip("Distortion center point (X axis).")]
+            public float centerX;
 
-		    [Range(0f, 1f), Tooltip("Distortion center point (Y axis).")]
-		    public float centerY;
+            [Range(0f, 1f), Tooltip("Distortion center point (Y axis).")]
+            public float centerY;
 
-		    [Range(0f, 2f), Tooltip("Amount multiplier on X axis.")]
-		    public float amountX;
+            [Range(0f, 2f), Tooltip("Amount multiplier on X axis.")]
+            public float amountX;
 
-		    [Range(0f, 2f), Tooltip("Amount multiplier on Y axis.")]
-		    public float amountY;
+            [Range(0f, 2f), Tooltip("Amount multiplier on Y axis.")]
+            public float amountY;
 
             [Range(0.5f, 2f), Tooltip("Global screen scaling.")]
             public float scale;
@@ -233,13 +233,13 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (distortion.enabled)
             {
-			    float amount = 1.6f * Math.Max(Mathf.Abs(distortion.amount), 1f);
-			    float theta = 0.01745329251994f * Math.Min(160f, amount);
-			    float sigma = 2f * Mathf.Tan(theta * 0.5f);
-			    Vector4 p0 = new Vector4(2f * distortion.centerX - 1f, 2f * distortion.centerY - 1f, distortion.amountX, distortion.amountY);
-			    Vector3 p1 = new Vector3(distortion.amount >= 0f ? theta : 1f / theta, sigma, 1f / distortion.scale);
-				material.SetVector("_DistCenterScale", p0);
-				material.SetVector("_DistAmount", p1);
+                float amount = 1.6f * Math.Max(Mathf.Abs(distortion.amount), 1f);
+                float theta = 0.01745329251994f * Math.Min(160f, amount);
+                float sigma = 2f * Mathf.Tan(theta * 0.5f);
+                Vector4 p0 = new Vector4(2f * distortion.centerX - 1f, 2f * distortion.centerY - 1f, distortion.amountX, distortion.amountY);
+                Vector3 p1 = new Vector3(distortion.amount >= 0f ? theta : 1f / theta, sigma, 1f / distortion.scale);
+                material.SetVector("_DistCenterScale", p0);
+                material.SetVector("_DistAmount", p1);
 
                 if (distortion.amount >= 0f)
                     material.EnableKeyword("DISTORT");

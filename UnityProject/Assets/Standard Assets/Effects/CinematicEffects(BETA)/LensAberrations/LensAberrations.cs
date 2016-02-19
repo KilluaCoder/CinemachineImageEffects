@@ -87,16 +87,16 @@ namespace UnityStandardAssets.CinematicEffects
             [SimpleSetting, Range(0.1f, 3f), Tooltip("Smoothness of the vignette borders.")]
             public float smoothness;
             
-		    [AdvancedSetting, Range(0f, 1f), Tooltip("Vignette radius in screen coordinates.")]
+            [AdvancedSetting, Range(0f, 1f), Tooltip("Vignette radius in screen coordinates.")]
             public float radius;
 
-		    [AdvancedSetting, Range(0f, 1f), Tooltip("Smoothness of the vignette border. Tweak this at the same time as \"Falloff\" to get more control over the vignette gradient.")]
+            [AdvancedSetting, Range(0f, 1f), Tooltip("Smoothness of the vignette border. Tweak this at the same time as \"Falloff\" to get more control over the vignette gradient.")]
             public float spread;
 
-		    [AdvancedSetting, Range(0f, 1f), Tooltip("Smoothness of the vignette border. Tweak this at the same time as \"Spread\" to get more control over the vignette gradient.")]
+            [AdvancedSetting, Range(0f, 1f), Tooltip("Smoothness of the vignette border. Tweak this at the same time as \"Spread\" to get more control over the vignette gradient.")]
             public float falloff;
 
-		    [AdvancedSetting, Range(0f, 1f), Tooltip("Lower values will make a square-ish vignette.")]
+            [AdvancedSetting, Range(0f, 1f), Tooltip("Lower values will make a square-ish vignette.")]
             public float roundness;
 
             [Range(0f, 1f), Tooltip("Blurs the corners of the screen. Leave this at 0 to disable it.")]

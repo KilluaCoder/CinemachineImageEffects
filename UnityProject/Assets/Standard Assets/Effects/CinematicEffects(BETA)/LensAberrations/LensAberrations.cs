@@ -256,10 +256,10 @@ namespace UnityStandardAssets.CinematicEffects
             }
             else
             {
-			    float r1 = 0.5f * vignette.radius;
-			    float r2 = r1 + vignette.spread;
-			    float falloff = Math.Max(0.000001f, (1f - vignette.falloff) * 0.5f);
-			    float roundness = (1f - vignette.roundness) * 6f + vignette.roundness * 2f;
+                float r1 = 0.5f * vignette.radius;
+                float r2 = r1 + vignette.spread;
+                float falloff = Math.Max(0.000001f, (1f - vignette.falloff) * 0.5f);
+                float roundness = (1f - vignette.roundness) * 6f + vignette.roundness * 2f;
                 material.SetVector("_Vignette1", new Vector4(r1, 1f / (r2 - r1), vignette.blur, 1f - vignette.desaturate));
                 material.SetVector("_Vignette2", new Vector3(falloff, 0.5f / falloff, roundness));
                 material.EnableKeyword("VIGNETTE_ADVANCED");

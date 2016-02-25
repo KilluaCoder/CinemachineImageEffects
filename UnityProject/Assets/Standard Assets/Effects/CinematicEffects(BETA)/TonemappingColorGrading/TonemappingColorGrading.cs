@@ -364,23 +364,6 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        [Serializable]
-        public struct DitheringSettings
-        {
-            public bool enabled;
-
-            public static DitheringSettings defaultSettings
-            {
-                get
-                {
-                    return new DitheringSettings
-                    {
-                        enabled = false
-                    };
-                }
-            }
-        }
-
         [SerializeField, SettingsGroup]
         private EyeAdaptationSettings m_EyeAdaptation = EyeAdaptationSettings.defaultSettings;
         public EyeAdaptationSettings eyeAdaptation
@@ -423,14 +406,6 @@ namespace UnityStandardAssets.CinematicEffects
                 m_ColorGrading = value;
                 SetDirty();
             }
-        }
-
-        [SerializeField, SettingsGroup]
-        private DitheringSettings m_Dithering = DitheringSettings.defaultSettings;
-        public DitheringSettings dithering
-        {
-            get { return m_Dithering; }
-            set { m_Dithering = value; }
         }
         #endregion
 
@@ -795,7 +770,6 @@ namespace UnityStandardAssets.CinematicEffects
 
             material.DisableKeyword("ENABLE_EYE_ADAPTATION");
             material.DisableKeyword("ENABLE_COLOR_GRADING");
-            material.DisableKeyword("ENABLE_DITHERING");
 
             Texture lutUsed = null;
             float lutContrib = 1f;
@@ -944,11 +918,6 @@ namespace UnityStandardAssets.CinematicEffects
                 lutUsed = internalLutRt;
                 lutContrib = 1f;
                 material.EnableKeyword("ENABLE_COLOR_GRADING");
-            }
-
-            if (dithering.enabled)
-            {
-                material.EnableKeyword("ENABLE_DITHERING");
             }
 
             if (lutUsed != null)

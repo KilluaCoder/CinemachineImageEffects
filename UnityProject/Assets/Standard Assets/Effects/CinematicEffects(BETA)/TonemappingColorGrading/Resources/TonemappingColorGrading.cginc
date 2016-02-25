@@ -198,12 +198,10 @@ half4 frag_tcg(v2f_img i) : SV_Target
     color.rgb = lerp(color.rgb, color_corrected, _LutParams.w);
 #endif
 
-#if ENABLE_DITHERING
     // Interleaved Gradient Noise from http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare (slide 122)
     half3 magic = float3(0.06711056, 0.00583715, 52.9829189);
     half gradient = frac(magic.z * frac(dot(i.uv / _MainTex_TexelSize, magic.xy))) / 255.0;
     color.rgb -= gradient.xxx;
-#endif
 
 #if GAMMA_COLORSPACE
     color.rgb = LinearToGammaSpace(color.rgb);

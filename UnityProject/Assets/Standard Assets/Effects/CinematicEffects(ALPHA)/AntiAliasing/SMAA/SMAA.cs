@@ -17,6 +17,10 @@ namespace UnityStandardAssets.CinematicEffects
         public class TopLevelSettings : Attribute
         {}
 
+        [AttributeUsage(AttributeTargets.Field)]
+        public class ExperimentalGroup : Attribute
+        {}
+
         public enum DebugPass
         {
             Off,
@@ -172,7 +176,7 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     return new TemporalSettings
                     {
-                        enabled = true,
+                        enabled = false,
                         fuzzSize = 2f
                     };
                 }
@@ -221,7 +225,7 @@ namespace UnityStandardAssets.CinematicEffects
         [SettingsGroup]
         public PredicationSettings predication = PredicationSettings.defaultSettings;
 
-        [SettingsGroup]
+        [SettingsGroup, ExperimentalGroup]
         public TemporalSettings temporal = TemporalSettings.defaultSettings;
 
         private Matrix4x4 m_ProjectionMatrix;

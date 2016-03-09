@@ -59,14 +59,16 @@ namespace UnityStandardAssets.CinematicEffects
                 if (group.Key.FieldType == typeof(SMAA.QualitySettings) && (target as SMAA).settings.quality != SMAA.QualityPreset.Custom)
                     continue;
 
-                string title = group.Key.Name;
-                title = char.ToUpper(title[0]) + title.Substring(1);
+                bool isExperimental = group.Key.GetCustomAttributes(typeof(SMAA.ExperimentalGroup), false).Length > 0;
+                string title = ObjectNames.NicifyVariableName(group.Key.Name);
+                if (isExperimental)
+                    title += " (Experimental)";
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
 
-                var enabledField = group.Value.FirstOrDefault(x => x.propertyPath == group.Key.Name + ".enabled");
+                var enabledField = group.Value.FirstOrDefault(x => x.propertyPath == "m_SMAA." + group.Key.Name + ".enabled");
                 if (enabledField != null && !enabledField.boolValue)
                 {
                     EditorGUILayout.PropertyField(enabledField);

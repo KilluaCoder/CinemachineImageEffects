@@ -6,7 +6,8 @@ namespace UnityStandardAssets.CinematicEffects
     public partial class AmbientOcclusion : MonoBehaviour
     {
         /// Values for Settings.sampleCount, determining the number of sample points.
-        public enum SampleCount {
+        public enum SampleCount
+        {
             Lowest, Low, Medium, High, Variable
         }
 
@@ -52,9 +53,12 @@ namespace UnityStandardAssets.CinematicEffects
             public bool ambientOnly;
 
             /// Returns the default settings.
-            public static Settings defaultSettings {
-                get {
-                    return new Settings {
+            public static Settings defaultSettings
+            {
+                get
+                {
+                    return new Settings
+                    {
                         intensity = 1,
                         radius = 0.3f,
                         sampleCount = SampleCount.Medium,

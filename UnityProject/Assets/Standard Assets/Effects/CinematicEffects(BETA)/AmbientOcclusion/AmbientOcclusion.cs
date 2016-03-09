@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace UnityStandardAssets.CinematicEffects
@@ -15,7 +15,8 @@ namespace UnityStandardAssets.CinematicEffects
         public Settings settings = Settings.defaultSettings;
 
         /// Checks if the ambient-only mode is supported under the current settings.
-        public bool isAmbientOnlySupported {
+        public bool isAmbientOnlySupported
+        {
             get { return targetCamera.hdr && isGBufferAvailable; }
         }
 
@@ -25,21 +26,27 @@ namespace UnityStandardAssets.CinematicEffects
 
         // Properties referring to the current settings
 
-        float intensity {
+        float intensity
+        {
             get { return settings.intensity; }
         }
 
-        float radius {
+        float radius
+        {
             get { return Mathf.Max(settings.radius, 1e-4f); }
         }
 
-        SampleCount sampleCount {
+        SampleCount sampleCount
+        {
             get { return settings.sampleCount; }
         }
 
-        int sampleCountValue {
-            get {
-                switch (settings.sampleCount) {
+        int sampleCountValue
+        {
+            get
+            {
+                switch (settings.sampleCount)
+                {
                     case SampleCount.Lowest: return 3;
                     case SampleCount.Low:    return 6;
                     case SampleCount.Medium: return 12;
@@ -49,21 +56,26 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        int blurIterations {
+        int blurIterations
+        {
             get { return settings.blurIterations; }
         }
 
-        bool downsampling {
+        bool downsampling
+        {
             get { return settings.downsampling; }
         }
 
-        bool ambientOnly {
+        bool ambientOnly
+        {
             get { return settings.ambientOnly && isAmbientOnlySupported; }
         }
 
         // AO shader
-        Shader aoShader {
-            get {
+        Shader aoShader
+        {
+            get
+            {
                 if (_aoShader == null)
                     _aoShader = Shader.Find("Hidden/Image Effects/Cinematic/AmbientOcclusion");
                 return _aoShader;
@@ -73,8 +85,10 @@ namespace UnityStandardAssets.CinematicEffects
         [SerializeField] Shader _aoShader;
 
         // Temporary aterial for the AO shader
-        Material aoMaterial {
-            get {
+        Material aoMaterial
+        {
+            get
+            {
                 if (_aoMaterial == null)
                     _aoMaterial = ImageEffectHelper.CheckShaderAndCreateMaterial(aoShader);
                 return _aoMaterial;
@@ -84,9 +98,12 @@ namespace UnityStandardAssets.CinematicEffects
         Material _aoMaterial;
 
         // Command buffer for the AO pass
-        CommandBuffer aoCommands {
-            get {
-                if (_aoCommands == null) {
+        CommandBuffer aoCommands
+        {
+            get
+            {
+                if (_aoCommands == null)
+                {
                     _aoCommands = new CommandBuffer();
                     _aoCommands.name = "AmbientOcclusion";
                 }
@@ -97,7 +114,8 @@ namespace UnityStandardAssets.CinematicEffects
         CommandBuffer _aoCommands;
 
         // Target camera
-        Camera targetCamera {
+        Camera targetCamera
+        {
             get { return GetComponent<Camera>(); }
         }
 
@@ -105,8 +123,10 @@ namespace UnityStandardAssets.CinematicEffects
         PropertyObserver propertyObserver { get; set; }
 
         // Check if the G-buffer is available
-        bool isGBufferAvailable {
-            get {
+        bool isGBufferAvailable
+        {
+            get
+            {
                 var path = targetCamera.actualRenderingPath;
                 return path == RenderingPath.DeferredShading;
             }
@@ -114,7 +134,8 @@ namespace UnityStandardAssets.CinematicEffects
 
         // Reference to the quad mesh in the built-in assets
         // (used in MRT blitting)
-        Mesh quadMesh {
+        Mesh quadMesh
+        {
             get { return _quadMesh; }
         }
 
@@ -134,7 +155,8 @@ namespace UnityStandardAssets.CinematicEffects
             var format = RenderTextureFormat.R8;
             var rwMode = RenderTextureReadWrite.Linear;
 
-            if (downsampling) {
+            if (downsampling)
+            {
                 tw /= 2;
                 th /= 2;
             }
@@ -185,7 +207,8 @@ namespace UnityStandardAssets.CinematicEffects
             var format = RenderTextureFormat.R8;
             var rwMode = RenderTextureReadWrite.Linear;
 
-            if (downsampling) {
+            if (downsampling)
+            {
                 tw /= 2;
                 th /= 2;
             }
@@ -257,9 +280,8 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
             // Register the command buffer if in the ambient-only mode.
-            if (ambientOnly) targetCamera.AddCommandBuffer(
-                CameraEvent.BeforeReflections, aoCommands
-            );
+            if (ambientOnly)
+                targetCamera.AddCommandBuffer(CameraEvent.BeforeReflections, aoCommands);
 
             // Requires DepthNormals when G-buffer is not available.
             if (!isGBufferAvailable)
@@ -272,9 +294,8 @@ namespace UnityStandardAssets.CinematicEffects
             if (_aoMaterial != null) DestroyImmediate(_aoMaterial);
             _aoMaterial = null;
 
-            if (_aoCommands != null) targetCamera.RemoveCommandBuffer(
-                CameraEvent.BeforeReflections, _aoCommands
-            );
+            if (_aoCommands != null)
+                targetCamera.RemoveCommandBuffer(CameraEvent.BeforeReflections, _aoCommands);
             _aoCommands = null;
         }
 

@@ -1,4 +1,4 @@
-﻿Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
+Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
 {
     Properties
     {

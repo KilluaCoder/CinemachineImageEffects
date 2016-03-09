@@ -10,7 +10,7 @@ namespace UnityStandardAssets.CinematicEffects
     public class LensAberrationsEditor : Editor
     {
         private Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
-        private List<SerializedProperty> m_SimpleProperties = new List<SerializedProperty>(); 
+        private List<SerializedProperty> m_SimpleProperties = new List<SerializedProperty>();
         private List<SerializedProperty> m_AdvancedProperties = new List<SerializedProperty>();
 
         private LensAberrations concreteTarget

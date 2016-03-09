@@ -1,6 +1,6 @@
 # README #
 
-![new-image-effectsb2.png](https://bitbucket.org/repo/gpBABE/images/2503994939-new-image-effectsb2.png)
+![cinematicimageeffects_blogpost_screenshot_03_1024.jpg](https://bitbucket.org/repo/gpBABE/images/3605109841-cinematicimageeffects_blogpost_screenshot_03_1024.jpg)
 
 The Unity Cinematic Image Effects are open source and available for use in your games and applications. This document details how to get it up and running on your computer and start modifying the code!
 
@@ -24,11 +24,12 @@ If you want to contribute patches back, please keep it under the unmodified MIT 
 ### Will you be taking pull requests? ###
 We will be developing the new image effects directly in the public Bitbucket repository, we will happily take pull requests if they improve any of the effects we currently have available.
 
-If you want to make a pull request please do the following
+If you want to contribute to the repository please do the following:
 
+* Fork and clone the Unity repository: [Doc](https://confluence.atlassian.com/bitbucket/fork-a-teammate-s-repository-774243391.html)
 * In your fork create a new branch based off trunk
-* Make the changes you wish to have merged
-* Make a pull request from your branch to unity with the same branch name (you may have to allow the creation of the new branch in the main unity repository)
-* We will then accept / reject this request
+* Make the changes you wish
+* Make a pull request from your branch to the same one on the Unity repo (you may have to allow the creation of the new branch): [Doc](https://confluence.atlassian.com/bitbucket/create-a-pull-request-774243413.html)
+* We will accept or reject it.
 * We will run some internal code beautification tools
-* We will then close the branch & merge to our trunk
+* We will close the branch and merge it to trunk

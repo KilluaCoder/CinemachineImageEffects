@@ -12,15 +12,20 @@ Shader "Hidden/LensAberrations"
         CGINCLUDE
 
             #pragma fragmentoption ARB_precision_hint_fastest
+            #pragma multi_compile __ DISTORT UNDISTORT
             #pragma multi_compile __ CHROMATIC_SIMPLE CHROMATIC_ADVANCED
+            #pragma multi_compile __ VIGNETTE_ADVANCED
             #include "UnityCG.cginc"
             #pragma target 3.0
 
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;
 
+            half4 _DistCenterScale;
+            half3 _DistAmount;
             half4 _ChromaticAberration;
-            half4 _Vignette;
+            half4 _Vignette1;
+            half3 _Vignette2;
             half4 _VignetteColor;
 
             sampler2D _BlurTex;
@@ -98,10 +103,37 @@ Shader "Hidden/LensAberrations"
                 return color;
             }
 
+            half2 distort(half2 uv)
+            {
+#if DISTORT
+                uv = (uv - 0.5) * _DistAmount.z + 0.5;
+                half2 ruv = _DistCenterScale.zw * (uv - 0.5 - _DistCenterScale.xy);
+                half ru = length(ruv);
+                half wu = ru * _DistAmount.x;
+                ru = tan(wu) * (1.0 / (ru * _DistAmount.y));
+                uv = uv + ruv * (ru - 1.0);
+#elif UNDISTORT
+                uv = (uv - 0.5) * _DistAmount.z + 0.5;
+                half2 ruv = _DistCenterScale.zw * (uv - 0.5 - _DistCenterScale.xy);
+                half ru = length(ruv);
+                ru = (1.0 / ru) * _DistAmount.x * atan(ru * _DistAmount.y);
+                uv = uv + ruv * (ru - 1.0);
+#endif
+                return uv;
+            }
+
             half get_vignette_factor(half2 uv)
             {
-                half2 d = (uv - 0.5) * _Vignette.x;
-                return pow(saturate(1.0 - dot(d, d)), _Vignette.y);
+#if VIGNETTE_ADVANCED
+                uv = abs(uv - 0.5);
+                half x = saturate((pow(pow(uv.x, _Vignette2.z) + pow(uv.y, _Vignette2.z), 1.0 / _Vignette2.z) - _Vignette1.x) * _Vignette1.y);
+                half ix = 1.0 - x;
+                half v = _Vignette2.x == 0.5 ? x : x <= _Vignette2.x ? x * x / ((2.0 - _Vignette2.y) * x + _Vignette2.x * (_Vignette2.y - 1.0)) : 1.0 + ix * ix / ((_Vignette2.y - 2.0) * ix + (_Vignette2.x - 1.0) * (_Vignette2.y - 1.0));
+                return 1.0 - v;
+#else
+                half2 d = (uv - 0.5) * _Vignette1.x;
+                return pow(saturate(1.0 - dot(d, d)), _Vignette1.y);
+#endif
             }
 
             half4 vignette_simple(half4 color, half2 uv)
@@ -115,7 +147,7 @@ Shader "Hidden/LensAberrations"
             {
                 half v = get_vignette_factor(uv);
                 half lum = Luminance(color);
-                color.rgb = lerp(lerp(lum.xxx, color.rgb, _Vignette.w), color.rgb, v);
+                color.rgb = lerp(lerp(lum.xxx, color.rgb, _Vignette1.w), color.rgb, v);
                 color.rgb = lerp(_VignetteColor.rgb, color.rgb, lerp(1.0, v, _VignetteColor.a));
                 return color;
             }
@@ -125,7 +157,7 @@ Shader "Hidden/LensAberrations"
                 half2 coords = (uv - 0.5) * 2.0;
                 half v = get_vignette_factor(uv);
                 half3 blur = tex2D(_BlurTex, uv);
-                color.rgb = lerp(color.rgb, blur, saturate(_Vignette.z * dot(coords, coords)));
+                color.rgb = lerp(color.rgb, blur, saturate(_Vignette1.z * dot(coords, coords)));
                 color.rgb = lerp(_VignetteColor.rgb, color.rgb, lerp(1.0, v, _VignetteColor.a));
                 return color;
             }
@@ -135,50 +167,61 @@ Shader "Hidden/LensAberrations"
                 half2 coords = (uv - 0.5) * 2.0;
                 half v = get_vignette_factor(uv);
                 half3 blur = tex2D(_BlurTex, uv);
-                color.rgb = lerp(color.rgb, blur, saturate(_Vignette.z * dot(coords, coords)));
+                color.rgb = lerp(color.rgb, blur, saturate(_Vignette1.z * dot(coords, coords)));
                 half lum = Luminance(color);
-                color.rgb = lerp(lerp(lum.xxx, color.rgb, _Vignette.w), color.rgb, v);
+                color.rgb = lerp(lerp(lum.xxx, color.rgb, _Vignette1.w), color.rgb, v);
                 color.rgb = lerp(_VignetteColor.rgb, color.rgb, lerp(1.0, v, _VignetteColor.a));
                 return color;
             }
 
             half4 frag_simple(v2f_img i) : SV_Target
             {
-                half4 color = tex2D(_MainTex, i.uv);
-                color = chromaticAberration(color, i.uv);
-                color = vignette_simple(color, i.uv);
+                half2 uv = distort(i.uv);
+                half4 color = tex2D(_MainTex, uv);
+                color = chromaticAberration(color, uv);
+                color = vignette_simple(color, uv);
                 return color;
             }
 
             half4 frag_desat(v2f_img i) : SV_Target
             {
-                half4 color = tex2D(_MainTex, i.uv);
-                color = chromaticAberration(color, i.uv);
-                color = vignette_desat(color, i.uv);
+                half2 uv = distort(i.uv);
+                half4 color = tex2D(_MainTex, uv);
+                color = chromaticAberration(color, uv);
+                color = vignette_desat(color, uv);
                 return color;
             }
 
             half4 frag_blur(v2f_img i) : SV_Target
             {
-                half4 color = tex2D(_MainTex, i.uv);
-                color = chromaticAberration(color, i.uv);
-                color = vignette_blur(color, i.uv);
+                half2 uv = distort(i.uv);
+                half4 color = tex2D(_MainTex, uv);
+                color = chromaticAberration(color, uv);
+                color = vignette_blur(color, uv);
                 return color;
             }
 
             half4 frag_blur_desat(v2f_img i) : SV_Target
             {
-                half4 color = tex2D(_MainTex, i.uv);
-                color = chromaticAberration(color, i.uv);
-                color = vignette_blur_desat(color, i.uv);
+                half2 uv = distort(i.uv);
+                half4 color = tex2D(_MainTex, uv);
+                color = chromaticAberration(color, uv);
+                color = vignette_blur_desat(color, uv);
                 return color;
             }
 
             half4 frag_chroma_only(v2f_img i) : SV_Target
             {
-                half4 color = tex2D(_MainTex, i.uv);
-                color = chromaticAberration(color, i.uv);
+                half2 uv = distort(i.uv);
+                half4 color = tex2D(_MainTex, uv);
+                color = chromaticAberration(color, uv);
                 return color;
+            }
+
+            half4 frag_distort_only(v2f_img i) : SV_Target
+            {
+                half2 uv = distort(i.uv);
+                return tex2D(_MainTex, uv);
             }
 
         ENDCG
@@ -234,6 +277,15 @@ Shader "Hidden/LensAberrations"
             CGPROGRAM
                 #pragma vertex vert_img
                 #pragma fragment frag_chroma_only
+            ENDCG
+        }
+
+        // (6) Distort only
+        Pass
+        {
+            CGPROGRAM
+                #pragma vertex vert_img
+                #pragma fragment frag_distort_only
             ENDCG
         }
     }

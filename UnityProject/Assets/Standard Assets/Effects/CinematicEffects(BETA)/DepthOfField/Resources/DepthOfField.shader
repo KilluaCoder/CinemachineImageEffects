@@ -158,6 +158,20 @@ inline half4 FetchMainTex(float2 uv)
 #endif
 }
 
+inline half2 GetBilinearFetchTexOffsetFromAbsCoc(half4 absCoc)
+{
+    half4 cocWeights = absCoc * absCoc * absCoc;
+
+    half2 offset = 0;
+    offset += cocWeights.r * float2(-1,+1);
+    offset += cocWeights.g * float2(+1,+1);
+    offset += cocWeights.b * float2(+1,-1);
+    offset += cocWeights.a * float2(-1,-1);
+    offset = clamp((half2)-1,(half2)1, offset);
+    offset *= 0.5;
+    return offset;
+}
+
 inline half4 FetchColorAndCocFromMainTex(float2 uv, float2 offsetFromKernelCenter)
 {
     //bilinear
@@ -653,24 +667,31 @@ float4 fragMergeExplicit (v2fDepth i) : SV_Target
 
 half4 captureCoc(half2 uvColor, half2 uvDepth, bool useExplicit)
 {
-    half4 color = FetchMainTex(uvColor);
-
+    /*****************/
+    /* coc.a | coc.b */
+    /* coc.r | coc.g */
+    /*****************/
 #if defined(USE_TEX2DOBJECT_FOR_COC)
-    half4 allCoc   = _CameraDepthTexture.GatherRed(sampler_CameraDepthTexture, uvDepth);
-    half cocA = GetCocFromZValue(allCoc.r, useExplicit);
-    half cocB = GetCocFromZValue(allCoc.g, useExplicit);
-    half cocC = GetCocFromZValue(allCoc.b, useExplicit);
-    half cocD = GetCocFromZValue(allCoc.a, useExplicit);
+    half4 coc = _CameraDepthTexture.GatherRed(sampler_CameraDepthTexture, uvDepth);
+    coc.r = GetCocFromZValue(coc.r, useExplicit);
+    coc.g = GetCocFromZValue(coc.g, useExplicit);
+    coc.b = GetCocFromZValue(coc.b, useExplicit);
+    coc.a = GetCocFromZValue(coc.a, useExplicit);
 #else
-    half cocA = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(+0.25f,+0.25f), useExplicit);
-    half cocB = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(+0.25f,-0.25f), useExplicit);
-    half cocC = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(-0.25f,+0.25f), useExplicit);
-    half cocD = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(-0.25f,-0.25f), useExplicit);
+    half4 coc;
+    coc.r = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(-0.25f,+0.25f), useExplicit);
+    coc.g = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(+0.25f,+0.25f), useExplicit);
+    coc.b = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(+0.25f,-0.25f), useExplicit);
+    coc.a = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(-0.25f,-0.25f), useExplicit);
 #endif
+    
+    half4 absCoc = abs(coc);
+    half2 offset = GetBilinearFetchTexOffsetFromAbsCoc(absCoc) * _MainTex_TexelSize.xy;
+    half4 color = FetchMainTex(uvColor + offset);
 
-    half cocAB = (abs(cocA)<abs(cocB))?cocA:cocB;
-    half cocCD = (abs(cocC)<abs(cocD))?cocC:cocD;
-    color.a    = (abs(cocAB)<abs(cocCD))?cocAB:cocCD;
+    half cocRG = (absCoc.r<absCoc.g)?coc.r:coc.g;
+    half cocBA = (absCoc.b<absCoc.a)?coc.b:coc.a;
+    color.a    = (abs(cocRG)<abs(cocBA))?cocRG:cocBA;
 
     color.rgb += getBoostAmount(color);
     color.rgb = Tonemap(color);

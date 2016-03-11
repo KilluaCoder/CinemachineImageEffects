@@ -640,6 +640,7 @@ namespace UnityStandardAssets.CinematicEffects
                 filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(nearBlurRadius * 0.75f, 0.0f, 0.0f, 0.0f));
                 Graphics.Blit(blurredFgCoc2, blurredFgCoc, filmicDepthOfFieldMaterial, (int)Passes.DilateFgCoc);
                 m_RTU.ReleaseTemporaryRenderTexture(blurredFgCoc2);
+                blurredFgCoc.filterMode = FilterMode.Point;
             }
 
             // Blur downsampled color to fill the gap between samples

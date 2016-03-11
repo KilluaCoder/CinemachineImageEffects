@@ -590,14 +590,32 @@ float4 fragCocPrefilter (v2fDepth i) : SV_Target
 // Final merge and upsample
 ///////////////////////////////////////////////////////////////////////////////
 
-float4 upSampleConvolved(half2 uv, bool useBicubic)
+float4 upSampleConvolved(half2 uv, bool useBicubic, bool useExplicit)
 {
+    half2 convolvedTexelPos    = uv * _Convolved_TexelSize.xy;
+    half2 convolvedTexelCenter = floor( convolvedTexelPos ) + 0.5h;
+    half2 convolvedTexelOffsetFromCenter = convolvedTexelPos - convolvedTexelCenter;
+
+#if defined(USE_TEX2DOBJECT_FOR_COC) && defined(USE_SPECIAL_FETCH_FOR_COC)
+    half2 cocUV = (convolvedTexelOffsetFromCenter * _Convolved_TexelSize.zw) + uv;
+    half4 coc = _CameraDepthTexture.GatherRed(sampler_CameraDepthTexture, cocUV);
+    coc.r = GetCocFromZValue(coc.r, useExplicit);
+    coc.g = GetCocFromZValue(coc.g, useExplicit);
+    coc.b = GetCocFromZValue(coc.b, useExplicit);
+    coc.a = GetCocFromZValue(coc.a, useExplicit);
+
+    half4 absCoc = abs(coc);
+    half2 offsetFromCoc = GetBilinearFetchTexOffsetFromAbsCoc(absCoc) * 0.5f;
+    uv += offsetFromCoc * _Convolved_TexelSize.zw;
+
+    //TODO fix me
+    useBicubic = false;
+#endif
+
     if (useBicubic)
     {
         //bicubic upsampling (B-spline)
-        half2 convolvedTexelPos    = uv * _Convolved_TexelSize.xy;
-        half2 convolvedTexelCenter = floor( convolvedTexelPos - 0.5h ) + 0.5h;
-        half2 f  = convolvedTexelPos - convolvedTexelCenter;
+        half2 f  = convolvedTexelOffsetFromCenter;
         half2 f2 = f * f;
         half2 f3 = f * f2;
 
@@ -627,7 +645,7 @@ float4 upSampleConvolved(half2 uv, bool useBicubic)
 
 float4 dofMerge (half2 uv, bool useExplicit, bool useBicubic)
 {
-    half4 convolvedTap = upSampleConvolved(uv, useBicubic);
+    half4 convolvedTap = upSampleConvolved(uv, useBicubic, useExplicit);
     convolvedTap.rgb = ToneMapInvert(convolvedTap.rgb);
 
     half4 sourceTap    = FetchMainTex(uv);
@@ -976,6 +994,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vertNoFlip
         #pragma fragment fragMerge
+        #pragma target 5.0
         ENDCG
     }
 
@@ -985,6 +1004,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vertNoFlip
         #pragma fragment fragMergeExplicit
+        #pragma target 5.0
         ENDCG
     }
 
@@ -994,6 +1014,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vertNoFlip
         #pragma fragment fragMergeBicubic
+        #pragma target 5.0
         ENDCG
     }
 
@@ -1003,6 +1024,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vertNoFlip
         #pragma fragment fragMergeExplicitBicubic
+        #pragma target 5.0
         ENDCG
     }
 

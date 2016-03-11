@@ -23,7 +23,6 @@ CGINCLUDE
 //if your scene does not present high contrast you can undef for a perf boost
 #define USE_SPECIAL_FETCH_FOR_COC
 
-
 sampler2D _SecondTex;
 sampler2D _ThirdTex;
 
@@ -277,7 +276,7 @@ inline half3 ToneMapInvert(half3 color)
 #define SAMPLE_NUM_M    11
 #define SAMPLE_NUM_H    16
 
-half4 shapeDirectionalBlur(half2 uv, bool mergePass, int numSample, bool sampleDilatedFG)
+inline half4 shapeDirectionalBlur(half2 uv, bool mergePass, int numSample, bool sampleDilatedFG)
 {
     half4 centerTap = FetchMainTex(uv);
     half  fgCoc  = centerTap.a;
@@ -467,7 +466,7 @@ static const half3 DiscBokeh48[48] =
     half3( 0.30488h,-0.12629h, 0.33h)
 };
 
-inline float4 circleCocBokeh(float2 uv, bool sampleDilatedFG, int increment)
+inline half4 circleCocBokeh(half2 uv, bool sampleDilatedFG, int increment)
 {
     half4 centerTap = FetchMainTex(uv);
     half  fgCoc  = centerTap.a;
@@ -522,22 +521,22 @@ inline float4 circleCocBokeh(float2 uv, bool sampleDilatedFG, int increment)
     return returnValue;
 }
 
-float4 fragCircleBlurWithDilatedFg (v2fDepth i) : SV_Target
+half4 fragCircleBlurWithDilatedFg (v2fDepth i) : SV_Target
 {
     return circleCocBokeh(i.uv, true, 1);
 }
 
-float4 fragCircleBlur (v2fDepth i) : SV_Target
+half4 fragCircleBlur (v2fDepth i) : SV_Target
 {
     return circleCocBokeh(i.uv, false, 1);
 }
 
-float4 fragCircleBlurWithDilatedFgLowQuality (v2fDepth i) : SV_Target
+half4 fragCircleBlurWithDilatedFgLowQuality (v2fDepth i) : SV_Target
 {
     return circleCocBokeh(i.uv, true, 2);
 }
 
-float4 fragCircleBlurLowQuality (v2fDepth i) : SV_Target
+half4 fragCircleBlurLowQuality (v2fDepth i) : SV_Target
 {
     return circleCocBokeh(i.uv, false, 2);
 }
@@ -560,7 +559,7 @@ static const half2 DiscPrefilter[DISC_PREFILTER_SAMPLE] =
     half2(0.5827708f, 0.7599297f)
 };
 
-float4 fragCocPrefilter (v2fDepth i) : SV_Target
+half4 fragCocPrefilter (v2fDepth i) : SV_Target
 {
     half4 centerTap = FetchMainTex(i.uv);
     half  radius = 0.33h * 0.5h * (centerTap.a < 0.0f ? -(centerTap.a * _BlurCoe.x):(centerTap.a * _BlurCoe.y));
@@ -590,11 +589,12 @@ float4 fragCocPrefilter (v2fDepth i) : SV_Target
 // Final merge and upsample
 ///////////////////////////////////////////////////////////////////////////////
 
-float4 upSampleConvolved(half2 uv, bool useBicubic, bool useExplicit)
+inline half4 upSampleConvolved(half2 uv, bool useBicubic, bool useExplicit)
 {
     half2 convolvedTexelPos    = uv * _Convolved_TexelSize.xy;
-    half2 convolvedTexelCenter = floor( convolvedTexelPos ) + 0.5h;
+    half2 convolvedTexelCenter = floor( convolvedTexelPos ) + 0.5;
     half2 convolvedTexelOffsetFromCenter = convolvedTexelPos - convolvedTexelCenter;
+    half2 offsetFromCoc = 0;
 
 #if defined(USE_TEX2DOBJECT_FOR_COC) && defined(USE_SPECIAL_FETCH_FOR_COC)
     half2 cocUV = (convolvedTexelOffsetFromCenter * _Convolved_TexelSize.zw) + uv;
@@ -605,17 +605,18 @@ float4 upSampleConvolved(half2 uv, bool useBicubic, bool useExplicit)
     coc.a = GetCocFromZValue(coc.a, useExplicit);
 
     half4 absCoc = abs(coc);
-    half2 offsetFromCoc = GetBilinearFetchTexOffsetFromAbsCoc(absCoc) * 0.5f;
+    offsetFromCoc = GetBilinearFetchTexOffsetFromAbsCoc(absCoc) * 0.5;
     uv += offsetFromCoc * _Convolved_TexelSize.zw;
-
-    //TODO fix me
-    useBicubic = false;
 #endif
 
     if (useBicubic)
     {
-        //bicubic upsampling (B-spline)
-        half2 f  = convolvedTexelOffsetFromCenter;
+        //bicubic upsampling (B-spline) 
+        //adding offsetFromCoc "antialias" haloing from bright in focus region on dark out of focus region.
+        //however its a hack as we should consider all the COC of the bicubic region and kill the bicubic
+        //interpolation to avoid in any leaking but that would be too expensive, so when this is a problem
+        //one should rather disable bicubic interpolation.
+        half2 f  = convolvedTexelOffsetFromCenter + offsetFromCoc;
         half2 f2 = f * f;
         half2 f3 = f * f2;
 
@@ -643,7 +644,7 @@ float4 upSampleConvolved(half2 uv, bool useBicubic, bool useExplicit)
     }
 }
 
-float4 dofMerge (half2 uv, bool useExplicit, bool useBicubic)
+inline half4 dofMerge (half2 uv, bool useExplicit, bool useBicubic)
 {
     half4 convolvedTap = upSampleConvolved(uv, useBicubic, useExplicit);
     convolvedTap.rgb = ToneMapInvert(convolvedTap.rgb);
@@ -659,22 +660,22 @@ float4 dofMerge (half2 uv, bool useExplicit, bool useBicubic)
     return (blendValue < 1e-2f) ? sourceTap : half4(returnValue.rgb, sourceTap.a);
 }
 
-float4 fragMergeBicubic (v2fDepth i) : SV_Target
+half4 fragMergeBicubic (v2fDepth i) : SV_Target
 {
     return dofMerge(i.uv, false, true);
 }
 
-float4 fragMergeExplicitBicubic (v2fDepth i) : SV_Target
+half4 fragMergeExplicitBicubic (v2fDepth i) : SV_Target
 {
     return dofMerge(i.uv, true, true);
 }
 
-float4 fragMerge (v2fDepth i) : SV_Target
+half4 fragMerge (v2fDepth i) : SV_Target
 {
     return dofMerge(i.uv, false, false);
 }
 
-float4 fragMergeExplicit (v2fDepth i) : SV_Target
+half4 fragMergeExplicit (v2fDepth i) : SV_Target
 {
     return dofMerge(i.uv, true, false);
 }
@@ -683,7 +684,7 @@ float4 fragMergeExplicit (v2fDepth i) : SV_Target
 // Downsampling and COC computation
 ///////////////////////////////////////////////////////////////////////////////
 
-half4 captureCoc(half2 uvColor, half2 uvDepth, bool useExplicit)
+inline half4 captureCoc(half2 uvColor, half2 uvDepth, bool useExplicit)
 {
     /*****************/
     /* coc.a | coc.b */
@@ -731,18 +732,18 @@ half4 fragCaptureCocExplicit (v2f i) : SV_Target
 // Coc visualisation
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float4 visualizeCoc(half2 uv, bool useExplicit)
+inline half4 visualizeCoc(half2 uv, bool useExplicit)
 {
     half coc = GetCocFromDepth(uv, useExplicit);
     return (coc < 0)? half4(-coc, -coc, 0, 1.0) : half4(0, coc, coc, 1.0);
 }
 
-float4 fragVisualizeCoc(v2fDepth i) : SV_Target
+half4 fragVisualizeCoc(v2fDepth i) : SV_Target
 {
     return visualizeCoc(i.uv, false);
 }
 
-float4 fragVisualizeCocExplicit(v2fDepth i) : SV_Target
+half4 fragVisualizeCocExplicit(v2fDepth i) : SV_Target
 {
     return visualizeCoc(i.uv, true);
 }
@@ -789,12 +790,12 @@ inline half2 weigthedFGCocBlur(v2fBlur i, bool fromAlpha)
     return half2(fgCoc,fgCoc00.g);
 }
 
-float4 fragDilateFgCocFromColor (v2fBlur i) : SV_Target
+half4 fragDilateFgCocFromColor (v2fBlur i) : SV_Target
 {
     return weigthedFGCocBlur(i,true).xyxy;
 }
 
-float4 fragDilateFgCoc (v2fBlur i) : SV_Target
+half4 fragDilateFgCoc (v2fBlur i) : SV_Target
 {
     return weigthedFGCocBlur(i,false).xyxy;
 }
@@ -803,26 +804,26 @@ float4 fragDilateFgCoc (v2fBlur i) : SV_Target
 // Texture Bokeh related
 ///////////////////////////////////////////////////////////////////////////////
 
-float4 fragBlurAlphaWeighted (v2fBlur i) : SV_Target
+half4 fragBlurAlphaWeighted (v2fBlur i) : SV_Target
 {
-    const float ALPHA_WEIGHT = 2.0f;
-    float4 sum = float4 (0,0,0,0);
-    float w = 0;
-    float weights = 0;
-    const float G_WEIGHTS[6] = {1.0, 0.8, 0.675, 0.5, 0.2, 0.075};
+    const half ALPHA_WEIGHT = 2.0;
+    half4 sum = half4 (0,0,0,0);
+    half w = 0;
+    half weights = 0;
+    const half G_WEIGHTS[6] = {1.0, 0.8, 0.675, 0.5, 0.2, 0.075};
 
-    float4 sampleA = FetchMainTex(i.uv.xy);
+    half4 sampleA = FetchMainTex(i.uv.xy);
 
-    float4 sampleB = FetchMainTex(i.uv01.xy);
-    float4 sampleC = FetchMainTex(i.uv01.zw);
-    float4 sampleD = FetchMainTex(i.uv23.xy);
-    float4 sampleE = FetchMainTex(i.uv23.zw);
-    float4 sampleF = FetchMainTex(i.uv45.xy);
-    float4 sampleG = FetchMainTex(i.uv45.zw);
-    float4 sampleH = FetchMainTex(i.uv67.xy);
-    float4 sampleI = FetchMainTex(i.uv67.zw);
-    float4 sampleJ = FetchMainTex(i.uv89.xy);
-    float4 sampleK = FetchMainTex(i.uv89.zw);
+    half4 sampleB = FetchMainTex(i.uv01.xy);
+    half4 sampleC = FetchMainTex(i.uv01.zw);
+    half4 sampleD = FetchMainTex(i.uv23.xy);
+    half4 sampleE = FetchMainTex(i.uv23.zw);
+    half4 sampleF = FetchMainTex(i.uv45.xy);
+    half4 sampleG = FetchMainTex(i.uv45.zw);
+    half4 sampleH = FetchMainTex(i.uv67.xy);
+    half4 sampleI = FetchMainTex(i.uv67.zw);
+    half4 sampleJ = FetchMainTex(i.uv89.xy);
+    half4 sampleK = FetchMainTex(i.uv89.zw);
 
     w = sampleA.a * G_WEIGHTS[0]; sum += sampleA * w; weights += w;
     w = saturate(ALPHA_WEIGHT*sampleB.a) * G_WEIGHTS[1]; sum += sampleB * w; weights += w;
@@ -836,20 +837,20 @@ float4 fragBlurAlphaWeighted (v2fBlur i) : SV_Target
     w = saturate(ALPHA_WEIGHT*sampleJ.a) * G_WEIGHTS[5]; sum += sampleJ * w; weights += w;
     w = saturate(ALPHA_WEIGHT*sampleK.a) * G_WEIGHTS[5]; sum += sampleK * w; weights += w;
 
-    sum /= weights + 1e-4f;
+    sum /= weights + 1e-4;
 
     sum.a = sampleA.a;
-    if(sampleA.a<1e-2f) sum.rgb = sampleA.rgb;
+    if(sampleA.a<1e-2) sum.rgb = sampleA.rgb;
 
     return sum;
 }
 
-float4 fragBoxBlur (v2f i) : SV_Target
+half4 fragBoxBlur (v2f i) : SV_Target
 {
-    float4 returnValue = FetchMainTex(i.uv1.xy + 0.75*_MainTex_TexelSize.xy);
+    half4 returnValue = FetchMainTex(i.uv1.xy + 0.75*_MainTex_TexelSize.xy);
     returnValue += FetchMainTex(i.uv1.xy - 0.75*_MainTex_TexelSize.xy);
-    returnValue += FetchMainTex(i.uv1.xy + 0.75*_MainTex_TexelSize.xy * float2(1,-1));
-    returnValue += FetchMainTex(i.uv1.xy - 0.75*_MainTex_TexelSize.xy * float2(1,-1));
+    returnValue += FetchMainTex(i.uv1.xy + 0.75*_MainTex_TexelSize.xy * half2(1,-1));
+    returnValue += FetchMainTex(i.uv1.xy - 0.75*_MainTex_TexelSize.xy * half2(1,-1));
     return returnValue/4;
 }
 

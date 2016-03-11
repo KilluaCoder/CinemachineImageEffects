@@ -182,6 +182,9 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Uses high quality upsampling for the blur passes.")]
             public bool highQualityUpsampling;
 
+            [Tooltip("Prevent haloing from bright in focus region over dark out of focus region.")]
+            public bool preventHaloing;
+
             public static QualitySettings[] presetQualitySettings =
             {
                 // Simple
@@ -190,7 +193,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = false,
                     medianFilter = FilterQuality.None,
                     dilateNearBlur = false,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = false
                 },
 
                 // Low
@@ -199,7 +203,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.None,
                     dilateNearBlur = false,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = false
                 },
 
                 // Medium
@@ -208,7 +213,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.Normal,
                     dilateNearBlur = false,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = false
                 },
 
                 // High
@@ -217,7 +223,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.Normal,
                     dilateNearBlur = true,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = false
                 },
 
                 // Very high
@@ -226,7 +233,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.High,
                     dilateNearBlur = true,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = true
                 },
 
                 // Ultra
@@ -235,7 +243,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.High,
                     dilateNearBlur = true,
-                    highQualityUpsampling = true
+                    highQualityUpsampling = true,
+                    preventHaloing = true
                 }
             };
         }
@@ -591,6 +600,11 @@ namespace UnityStandardAssets.CinematicEffects
             Vector4 blurrinessCoe = new Vector4(nearBlurRadius * 0.5f, farBlurRadius * 0.5f, 0.0f, 0.0f);
             RenderTexture colorAndCoc = m_RTU.GetTemporaryRenderTexture(rtW, rtH);
             RenderTexture colorAndCoc2 = m_RTU.GetTemporaryRenderTexture(rtW, rtH);
+
+            if (m_CurrentQualitySettings.preventHaloing)
+                filmicDepthOfFieldMaterial.EnableKeyword("USE_SPECIAL_FETCH_FOR_COC");
+            else
+                filmicDepthOfFieldMaterial.DisableKeyword("USE_SPECIAL_FETCH_FOR_COC");
 
             // Downsample to Color + COC buffer and apply boost
             Vector4 cocParam;

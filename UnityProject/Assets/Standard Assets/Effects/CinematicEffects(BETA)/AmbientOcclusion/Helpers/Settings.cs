@@ -52,6 +52,9 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("If checked, the effect only affects ambient lighting.")]
             public bool ambientOnly;
 
+            [SerializeField]
+            public bool debug;
+
             /// Returns the default settings.
             public static Settings defaultSettings
             {

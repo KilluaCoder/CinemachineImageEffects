@@ -240,7 +240,11 @@ namespace UnityStandardAssets.CinematicEffects
 
             // Combine AO with the source.
             m.SetTexture("_OcclusionTexture", rtMask);
-            Graphics.Blit(source, destination, m, 2);
+
+            if (!settings.debug)
+                Graphics.Blit(source, destination, m, 2);
+            else
+                Graphics.Blit(source, destination, m, 4);
 
             RenderTexture.ReleaseTemporary(rtMask);
         }

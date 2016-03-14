@@ -14,6 +14,7 @@ namespace UnityStandardAssets.CinematicEffects
         SerializedProperty _blurIterations;
         SerializedProperty _downsampling;
         SerializedProperty _ambientOnly;
+        SerializedProperty _debug;
 
         static GUIContent _textValue = new GUIContent("Value");
 
@@ -30,6 +31,7 @@ namespace UnityStandardAssets.CinematicEffects
             _blurIterations = serializedObject.FindProperty("settings.blurIterations");
             _downsampling = serializedObject.FindProperty("settings.downsampling");
             _ambientOnly = serializedObject.FindProperty("settings.ambientOnly");
+            _debug = serializedObject.FindProperty("settings.debug");
         }
 
         public override void OnInspectorGUI()
@@ -51,6 +53,7 @@ namespace UnityStandardAssets.CinematicEffects
             EditorGUILayout.PropertyField(_blurIterations);
             EditorGUILayout.PropertyField(_downsampling);
             EditorGUILayout.PropertyField(_ambientOnly);
+            EditorGUILayout.PropertyField(_debug);
 
             // Show a warning if the ambient-only mode is not supported.
             if (!_ambientOnly.hasMultipleDifferentValues && _ambientOnly.boolValue)

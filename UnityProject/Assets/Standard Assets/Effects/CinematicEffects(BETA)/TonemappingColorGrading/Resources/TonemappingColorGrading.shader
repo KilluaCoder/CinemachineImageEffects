@@ -29,6 +29,7 @@ Shader "Hidden/TonemappingColorGrading"
                 sampler2D _UserLutTex;
                 half4 _UserLutParams;
 
+                half3 _WhiteBalance;
                 half3 _Lift;
                 half3 _Gamma;
                 half3 _Gain;
@@ -40,6 +41,18 @@ Shader "Hidden/TonemappingColorGrading"
                 half3 _ChannelMixerBlue;
                 sampler2D _CurveTex;
                 half _Contribution;
+
+                static const half3x3 LIN_2_LMS_MAT = {
+                    3.90405e-1, 5.49941e-1, 8.92632e-3,
+                    7.08416e-2, 9.63172e-1, 1.35775e-3,
+                    2.31082e-2, 1.28021e-1, 9.36245e-1
+                };
+
+                static const half3x3 LMS_2_LIN_MAT = {
+                     2.85847e+0, -1.62879e+0, -2.48910e-2,
+                    -2.10182e-1,  1.15820e+0,  3.24281e-4,
+                    -4.18120e-2, -1.18169e-1,  1.06867e+0
+                };
 
                 half3 rgb_to_hsv(half3 c)
                 {
@@ -73,8 +86,14 @@ Shader "Hidden/TonemappingColorGrading"
                     half3 user_luted = apply_lut(_UserLutTex, final_lut, _UserLutParams.xyz);
                     final_lut = lerp(final_lut, user_luted, _UserLutParams.w);
 
+                    // White balance
+                    half3 lms = mul(LIN_2_LMS_MAT, final_lut);
+                    lms *= _WhiteBalance;
+                    final_lut = mul(LMS_2_LIN_MAT, lms);
+
                     // Lift/gamma/gain
                     final_lut = _Gain * (_Lift * (1.0 - final_lut) + pow(final_lut, _Gamma));
+                    final_lut = max(final_lut, 0.0);
 
                     // Hue/saturation/value
                     half3 hsv = rgb_to_hsv(final_lut);

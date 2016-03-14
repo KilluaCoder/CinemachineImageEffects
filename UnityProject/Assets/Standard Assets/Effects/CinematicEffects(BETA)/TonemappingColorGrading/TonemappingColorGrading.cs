@@ -214,7 +214,13 @@ namespace UnityStandardAssets.CinematicEffects
         [Serializable]
         public struct BasicsSettings
         {
-            [Range(-0.5f, 0.5f), Tooltip("Shift the hue of all colors.")]
+            [Range(-2f, 2f), Tooltip("Sets the white balance to a custom color temperature.")]
+            public float temperatureShift;
+
+            [Range(-2f, 2f), Tooltip("Sets the white balance to compensate for a green or magenta tint.")]
+            public float tint;
+
+            [Space, Range(-0.5f, 0.5f), Tooltip("Shift the hue of all colors.")]
             public float hue;
 
             [Range(0f, 2f), Tooltip("Pushes the intensity of all colors.")]
@@ -241,6 +247,8 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     return new BasicsSettings
                     {
+                        temperatureShift = 0f,
+                        tint = 0f,
                         contrast = 1f,
                         hue = 0f,
                         saturation = 1f,
@@ -634,6 +642,45 @@ namespace UnityStandardAssets.CinematicEffects
             return tex2D;
         }
 
+        // An analytical model of chromaticity of the standard illuminant, by Judd et al.
+        // http://en.wikipedia.org/wiki/Standard_illuminant#Illuminant_series_D
+        // Slightly modifed to adjust it with the D65 white point (x=0.31271, y=0.32902).
+        private float StandardIlluminantY(float x)
+        {
+            return 2.87f * x - 3f * x * x - 0.27509507f;
+        }
+
+        // CIE xy chromaticity to CAT02 LMS.
+        // http://en.wikipedia.org/wiki/LMS_color_space#CAT02
+        private Vector3 CIExyToLMS(float x, float y)
+        {
+            float Y = 1f;
+            float X = Y * x / y;
+            float Z = Y * (1f - x - y) / y;
+
+            float L =  0.7328f * X + 0.4296f * Y - 0.1624f * Z;
+            float M = -0.7036f * X + 1.6975f * Y + 0.0061f * Z;
+            float S =  0.0030f * X + 0.0136f * Y + 0.9834f * Z;
+
+            return new Vector3(L, M, S);
+        }
+
+        private Vector3 GetWhiteBalance()
+        {
+            float t1 = colorGrading.basics.temperatureShift;
+            float t2 = colorGrading.basics.tint;
+
+            // Get the CIE xy chromaticity of the reference white point.
+            // Note: 0.31271 = x value on the D65 white point
+            float x = 0.31271f - t1 * (t1 < 0f ? 0.1f : 0.05f);
+            float y = StandardIlluminantY(x) + t2 * 0.05f;
+
+            // Calculate the coefficients in the LMS space.
+            Vector3 w1 = new Vector3(0.949237f, 1.03542f, 1.08728f); // D65 white point
+            Vector3 w2 = CIExyToLMS(x, y);
+            return new Vector3(w1.x / w2.x, w1.y / w2.y, w1.z / w2.z);
+        }
+
         private static Color NormalizeColor(Color c)
         {
             float sum = (c.r + c.g + c.b) / 3f;
@@ -900,6 +947,7 @@ namespace UnityStandardAssets.CinematicEffects
                     GenerateLiftGammaGain(out lift, out gamma, out gain);
                     GenCurveTexture();
 
+                    material.SetVector("_WhiteBalance", GetWhiteBalance());
                     material.SetVector("_Lift", lift);
                     material.SetVector("_Gamma", gamma);
                     material.SetVector("_Gain", gain);

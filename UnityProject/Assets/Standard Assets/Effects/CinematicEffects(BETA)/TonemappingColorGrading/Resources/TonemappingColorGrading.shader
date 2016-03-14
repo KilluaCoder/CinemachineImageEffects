@@ -116,7 +116,11 @@ Shader "Hidden/TonemappingColorGrading"
                     final_lut = pow(final_lut, _ContrastGainGamma.z);
 
                     // Color mixer
-                    final_lut = (final_lut.rrr * _ChannelMixerRed) + (final_lut.ggg * _ChannelMixerGreen) + (final_lut.bbb * _ChannelMixerBlue);
+                    final_lut = half3(
+                        dot(final_lut, _ChannelMixerRed),
+                        dot(final_lut, _ChannelMixerGreen),
+                        dot(final_lut, _ChannelMixerBlue)
+                    );
 
                     // Curves
                     half mr = tex2D(_CurveTex, half2(final_lut.r, 0.5)).a;

@@ -7,6 +7,9 @@ namespace UnityStandardAssets.CinematicEffects
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
     [AddComponentMenu("Image Effects/Cinematic/Tonemapping and Color Grading")]
+#if UNITY_5_4_OR_NEWER
+    [ImageEffectAllowedInSceneView]
+#endif
     public class TonemappingColorGrading : MonoBehaviour
     {
 #if UNITY_EDITOR

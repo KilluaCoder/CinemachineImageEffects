@@ -19,10 +19,6 @@ CGINCLUDE
 #define LOCAL_TONEMAP_START_LUMA 1.0
 #define LOCAL_TONEMAP_RANGE_LUMA 5.0
 
-//this prevent haloing when a dark blurred area is next to a bright in focus one
-//if your scene does not present high contrast you can undef for a perf boost
-#define USE_SPECIAL_FETCH_FOR_COC
-
 sampler2D _SecondTex;
 sampler2D _ThirdTex;
 
@@ -596,7 +592,7 @@ inline half4 upSampleConvolved(half2 uv, bool useBicubic, bool useExplicit)
     half2 convolvedTexelOffsetFromCenter = convolvedTexelPos - convolvedTexelCenter;
     half2 offsetFromCoc = 0;
 
-#if defined(USE_TEX2DOBJECT_FOR_COC) && defined(USE_SPECIAL_FETCH_FOR_COC)
+#if defined(USE_TEX2DOBJECT_FOR_COC)
     half2 cocUV = (convolvedTexelOffsetFromCenter * _Convolved_TexelSize.zw) + uv;
     half4 coc = _CameraDepthTexture.GatherRed(sampler_CameraDepthTexture, cocUV);
     coc.r = GetCocFromZValue(coc.r, useExplicit);
@@ -946,6 +942,7 @@ SubShader
         #pragma vertex vert
         #pragma fragment fragCocPrefilter
         #pragma target 5.0
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -956,6 +953,7 @@ SubShader
         #pragma vertex vert
         #pragma fragment fragCircleBlur
         #pragma target 5.0
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -966,6 +964,7 @@ SubShader
         #pragma vertex vert
         #pragma fragment fragCircleBlurWithDilatedFg
         #pragma target 5.0
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -976,6 +975,7 @@ SubShader
         #pragma vertex vert
         #pragma fragment fragCircleBlurLowQuality
         #pragma target 5.0
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -986,6 +986,7 @@ SubShader
         #pragma vertex vert
         #pragma fragment fragCircleBlurWithDilatedFgLowQuality
         #pragma target 5.0
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1035,6 +1036,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeLowQuality
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1044,6 +1046,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeLowQualityDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1053,6 +1056,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeLowQualityMerge
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1062,6 +1066,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeLowQualityMergeDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1071,6 +1076,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeMediumQuality
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1080,6 +1086,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeMediumQualityDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1089,6 +1096,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeMediumQualityMerge
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1098,6 +1106,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeMediumQualityMergeDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1107,6 +1116,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeHighQuality
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1116,6 +1126,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeHighQualityDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1125,6 +1136,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeHighQualityMerge
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1134,6 +1146,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeHighQualityMergeDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 }
@@ -1223,6 +1236,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragCocPrefilter
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1232,6 +1246,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragCircleBlur
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1241,6 +1256,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragCircleBlurWithDilatedFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1250,6 +1266,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragCircleBlurLowQuality
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1259,6 +1276,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragCircleBlurWithDilatedFgLowQuality
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1304,6 +1322,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeLowQuality
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1313,6 +1332,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeLowQualityDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1322,6 +1342,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeLowQualityMerge
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1331,6 +1352,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeLowQualityMergeDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1340,6 +1362,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeMediumQuality
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1349,6 +1372,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeMediumQualityDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1358,6 +1382,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeMediumQualityMerge
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1367,6 +1392,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeMediumQualityMergeDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1376,6 +1402,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeHighQuality
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1385,6 +1412,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeHighQualityDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1394,6 +1422,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeHighQualityMerge
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 
@@ -1403,6 +1432,7 @@ SubShader
         CGPROGRAM
         #pragma vertex vert
         #pragma fragment fragShapeHighQualityMergeDilateFg
+        #pragma multi_compile __ USE_SPECIAL_FETCH_FOR_COC
         ENDCG
     }
 }

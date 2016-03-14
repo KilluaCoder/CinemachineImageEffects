@@ -951,7 +951,7 @@ namespace UnityStandardAssets.CinematicEffects
                     material.SetVector("_Lift", lift);
                     material.SetVector("_Gamma", gamma);
                     material.SetVector("_Gain", gain);
-                    material.SetVector("_ContrastGainGamma", new Vector3(colorGrading.basics.contrast, colorGrading.basics.gain, colorGrading.basics.gamma));
+                    material.SetVector("_ContrastGainGamma", new Vector3(colorGrading.basics.contrast, colorGrading.basics.gain, 1f / colorGrading.basics.gamma));
                     material.SetFloat("_Vibrance", colorGrading.basics.vibrance);
                     material.SetVector("_HSV", new Vector4(colorGrading.basics.hue, colorGrading.basics.saturation, colorGrading.basics.value));
                     material.SetVector("_ChannelMixerRed", colorGrading.channelMixer.channels[0]);

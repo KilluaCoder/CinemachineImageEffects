@@ -176,10 +176,10 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Applies a median filter for even smoother bokeh.")]
             public FilterQuality medianFilter;
 
-            [Tooltip("Dilates near blur to make it smoother.")]
+            [Tooltip("Dilates near blur over in focus area.")]
             public bool dilateNearBlur;
 
-            [Tooltip("Uses high quality upsampling for the blur passes.")]
+            [Tooltip("Uses high quality upsampling.")]
             public bool highQualityUpsampling;
 
             [Tooltip("Prevent haloing from bright in focus region over dark out of focus region.")]

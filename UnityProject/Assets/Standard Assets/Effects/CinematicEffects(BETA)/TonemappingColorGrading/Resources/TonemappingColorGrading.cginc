@@ -141,7 +141,7 @@ half3 tonemapHejlDawson(half3 color)
     const half d = 0.06;
 
     color *= _Exposure;
-    color = max((0.0).xxxx, color - 0.004);
+    color = max((0.0).xxx, color - (0.004).xxx);
     color = (color * (a * color + b)) / (color * (a * color + c) + d);
     return color * color;
 }

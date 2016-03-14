@@ -305,6 +305,13 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         return half4(CombineOcclusion(src.rgb, ao), src.a);
     }
 
+    half4 frag_blit_ao(v2f_multitex i) : SV_Target
+    {
+        half4 src = tex2D(_MainTex, i.uv0);
+        half ao = tex2D(_OcclusionTexture, i.uv1).r;
+        return half4(CombineOcclusion(1, ao), src.a);
+    }
+
     // Pass 3: Combiner for the ambient-only mode
     v2f_img vert_gbuffer(appdata_img v)
     {
@@ -371,6 +378,15 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
             CGPROGRAM
             #pragma vertex vert_gbuffer
             #pragma fragment frag_gbuffer_combine
+            #pragma target 3.0
+            ENDCG
+        }
+        Pass
+        {
+            ZTest Always Cull Off ZWrite Off
+            CGPROGRAM
+            #pragma vertex vert_multitex
+            #pragma fragment frag_blit_ao
             #pragma target 3.0
             ENDCG
         }

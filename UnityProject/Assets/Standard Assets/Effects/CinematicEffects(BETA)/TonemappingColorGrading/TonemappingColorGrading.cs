@@ -223,7 +223,7 @@ namespace UnityStandardAssets.CinematicEffects
             [Range(-1f, 1f), Tooltip("Adjusts the saturation so that clipping is minimized as colors approach full saturation.")]
             public float vibrance;
 
-            [Range(0f, 5f), Tooltip("Brightens or darkens all colors.")]
+            [Range(0f, 10f), Tooltip("Brightens or darkens all colors.")]
             public float value;
 
             [Space, Range(0f, 2f), Tooltip("Expands or shrinks the overall range of tonal values.")]

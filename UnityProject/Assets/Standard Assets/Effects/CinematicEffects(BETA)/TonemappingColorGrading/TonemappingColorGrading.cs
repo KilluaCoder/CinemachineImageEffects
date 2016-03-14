@@ -346,7 +346,10 @@ namespace UnityStandardAssets.CinematicEffects
             [Space, IndentedGroup]
             public CurvesSettings curves;
 
-            [Space, Tooltip("Displays the generated LUT in the top left corner of the GameView.")]
+            [Space, Tooltip("Use dithering to try and minimize color banding in dark areas.")]
+            public bool useDithering;
+
+            [Tooltip("Displays the generated LUT in the top left corner of the GameView.")]
             public bool showDebug;
 
             public static ColorGradingSettings defaultSettings
@@ -356,6 +359,7 @@ namespace UnityStandardAssets.CinematicEffects
                     return new ColorGradingSettings
                     {
                         enabled = false,
+                        useDithering = false,
                         showDebug = false,
                         precision = ColorGradingPrecision.Normal,
                         colorWheels = ColorWheelsSettings.defaultSettings,
@@ -817,6 +821,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             material.DisableKeyword("ENABLE_EYE_ADAPTATION");
             material.DisableKeyword("ENABLE_COLOR_GRADING");
+            material.DisableKeyword("ENABLE_DITHERING");
 
             Texture lutUsed = null;
             float lutContrib = 1f;
@@ -966,6 +971,9 @@ namespace UnityStandardAssets.CinematicEffects
                 lutUsed = internalLutRt;
                 lutContrib = 1f;
                 material.EnableKeyword("ENABLE_COLOR_GRADING");
+
+                if (colorGrading.useDithering)
+                    material.EnableKeyword("ENABLE_DITHERING");
             }
 
             if (lutUsed != null)

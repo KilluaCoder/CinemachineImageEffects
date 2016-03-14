@@ -4,7 +4,6 @@ using System;
 namespace UnityStandardAssets.CinematicEffects
 {
     //Improvement ideas:
-    //  In hdr do local tonemapping/inverse tonemapping to stabilize bokeh.
     //  Use rgba8 buffer in ldr / in some pass in hdr (in correlation to previous point and remapping coc from -1/0/1 to 0/0.5/1)
     //  Use temporal stabilisation.
     //  Add a mode to do bokeh texture in quarter res as well

@@ -11,7 +11,7 @@ namespace UnityStandardAssets.CinematicEffects
     public class SMAAEditor : IAntiAliasingEditor
     {
         private List<SerializedProperty> m_TopLevelFields = new List<SerializedProperty>();
-        
+
         [Serializable]
         class InfoMap
         {

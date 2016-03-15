@@ -1,14 +1,25 @@
 using UnityEditor;
 using System.Collections.Generic;
+using System;
 using System.Linq;
+using UnityEngine;
 using System.Reflection;
+using UnityEngine.Serialization;
 
 namespace UnityStandardAssets.CinematicEffects
 {
     public class SMAAEditor : IAntiAliasingEditor
     {
         private List<SerializedProperty> m_TopLevelFields = new List<SerializedProperty>();
-        private Dictionary<FieldInfo, List<SerializedProperty>> m_GroupFields = new Dictionary<FieldInfo, List<SerializedProperty>>();
+        
+        [Serializable]
+        class InfoMap
+        {
+            public string name;
+            public bool experimental;
+            public List<SerializedProperty> properties;
+        }
+        private List<InfoMap> m_GroupFields = new List<InfoMap>();
 
         public void OnEnable(SerializedObject serializedObject, string path)
         {
@@ -33,16 +44,21 @@ namespace UnityStandardAssets.CinematicEffects
 
                 foreach (var setting in group.FieldType.GetFields(BindingFlags.Instance | BindingFlags.Public))
                 {
-                    List<SerializedProperty> settingsGroup;
-                    if (!m_GroupFields.TryGetValue(group, out settingsGroup))
+                    var infoGroup = m_GroupFields.FirstOrDefault(x => x.name == group.Name);
+                    if (infoGroup == null)
                     {
-                        settingsGroup = new List<SerializedProperty>();
-                        m_GroupFields[group] = settingsGroup;
+                        infoGroup = new InfoMap();
+                        infoGroup.properties = new List<SerializedProperty>();
+                        infoGroup.name = setting.Name;
+                        infoGroup.experimental = setting.GetCustomAttributes(typeof(SMAA.ExperimentalGroup), false).Length > 0;
+                        m_GroupFields.Add(infoGroup);
                     }
 
                     var property = serializedObject.FindProperty(searchPath + setting.Name);
                     if (property != null)
-                        settingsGroup.Add(property);
+                    {
+                        infoGroup.properties.Add(property);
+                    }
                 }
             }
         }
@@ -54,21 +70,20 @@ namespace UnityStandardAssets.CinematicEffects
             foreach (var setting in m_TopLevelFields)
                 EditorGUILayout.PropertyField(setting);
 
+            if ((target as SMAA).settings.quality != SMAA.QualityPreset.Custom)
+                return EditorGUI.EndChangeCheck();
+
             foreach (var group in m_GroupFields)
             {
-                if (group.Key.FieldType == typeof(SMAA.QualitySettings) && (target as SMAA).settings.quality != SMAA.QualityPreset.Custom)
-                    continue;
-
-                bool isExperimental = group.Key.GetCustomAttributes(typeof(SMAA.ExperimentalGroup), false).Length > 0;
-                string title = ObjectNames.NicifyVariableName(group.Key.Name);
-                if (isExperimental)
+                string title = ObjectNames.NicifyVariableName(group.name);
+                if (group.experimental)
                     title += " (Experimental)";
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
 
-                var enabledField = group.Value.FirstOrDefault(x => x.propertyPath == "m_SMAA." + group.Key.Name + ".enabled");
+                var enabledField = group.properties.FirstOrDefault(x => x.propertyPath == "m_SMAA." + group.name + ".enabled");
                 if (enabledField != null && !enabledField.boolValue)
                 {
                     EditorGUILayout.PropertyField(enabledField);
@@ -76,7 +91,7 @@ namespace UnityStandardAssets.CinematicEffects
                     continue;
                 }
 
-                foreach (var field in group.Value)
+                foreach (var field in group.properties)
                     EditorGUILayout.PropertyField(field);
 
                 EditorGUI.indentLevel--;

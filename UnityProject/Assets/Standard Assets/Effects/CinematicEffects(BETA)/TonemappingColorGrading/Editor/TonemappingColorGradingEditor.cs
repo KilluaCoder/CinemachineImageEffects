@@ -498,7 +498,7 @@ namespace UnityStandardAssets.CinematicEffects
             cs.SetFloat("_Height", rect.height);
             cs.Dispatch(kernel, 1, 1, 1);
 
-            if (m_HistogramTexture == null || m_HistogramTexture.height != rect.height || m_HistogramTexture.width != rect.width)
+            if (m_HistogramTexture == null)
             {
                 DestroyImmediate(m_HistogramTexture);
                 m_HistogramTexture = new RenderTexture((int)rect.width, (int)rect.height, 0, RenderTextureFormat.ARGB32);

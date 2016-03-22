@@ -24,17 +24,14 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
 
     float _PrefilterOffs;
     half _Threshold;
-    half _Cutoff;
+    half3 _Curve;
     float _SampleScale;
     half _Intensity;
 
-    // Luma function with Rec.709 HDTV Standard
-    half Luma(half3 c)
+    // Brightness function
+    half Brightness(half3 c)
     {
-    #if LINEAR_COLOR
-        c = LinearToGammaSpace(c);
-    #endif
-        return dot(c, half3(0.2126, 0.7152, 0.0722));
+        return max(max(c.r, c.g), c.b);
     }
 
     // 3-tap median filter
@@ -48,7 +45,7 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
     half4 SafeHDR(half4 c) { return min(c, 65000); }
 
     // RGBM encoding/decoding
-    half4 EncodeHDR(half3 rgb)
+    half4 EncodeHDR(float3 rgb)
     {
     #if USE_RGBM
         rgb *= 1.0 / 8;
@@ -60,7 +57,7 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
     #endif
     }
 
-    half3 DecodeHDR(half4 rgba)
+    float3 DecodeHDR(half4 rgba)
     {
     #if USE_RGBM
         return rgba.rgb * rgba.a * 8;
@@ -96,10 +93,10 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
         half3 s4 = DecodeHDR(tex2D(_MainTex, uv + d.zw));
 
         // Karis's luma weighted average
-        half s1w = 1 / (Luma(s1) + 1);
-        half s2w = 1 / (Luma(s2) + 1);
-        half s3w = 1 / (Luma(s3) + 1);
-        half s4w = 1 / (Luma(s4) + 1);
+        half s1w = 1 / (Brightness(s1) + 1);
+        half s2w = 1 / (Brightness(s2) + 1);
+        half s3w = 1 / (Brightness(s3) + 1);
+        half s4w = 1 / (Brightness(s4) + 1);
         half one_div_wsum = 1.0 / (s1w + s2w + s3w + s4w);
 
         return (s1 * s1w + s2 * s2w + s3 * s3w + s4 * s4w) * one_div_wsum;
@@ -186,11 +183,18 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
         half3 m = s0.rgb;
     #endif
 
-        half lm = Luma(m);
     #if GAMMA_COLOR
         m = GammaToLinearSpace(m);
     #endif
-        m *= saturate((lm - _Threshold) / _Cutoff);
+        // Pixel brightness
+        half br = Brightness(m);
+
+        // Under-threshold part: quadratic curve
+        half rq = clamp(br - _Curve.x, 0, _Curve.y);
+        rq = _Curve.z * rq * rq;
+
+        // Combine and apply the brightness response curve.
+        m *= max(rq, br - _Threshold) / (br + 1e-5);
 
         return EncodeHDR(m);
     }

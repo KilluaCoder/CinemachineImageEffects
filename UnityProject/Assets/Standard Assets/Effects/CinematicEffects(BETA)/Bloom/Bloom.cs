@@ -11,19 +11,27 @@ namespace UnityStandardAssets.CinematicEffects
         [Serializable]
         public struct Settings
         {
-            [SerializeField, Range(0, 1)]
+            [SerializeField]
             [Tooltip("Filters out pixels under this level of brightness.")]
             public float threshold;
 
-            [SerializeField, Range(0, 1)]
-            [Tooltip("Sensitivity of the effect\n(0=less sensitive, 1=fully sensitive).")]
-            public float exposure;
+            public float thresholdGamma
+            {
+                set { threshold = value; }
+                get { return Mathf.Max(0.0f, threshold); }
+            }
+
+            public float thresholdLinear
+            {
+                set { threshold = Mathf.LinearToGammaSpace(value); }
+                get { return Mathf.GammaToLinearSpace(thresholdGamma); }
+            }
 
             [SerializeField, Range(0, 5)]
             [Tooltip("Changes extent of veiling effects in a screen resolution-independent fashion.")]
             public float radius;
 
-            [SerializeField, Range(0, 2)]
+            [SerializeField]
             [Tooltip("Blend factor of the result image.")]
             public float intensity;
 
@@ -42,9 +50,8 @@ namespace UnityStandardAssets.CinematicEffects
                     var settings = new Settings
                     {
                         threshold = 0.9f,
-                        exposure = 0.3f,
                         radius = 2.0f,
-                        intensity = 1.0f,
+                        intensity = 0.7f,
                         highQuality = true,
                         antiFlicker = false
                     };
@@ -130,16 +137,19 @@ namespace UnityStandardAssets.CinematicEffects
             var iteration = Mathf.Max(2, logh_i);
 
             // update the shader properties
-            material.SetFloat("_Threshold", settings.threshold);
+            var threshold = settings.thresholdLinear;
+            material.SetFloat("_Threshold", threshold);
 
-            var pfc = -Mathf.Log(Mathf.Lerp(1e-2f, 1 - 1e-5f, settings.exposure), 10);
-            material.SetFloat("_Cutoff", settings.threshold + pfc * 10);
+            const float softKneeRatio = 0.5f;
+            var knee = threshold * softKneeRatio + 1e-5f;
+            var curve = new Vector3(threshold - knee, knee * 2, 0.25f / knee);
+            material.SetVector("_Curve", curve);
 
             var pfo = !settings.highQuality && settings.antiFlicker;
             material.SetFloat("_PrefilterOffs", pfo ? -0.5f : 0.0f);
 
             material.SetFloat("_SampleScale", 0.5f + logh - logh_i);
-            material.SetFloat("_Intensity", settings.intensity);
+            material.SetFloat("_Intensity", Mathf.Max(0.0f, settings.intensity));
 
             if (settings.highQuality)
                 material.EnableKeyword("HIGH_QUALITY");

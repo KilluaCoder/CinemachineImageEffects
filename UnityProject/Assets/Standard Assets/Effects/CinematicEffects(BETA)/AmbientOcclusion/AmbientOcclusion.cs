@@ -167,7 +167,7 @@ namespace UnityStandardAssets.CinematicEffects
             cb.GetTemporaryRT(rtMask, tw, th, 0, FilterMode.Bilinear, format, rwMode);
 
             // AO estimation
-            cb.Blit(null, rtMask, m, 0);
+            cb.Blit((Texture)null, rtMask, m, 0);
 
             if (blurIterations > 0)
             {

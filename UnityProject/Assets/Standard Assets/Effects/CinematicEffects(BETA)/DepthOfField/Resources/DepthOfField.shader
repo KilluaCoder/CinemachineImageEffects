@@ -15,7 +15,9 @@ CGINCLUDE
 
 //undef USE_LOCAL_TONEMAPPING if you dont want to use local tonemapping.
 //tweaking these values down will trade stability for less bokeh (see Tonemap/ToneMapInvert methods below).
-#define USE_LOCAL_TONEMAPPING
+#ifndef SHADER_API_MOBILE 
+	#define USE_LOCAL_TONEMAPPING
+#endif
 #define LOCAL_TONEMAP_START_LUMA 1.0
 #define LOCAL_TONEMAP_RANGE_LUMA 5.0
 
@@ -229,6 +231,10 @@ inline half GetCocFromDepth(half2 uv, bool useExplicit)
 #endif
     return GetCocFromZValue(d,useExplicit);
 }
+
+#if (SHADER_TARGET < 50)
+    half rcp(half x) { return 1 / x; }
+#endif
 
 //from http://graphicrants.blogspot.dk/2013/12/tone-mapping.html
 inline half3 Tonemap(half3 color)

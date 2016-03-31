@@ -209,6 +209,8 @@ namespace UnityStandardAssets.CinematicEffects
             Preset.extremeQualityPreset
         };
 
+        public bool validSourceFormat { get; private set; }
+
         public void OnEnable(AntiAliasing owner)
         {
             if (!ImageEffectHelper.IsSupported(shader, true, false, owner))
@@ -231,6 +233,15 @@ namespace UnityStandardAssets.CinematicEffects
 
         public void OnRenderImage(Camera camera, RenderTexture source, RenderTexture destination)
         {
+#if UNITY_EDITOR
+            validSourceFormat = true;
+
+            if (source.format == RenderTextureFormat.ARGBHalf
+             || source.format == RenderTextureFormat.ARGBFloat
+             || source.format == RenderTextureFormat.ARGB2101010)
+                validSourceFormat = false;
+#endif
+
             material.SetVector("_QualitySettings", new Vector3(preset.qualitySettings.subpixelAliasingRemovalAmount,
                     preset.qualitySettings.edgeDetectionThreshold, preset.qualitySettings.minimumRequiredLuminance));
 

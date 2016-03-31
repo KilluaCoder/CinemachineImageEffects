@@ -33,16 +33,17 @@ namespace UnityStandardAssets.CinematicEffects
                     return;
 
                 m_Method = value;
-                UpdateUsedAAInterface();
             }
         }
 
-        private IAntiAliasing m_Interface;
         public IAntiAliasing current
         {
             get
             {
-                return m_Interface;
+                if (method == (int)Method.Smaa)
+                    return m_SMAA;
+                else
+                    return m_FXAA;
             }
         }
 
@@ -62,16 +63,6 @@ namespace UnityStandardAssets.CinematicEffects
         {
             m_SMAA.OnEnable(this);
             m_FXAA.OnEnable(this);
-
-            UpdateUsedAAInterface();
-        }
-
-        private void UpdateUsedAAInterface()
-        {
-            if (method == (int)Method.Smaa)
-                m_Interface = m_SMAA;
-            else
-                m_Interface = m_FXAA;
         }
 
         private void OnDisable()
@@ -82,17 +73,17 @@ namespace UnityStandardAssets.CinematicEffects
 
         private void OnPreCull()
         {
-            m_Interface.OnPreCull(cameraComponent);
+            current.OnPreCull(cameraComponent);
         }
 
         private void OnPostRender()
         {
-            m_Interface.OnPostRender(cameraComponent);
+            current.OnPostRender(cameraComponent);
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            m_Interface.OnRenderImage(cameraComponent, source, destination);
+            current.OnRenderImage(cameraComponent, source, destination);
         }
     }
 }

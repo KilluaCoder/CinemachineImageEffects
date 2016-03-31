@@ -29,6 +29,7 @@ Shader "Hidden/TonemappingColorGrading"
                 sampler2D _UserLutTex;
                 half4 _UserLutParams;
 
+                half3 _WhiteBalance;
                 half3 _Lift;
                 half3 _Gamma;
                 half3 _Gain;
@@ -41,13 +42,25 @@ Shader "Hidden/TonemappingColorGrading"
                 sampler2D _CurveTex;
                 half _Contribution;
 
+                static const half3x3 LIN_2_LMS_MAT = {
+                    3.90405e-1, 5.49941e-1, 8.92632e-3,
+                    7.08416e-2, 9.63172e-1, 1.35775e-3,
+                    2.31082e-2, 1.28021e-1, 9.36245e-1
+                };
+
+                static const half3x3 LMS_2_LIN_MAT = {
+                     2.85847e+0, -1.62879e+0, -2.48910e-2,
+                    -2.10182e-1,  1.15820e+0,  3.24281e-4,
+                    -4.18120e-2, -1.18169e-1,  1.06867e+0
+                };
+
                 half3 rgb_to_hsv(half3 c)
                 {
                     half4 K = half4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
                     half4 p = lerp(half4(c.bg, K.wz), half4(c.gb, K.xy), step(c.b, c.g));
                     half4 q = lerp(half4(p.xyw, c.r), half4(c.r, p.yzx), step(p.x, c.r));
                     half d = q.x - min(q.w, q.y);
-                    half e = 1.0e-10;
+                    half e = 1.0e-4;
                     return half3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
                 }
 
@@ -73,8 +86,14 @@ Shader "Hidden/TonemappingColorGrading"
                     half3 user_luted = apply_lut(_UserLutTex, final_lut, _UserLutParams.xyz);
                     final_lut = lerp(final_lut, user_luted, _UserLutParams.w);
 
+                    // White balance
+                    half3 lms = mul(LIN_2_LMS_MAT, final_lut);
+                    lms *= _WhiteBalance;
+                    final_lut = mul(LMS_2_LIN_MAT, lms);
+
                     // Lift/gamma/gain
                     final_lut = _Gain * (_Lift * (1.0 - final_lut) + pow(final_lut, _Gamma));
+                    final_lut = max(final_lut, 0.0);
 
                     // Hue/saturation/value
                     half3 hsv = rgb_to_hsv(final_lut);
@@ -97,7 +116,11 @@ Shader "Hidden/TonemappingColorGrading"
                     final_lut = pow(final_lut, _ContrastGainGamma.z);
 
                     // Color mixer
-                    final_lut = (final_lut.rrr * _ChannelMixerRed) + (final_lut.ggg * _ChannelMixerGreen) + (final_lut.bbb * _ChannelMixerBlue);
+                    final_lut = half3(
+                        dot(final_lut, _ChannelMixerRed),
+                        dot(final_lut, _ChannelMixerGreen),
+                        dot(final_lut, _ChannelMixerBlue)
+                    );
 
                     // Curves
                     half mr = tex2D(_CurveTex, half2(final_lut.r, 0.5)).a;
@@ -151,6 +174,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #include "TonemappingColorGrading.cginc"
             ENDCG
@@ -163,6 +187,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_ACES
                 #include "TonemappingColorGrading.cginc"
@@ -176,6 +201,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_CURVE
                 #include "TonemappingColorGrading.cginc"
@@ -189,6 +215,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_HABLE
                 #include "TonemappingColorGrading.cginc"
@@ -202,6 +229,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_HEJL_DAWSON
                 #include "TonemappingColorGrading.cginc"
@@ -215,6 +243,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_PHOTOGRAPHIC
                 #include "TonemappingColorGrading.cginc"
@@ -228,6 +257,7 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma multi_compile __ GAMMA_COLORSPACE
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_REINHARD
                 #include "TonemappingColorGrading.cginc"

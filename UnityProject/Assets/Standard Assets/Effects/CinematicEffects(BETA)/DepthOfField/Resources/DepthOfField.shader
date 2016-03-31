@@ -15,8 +15,8 @@ CGINCLUDE
 
 //undef USE_LOCAL_TONEMAPPING if you dont want to use local tonemapping.
 //tweaking these values down will trade stability for less bokeh (see Tonemap/ToneMapInvert methods below).
-#ifndef SHADER_API_MOBILE 
-	#define USE_LOCAL_TONEMAPPING
+#ifndef SHADER_API_MOBILE
+    #define USE_LOCAL_TONEMAPPING
 #endif
 #define LOCAL_TONEMAP_START_LUMA 1.0
 #define LOCAL_TONEMAP_RANGE_LUMA 5.0
@@ -613,7 +613,7 @@ inline half4 upSampleConvolved(half2 uv, bool useBicubic, bool useExplicit)
 
     if (useBicubic)
     {
-        //bicubic upsampling (B-spline) 
+        //bicubic upsampling (B-spline)
         //adding offsetFromCoc "antialias" haloing from bright in focus region on dark out of focus region.
         //however its a hack as we should consider all the COC of the bicubic region and kill the bicubic
         //interpolation to avoid in any leaking but that would be too expensive, so when this is a problem
@@ -705,7 +705,7 @@ inline half4 captureCoc(half2 uvColor, half2 uvDepth, bool useExplicit)
     coc.b = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(+0.25f,-0.25f), useExplicit);
     coc.a = GetCocFromDepth(uvDepth + _MainTex_TexelSize.xy * half2(-0.25f,-0.25f), useExplicit);
 #endif
-    
+
     half4 absCoc = abs(coc);
     half2 offset = GetBilinearFetchTexOffsetFromAbsCoc(absCoc) * _MainTex_TexelSize.xy;
     half4 color = FetchMainTex(uvColor + offset);
@@ -1161,7 +1161,7 @@ SubShader
 {
     Tags { "Name" = "FallbackSubShader_SM3" }
     //if adding or removing a pass please also update the main subshader above
-    
+
     ZTest Always Cull Off ZWrite Off Fog { Mode Off } Lighting Off Blend Off
 
     // 1

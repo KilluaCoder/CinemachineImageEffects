@@ -468,24 +468,24 @@ namespace UnityStandardAssets.CinematicEffects
             int kernel = cs.FindKernel("KHistogramGather");
             cs.SetBuffer(kernel, "_Histogram", m_HistogramBuffer);
             cs.SetTexture(kernel, "_Source", source);
-            
+
             int[] channels = null;
             switch (mode)
             {
                 case HistogramMode.Luminance:
-                    channels = new [] { 0, 0, 0, 1 };
+                    channels = new[] { 0, 0, 0, 1 };
                     break;
                 case HistogramMode.RGB:
-                    channels = new [] { 1, 1, 1, 0 };
+                    channels = new[] { 1, 1, 1, 0 };
                     break;
                 case HistogramMode.Red:
-                    channels = new [] { 1, 0, 0, 0 };
+                    channels = new[] { 1, 0, 0, 0 };
                     break;
                 case HistogramMode.Green:
-                    channels = new [] { 0, 1, 0, 0 };
+                    channels = new[] { 0, 1, 0, 0 };
                     break;
                 case HistogramMode.Blue:
-                    channels = new [] { 0, 0, 1, 0 };
+                    channels = new[] { 0, 0, 1, 0 };
                     break;
             }
 

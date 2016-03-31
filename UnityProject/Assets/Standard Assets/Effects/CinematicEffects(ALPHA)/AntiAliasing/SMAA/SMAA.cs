@@ -1,7 +1,8 @@
 using UnityEngine;
-using UnityEngine.Serialization;
 using System;
-
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using Object = UnityEngine.Object;
 
 namespace UnityStandardAssets.CinematicEffects
@@ -166,6 +167,15 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Temporal filtering makes it possible for the SMAA algorithm to benefit from minute subpixel information available that has been accumulated over many frames.")]
             public bool enabled;
 
+            public bool UseTemporal()
+            {
+#if UNITY_EDITOR
+                return enabled && EditorApplication.isPlayingOrWillChangePlaymode;
+#else
+                return enabled
+#endif
+            }
+
             [Range(0.5f, 10.0f)]
             [Tooltip("The size of the fuzz-displacement (jitter) in pixels applied to the camera's perspective projection matrix.\nUsed for 2x temporal anti-aliasing.")]
             public float fuzzSize;
@@ -300,7 +310,7 @@ namespace UnityStandardAssets.CinematicEffects
 
         public void OnPreCull(Camera camera)
         {
-            if (temporal.enabled)
+            if (temporal.UseTemporal())
             {
                 m_ProjectionMatrix = camera.projectionMatrix;
                 m_FlipFlop -= (2.0f * m_FlipFlop);
@@ -316,7 +326,7 @@ namespace UnityStandardAssets.CinematicEffects
 
         public void OnPostRender(Camera camera)
         {
-            if (temporal.enabled)
+            if (temporal.UseTemporal())
                 camera.ResetProjectionMatrix();
         }
 
@@ -382,7 +392,7 @@ namespace UnityStandardAssets.CinematicEffects
             // TODO: use motion vectors when available!
             Shader.DisableKeyword("USE_UV_BASED_REPROJECTION");
 
-            if (temporal.enabled)
+            if (temporal.UseTemporal())
                 Shader.EnableKeyword("USE_UV_BASED_REPROJECTION");
 
             // Persistent textures and lazy-initializations
@@ -424,7 +434,7 @@ namespace UnityStandardAssets.CinematicEffects
                     // Neighborhood Blending
                     material.SetTexture("_BlendTex", rt2);
 
-                    if (temporal.enabled)
+                    if (temporal.UseTemporal())
                     {
                         // Temporal filtering
                         Graphics.Blit(source, rt1, material, passNeighborhoodBlending);

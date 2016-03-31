@@ -49,8 +49,8 @@ namespace UnityStandardAssets.CinematicEffects
                     {
                         infoGroup = new InfoMap();
                         infoGroup.properties = new List<SerializedProperty>();
-                        infoGroup.name = setting.Name;
-                        infoGroup.experimental = setting.GetCustomAttributes(typeof(SMAA.ExperimentalGroup), false).Length > 0;
+                        infoGroup.name = group.Name;
+                        infoGroup.experimental = group.GetCustomAttributes(typeof(SMAA.ExperimentalGroup), false).Length > 0;
                         m_GroupFields.Add(infoGroup);
                     }
 

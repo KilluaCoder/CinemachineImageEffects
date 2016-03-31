@@ -237,8 +237,8 @@ namespace UnityStandardAssets.CinematicEffects
             validSourceFormat = true;
 
             if (source.format == RenderTextureFormat.ARGBHalf
-             || source.format == RenderTextureFormat.ARGBFloat
-             || source.format == RenderTextureFormat.ARGB2101010)
+                || source.format == RenderTextureFormat.ARGBFloat
+                || source.format == RenderTextureFormat.ARGB2101010)
                 validSourceFormat = false;
 #endif
 

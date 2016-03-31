@@ -57,15 +57,15 @@ namespace UnityStandardAssets.CinematicEffects
                 get
                 {
                     return new DistortionSettings
-                    {
-                        enabled = false,
-                        amount = 0f,
-                        centerX = 0.5f,
-                        centerY = 0.5f,
-                        amountX = 1f,
-                        amountY = 1f,
-                        scale = 1f
-                    };
+                           {
+                               enabled = false,
+                               amount = 0f,
+                               centerX = 0.5f,
+                               centerY = 0.5f,
+                               amountX = 1f,
+                               amountY = 1f,
+                               scale = 1f
+                           };
                 }
             }
         }
@@ -86,7 +86,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             [SimpleSetting, Range(0.1f, 3f), Tooltip("Smoothness of the vignette borders.")]
             public float smoothness;
-            
+
             [AdvancedSetting, Range(0f, 1f), Tooltip("Vignette radius in screen coordinates.")]
             public float radius;
 
@@ -110,19 +110,19 @@ namespace UnityStandardAssets.CinematicEffects
                 get
                 {
                     return new VignetteSettings
-                    {
-                        enabled = false,
-                        mode = SettingsMode.Simple,
-                        color = Color.black,
-                        intensity = 1.2f,
-                        smoothness = 1.5f,
-                        radius = 0.7f,
-                        spread = 0.4f,
-                        falloff = 0.5f,
-                        roundness = 1f,
-                        blur = 0f,
-                        desaturate = 0f
-                    };
+                           {
+                               enabled = false,
+                               mode = SettingsMode.Simple,
+                               color = Color.black,
+                               intensity = 1.2f,
+                               smoothness = 1.5f,
+                               radius = 0.7f,
+                               spread = 0.4f,
+                               falloff = 0.5f,
+                               roundness = 1f,
+                               blur = 0f,
+                               desaturate = 0f
+                           };
                 }
             }
         }
@@ -149,13 +149,13 @@ namespace UnityStandardAssets.CinematicEffects
                 get
                 {
                     return new ChromaticAberrationSettings
-                    {
-                        enabled = false,
-                        mode = SettingsMode.Simple,
-                        tangential = 0f,
-                        axial = 0f,
-                        contrastDependency = 0f
-                    };
+                           {
+                               enabled = false,
+                               mode = SettingsMode.Simple,
+                               tangential = 0f,
+                               axial = 0f,
+                               contrastDependency = 0f
+                           };
                 }
             }
         }
@@ -246,7 +246,7 @@ namespace UnityStandardAssets.CinematicEffects
                 else
                     material.EnableKeyword("UNDISTORT");
             }
-            
+
             material.SetColor("_VignetteColor", vignette.color);
 
             if (vignette.mode == SettingsMode.Simple)

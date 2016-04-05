@@ -172,7 +172,7 @@ namespace UnityStandardAssets.CinematicEffects
 #if UNITY_EDITOR
                 return enabled && EditorApplication.isPlayingOrWillChangePlaymode;
 #else
-                return enabled
+                return enabled;
 #endif
             }
 

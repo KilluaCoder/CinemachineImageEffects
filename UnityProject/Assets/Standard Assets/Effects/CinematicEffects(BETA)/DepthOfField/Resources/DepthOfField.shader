@@ -35,7 +35,7 @@ uniform half4 _MainTex_ST;
 uniform half4 _SecondTex_ST;
 uniform half4 _ThirdTex_ST;
 
-#if (SHADER_TARGET >= 50)
+#if (SHADER_TARGET >= 50 && !defined(SHADER_API_PSSL))
     #define USE_TEX2DOBJECT_FOR_COC
 #endif
 
@@ -232,7 +232,7 @@ inline half GetCocFromDepth(half2 uv, bool useExplicit)
     return GetCocFromZValue(d,useExplicit);
 }
 
-#if (SHADER_TARGET < 50)
+#if (SHADER_TARGET < 50 && !defined(SHADER_API_PSSL))
     half rcp(half x) { return 1 / x; }
 #endif
 

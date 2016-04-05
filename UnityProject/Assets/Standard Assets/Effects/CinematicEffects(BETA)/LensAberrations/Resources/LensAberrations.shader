@@ -44,6 +44,12 @@ Shader "Hidden/LensAberrations"
                 v2f o;
                 o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
                 o.uv = v.texcoord.xy;
+
+            #if UNITY_UV_STARTS_AT_TOP
+                if (_MainTex_TexelSize.y < 0)
+                    o.uv.y = 1.0 - o.uv.y;
+            #endif
+
                 half2 d1 = 1.3846153846 * _BlurPass;
                 half2 d2 = 3.2307692308 * _BlurPass;
                 o.uv1 = half4(o.uv + d1, o.uv - d1);

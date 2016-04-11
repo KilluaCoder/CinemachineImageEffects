@@ -6,6 +6,9 @@ namespace UnityStandardAssets.CinematicEffects
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
     [AddComponentMenu("Image Effects/Cinematic/Ambient Occlusion")]
+#if UNITY_5_4_OR_NEWER
+    [ImageEffectAllowedInSceneView]
+#endif
     public partial class AmbientOcclusion : MonoBehaviour
     {
         #region Public Properties

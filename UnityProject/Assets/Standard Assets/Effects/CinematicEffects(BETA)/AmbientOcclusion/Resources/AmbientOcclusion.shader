@@ -38,12 +38,6 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
 
     #include "UnityCG.cginc"
 
-    // Source texture type (CameraDepthNormals or G-buffer)
-    #pragma multi_compile _SOURCE_DEPTHNORMALS _SOURCE_GBUFFER
-
-    // Sample count; given-via-uniform (default) or lowest
-    #pragma multi_compile _ _SAMPLECOUNT_LOWEST
-
     #if _SAMPLECOUNT_LOWEST
     static const int _SampleCount = 3;
     #else
@@ -353,6 +347,8 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         {
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
+            #pragma multi_compile _SOURCE_DEPTHNORMALS _SOURCE_GBUFFER
+            #pragma multi_compile _ _SAMPLECOUNT_LOWEST
             #pragma vertex vert_img
             #pragma fragment frag_ao
             #pragma target 3.0
@@ -362,6 +358,7 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         {
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
+            #pragma multi_compile _SOURCE_DEPTHNORMALS _SOURCE_GBUFFER
             #pragma vertex vert_img
             #pragma fragment frag_blur
             #pragma target 3.0

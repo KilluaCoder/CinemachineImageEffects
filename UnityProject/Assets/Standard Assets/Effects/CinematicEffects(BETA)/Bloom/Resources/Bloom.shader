@@ -10,10 +10,6 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
 
     #include "UnityCG.cginc"
 
-    #pragma multi_compile _ HIGH_QUALITY
-    #pragma multi_compile _ ANTI_FLICKER
-    #pragma multi_compile LINEAR_COLOR GAMMA_COLOR
-
     // Mobile: use RGBM instead of float/half RGB
     #define USE_RGBM defined(SHADER_API_MOBILE)
 
@@ -80,8 +76,6 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
         return s * (1.0 / 4);
     }
 
-    #if ANTI_FLICKER
-
     // Downsample with a 4x4 box filter + anti-flicker filter
     half3 DownsampleAntiFlickerFilter(float2 uv)
     {
@@ -101,8 +95,6 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
 
         return (s1 * s1w + s2 * s2w + s3 * s3w + s4 * s4w) * one_div_wsum;
     }
-
-    #endif
 
     half3 UpsampleFilter(float2 uv)
     {
@@ -241,6 +233,8 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
         {
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
+            #pragma multi_compile _ ANTI_FLICKER
+            #pragma multi_compile LINEAR_COLOR GAMMA_COLOR
             #pragma vertex vert_img
             #pragma fragment frag_prefilter
             #pragma target 3.0
@@ -250,6 +244,7 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
         {
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
+            #pragma multi_compile _ ANTI_FLICKER
             #pragma vertex vert_img
             #pragma fragment frag_downsample1
             #pragma target 3.0
@@ -268,6 +263,7 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
         {
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
+            #pragma multi_compile _ HIGH_QUALITY
             #pragma vertex vert_multitex
             #pragma fragment frag_upsample
             #pragma target 3.0
@@ -277,6 +273,8 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
         {
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
+            #pragma multi_compile _ HIGH_QUALITY
+            #pragma multi_compile LINEAR_COLOR GAMMA_COLOR
             #pragma vertex vert_multitex
             #pragma fragment frag_upsample_final
             #pragma target 3.0

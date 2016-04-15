@@ -324,6 +324,8 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         return o;
     }
 
+#if !SHADER_API_GLES // excluding the MRT pass under GLES2
+
     struct CombinerOutput
     {
         half4 gbuffer0 : SV_Target0;
@@ -338,6 +340,15 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         o.gbuffer3 = half4((half3)EncodeAO(ao), 0);
         return o;
     }
+
+#else
+
+    fixed4 frag_gbuffer_combine(v2f_img i) : SV_Target0
+    {
+        return 0;
+    }
+
+#endif
 
     ENDCG
 

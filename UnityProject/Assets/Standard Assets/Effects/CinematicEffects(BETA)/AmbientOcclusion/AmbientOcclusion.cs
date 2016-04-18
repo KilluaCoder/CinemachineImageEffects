@@ -166,7 +166,7 @@ namespace UnityStandardAssets.CinematicEffects
             // Blur buffer
             var rtBlur = Shader.PropertyToID("_OcclusionBlurTexture");
 
-            // 1st blur iteration (large kernel)
+            // Primary blur filter (large kernel)
             cb.GetTemporaryRT(rtBlur, tw, th, 0, filter, format, rwMode);
             cb.SetGlobalVector("_BlurVector", Vector2.right * 2);
             cb.Blit(rtMask, rtBlur, m, 1);
@@ -177,7 +177,7 @@ namespace UnityStandardAssets.CinematicEffects
             cb.Blit(rtBlur, rtMask, m, 1);
             cb.ReleaseTemporaryRT(rtBlur);
 
-            // 2nd blur iteration (small kernel)
+            // Secondary blur filter (small kernel)
             cb.GetTemporaryRT(rtBlur, tw, th, 0, filter, format, rwMode);
             cb.SetGlobalVector("_BlurVector", Vector2.right * ts);
             cb.Blit(rtMask, rtBlur, m, 2);
@@ -215,7 +215,7 @@ namespace UnityStandardAssets.CinematicEffects
             // AO estimation
             Graphics.Blit((Texture)null, rtMask, m, 0);
 
-            // 1st blur iteration (large kernel)
+            // Primary blur filter (large kernel)
             var rtBlur = RenderTexture.GetTemporary(tw, th, 0, format, rwMode);
             m.SetVector("_BlurVector", Vector2.right * 2);
             Graphics.Blit(rtMask, rtBlur, m, 1);
@@ -226,7 +226,7 @@ namespace UnityStandardAssets.CinematicEffects
             Graphics.Blit(rtBlur, rtMask, m, 1);
             RenderTexture.ReleaseTemporary(rtBlur);
 
-            // 2nd blur iteration (small kernel)
+            // Secondary blur filter (small kernel)
             rtBlur = RenderTexture.GetTemporary(tw, th, 0, format, rwMode);
             m.SetVector("_BlurVector", Vector2.right * ts);
             Graphics.Blit(rtMask, rtBlur, m, 2);

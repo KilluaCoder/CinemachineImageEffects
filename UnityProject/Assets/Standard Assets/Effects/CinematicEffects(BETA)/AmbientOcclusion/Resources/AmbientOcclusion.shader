@@ -321,14 +321,14 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         return EstimateOcclusion(i.uv);
     }
 
-    // Pass 1: Geometry-aware separable blur (1st iteration)
+    // Pass 1: Primary blur filter
     half4 frag_blur1(v2f_img i) : SV_Target
     {
         float2 delta = _MainTex_TexelSize.xy * _BlurVector;
         return SeparableBlurLarge(_MainTex, i.uv, delta);
     }
 
-    // Pass 2: Geometry-aware separable blur (2nd iteration)
+    // Pass 2: Secondary blur filter
     half4 frag_blur2(v2f_img i) : SV_Target
     {
         float2 delta = _MainTex_TexelSize.xy * _BlurVector;

@@ -11,7 +11,6 @@ namespace UnityStandardAssets.CinematicEffects
         SerializedProperty _radius;
         SerializedProperty _sampleCount;
         SerializedProperty _sampleCountValue;
-        SerializedProperty _blurIterations;
         SerializedProperty _downsampling;
         SerializedProperty _ambientOnly;
         SerializedProperty _debug;
@@ -28,7 +27,6 @@ namespace UnityStandardAssets.CinematicEffects
             _radius = serializedObject.FindProperty("settings.radius");
             _sampleCount = serializedObject.FindProperty("settings.sampleCount");
             _sampleCountValue = serializedObject.FindProperty("settings.sampleCountValue");
-            _blurIterations = serializedObject.FindProperty("settings.blurIterations");
             _downsampling = serializedObject.FindProperty("settings.downsampling");
             _ambientOnly = serializedObject.FindProperty("settings.ambientOnly");
             _debug = serializedObject.FindProperty("settings.debug");
@@ -50,7 +48,6 @@ namespace UnityStandardAssets.CinematicEffects
                 EditorGUI.indentLevel--;
             }
 
-            EditorGUILayout.PropertyField(_blurIterations);
             EditorGUILayout.PropertyField(_downsampling);
             EditorGUILayout.PropertyField(_ambientOnly);
             EditorGUILayout.PropertyField(_debug);

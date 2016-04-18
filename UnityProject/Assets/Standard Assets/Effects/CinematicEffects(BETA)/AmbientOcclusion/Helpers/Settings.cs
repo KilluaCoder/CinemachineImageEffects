@@ -35,11 +35,6 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Determines the sample count when SampleCount.Variable is used.")]
             public int sampleCountValue;
 
-            /// Number of iterations of blur filter.
-            [SerializeField, Range(0, 4)]
-            [Tooltip("Number of iterations of the blur filter.")]
-            public int blurIterations;
-
             /// Halves the resolution of the effect to increase performance.
             [SerializeField]
             [Tooltip("Halves the resolution of the effect to increase performance.")]
@@ -66,7 +61,6 @@ namespace UnityStandardAssets.CinematicEffects
                         radius = 0.3f,
                         sampleCount = SampleCount.Medium,
                         sampleCountValue = 24,
-                        blurIterations = 2,
                         downsampling = false,
                         ambientOnly = false
                     };

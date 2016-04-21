@@ -194,6 +194,7 @@ namespace UnityStandardAssets.CinematicEffects
                 BuiltinRenderTextureType.CameraTarget   // Ambient
             };
             cb.SetRenderTarget(mrt, BuiltinRenderTextureType.CameraTarget);
+            cb.SetGlobalTexture("_OcclusionTexture", rtMask);
             cb.DrawMesh(quadMesh, Matrix4x4.identity, m, 0, 4);
 
             cb.ReleaseTemporaryRT(rtMask);

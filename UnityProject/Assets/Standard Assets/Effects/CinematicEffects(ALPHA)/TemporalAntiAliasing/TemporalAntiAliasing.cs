@@ -1,4 +1,7 @@
 ﻿using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using System.Collections;
 
 [ExecuteInEditMode]
@@ -117,6 +120,13 @@ public class TemporalAntiAliasing : MonoBehaviour
         [ImageEffectOpaque]
         void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
+#if UNITY_EDITOR
+                if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                {
+                        Graphics.Blit(source, destination);
+                        return;
+                }
+#endif
                 if (m_History == null || (m_History.width != source.width || m_History.height != source.height))
                 {
                         if (m_History)

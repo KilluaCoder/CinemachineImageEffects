@@ -91,8 +91,20 @@ public class TemporalAntiAliasing : MonoBehaviour
         camera_.depthTextureMode &= ~(DepthTextureMode.MotionVectors);
     }
 
+    bool ShouldDoTAA()
+    {
+#if UNITY_EDITOR
+        return EditorApplication.isPlayingOrWillChangePlaymode;
+#else
+        return true;
+#endif
+    }
+
     void OnPreCull()
     {
+        if (!ShouldDoTAA())
+            return;
+
         Vector2 offset = new Vector2(
                 GetHaltonValue(m_SampleIndex, 2),
                 GetHaltonValue(m_SampleIndex, 3));
@@ -120,13 +132,12 @@ public class TemporalAntiAliasing : MonoBehaviour
     [ImageEffectOpaque]
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-#if UNITY_EDITOR
-        if (!EditorApplication.isPlayingOrWillChangePlaymode)
+        if (!ShouldDoTAA())
         {
             Graphics.Blit(source, destination);
             return;
         }
-#endif
+
         if (m_History == null || (m_History.width != source.width || m_History.height != source.height))
         {
             if (m_History)
@@ -153,6 +164,9 @@ public class TemporalAntiAliasing : MonoBehaviour
 
     void OnPostRender()
     {
+        if (!ShouldDoTAA())
+            return;
+            
         camera_.ResetProjectionMatrix();
     }
 }

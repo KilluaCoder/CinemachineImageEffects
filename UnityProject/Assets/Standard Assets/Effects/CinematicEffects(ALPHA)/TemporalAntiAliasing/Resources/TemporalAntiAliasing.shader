@@ -67,7 +67,7 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         float4 convertToRGBA(float4 yCoCg)
         {
-            return saturate(float4(
+            return (float4(
                 yCoCg.x + yCoCg.y - yCoCg.z,
                 yCoCg.x + yCoCg.z,
                 yCoCg.x - yCoCg.y - yCoCg.z,

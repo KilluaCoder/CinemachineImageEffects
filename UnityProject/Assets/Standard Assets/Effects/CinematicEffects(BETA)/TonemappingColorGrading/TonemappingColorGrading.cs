@@ -131,7 +131,8 @@ namespace UnityStandardAssets.CinematicEffects
             Hable,
             HejlDawson,
             Photographic,
-            Reinhard
+            Reinhard,
+            Neutral
         }
 
         [Serializable]
@@ -148,6 +149,25 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Custom tonemapping curve.")]
             public AnimationCurve curve;
 
+            // Neutral settings
+            [Range(-0.1f, 0.1f)]
+            public float neutralBlackIn;
+
+            [Range(1f, 20f)]
+            public float neutralWhiteIn;
+
+            [Range(-0.09f, 0.1f)]
+            public float neutralBlackOut;
+
+            [Range(1f, 19f)]
+            public float neutralWhiteOut;
+
+            [Range(0.1f, 20f)]
+            public float neutralWhiteLevel;
+
+            [Range(1f, 10f)]
+            public float neutralWhiteClip;
+
             public static TonemappingSettings defaultSettings
             {
                 get
@@ -155,9 +175,15 @@ namespace UnityStandardAssets.CinematicEffects
                     return new TonemappingSettings
                     {
                         enabled = false,
-                        tonemapper = Tonemapper.ACES,
+                        tonemapper = Tonemapper.Neutral,
                         exposure = 1f,
-                        curve = CurvesSettings.defaultCurve
+                        curve = CurvesSettings.defaultCurve,
+                        neutralBlackIn = 0.02f,
+                        neutralWhiteIn = 10f,
+                        neutralBlackOut = 0f,
+                        neutralWhiteOut = 10f,
+                        neutralWhiteLevel = 5.3f,
+                        neutralWhiteClip = 10f
                     };
                 }
             }
@@ -558,6 +584,7 @@ namespace UnityStandardAssets.CinematicEffects
             TonemappingHejlDawson,
             TonemappingPhotographic,
             TonemappingReinhard,
+            TonemappingNeutral,
             AdaptationDebug
         }
 
@@ -918,6 +945,28 @@ namespace UnityStandardAssets.CinematicEffects
 
                     material.SetFloat("_ToneCurveRange", m_TonemapperCurveRange);
                     material.SetTexture("_ToneCurve", tonemapperCurve);
+                }
+                else if (tonemapping.tonemapper == Tonemapper.Neutral)
+                {
+                    const float scaleFactor = 20f;
+                    const float scaleFactorHalf = scaleFactor * 0.5f;
+
+                    float inBlack = tonemapping.neutralBlackIn * scaleFactor + 1f;
+                    float outBlack = tonemapping.neutralBlackOut * scaleFactorHalf + 1f;
+                    float inWhite = tonemapping.neutralWhiteIn / scaleFactor;
+                    float outWhite = 1f - tonemapping.neutralWhiteOut / scaleFactor;
+                    float blackRatio = inBlack / outBlack;
+                    float whiteRatio = inWhite / outWhite;
+
+                    const float a = 0.2f;
+                    float b = Mathf.Max(0f, Mathf.LerpUnclamped(0.57f, 0.37f, blackRatio));
+                    float c = Mathf.LerpUnclamped(0.01f, 0.24f, whiteRatio);
+                    float d = Mathf.Max(0f, Mathf.LerpUnclamped(0.02f, 0.20f, blackRatio));
+                    const float e = 0.02f;
+                    const float f = 0.30f;
+
+                    material.SetVector("_NeutralTonemapperParams1", new Vector4(a, b, c, d));
+                    material.SetVector("_NeutralTonemapperParams2", new Vector4(e, f, tonemapping.neutralWhiteLevel, tonemapping.neutralWhiteClip / scaleFactorHalf));
                 }
 
                 material.SetFloat("_Exposure", tonemapping.exposure);

@@ -6,6 +6,8 @@ half4 _MainTex_TexelSize;
 half _Exposure;
 half _ToneCurveRange;
 sampler2D _ToneCurve;
+half4 _NeutralTonemapperParams1;
+half4 _NeutralTonemapperParams2;
 
 sampler2D _LutTex;
 half4 _LutParams;
@@ -163,6 +165,35 @@ half3 tonemapCurve(half3 color)
     return FromCIE(cie);
 }
 
+half3 neutralCurve(half3 x, half a, half b, half c, half d, half e, half f)
+{
+    return ((x * (a * x + c * b) + d * e) / (x * (a * x + b) + d * f)) - e / f;
+}
+
+half3 tonemapNeutral(half3 color)
+{
+    color *= _Exposure;
+
+    // Tonemap
+    half a = _NeutralTonemapperParams1.x;
+    half b = _NeutralTonemapperParams1.y;
+    half c = _NeutralTonemapperParams1.z;
+    half d = _NeutralTonemapperParams1.w;
+    half e = _NeutralTonemapperParams2.x;
+    half f = _NeutralTonemapperParams2.y;
+    half whiteLevel = _NeutralTonemapperParams2.z;
+    half whiteClip = _NeutralTonemapperParams2.w;
+
+    half3 whiteScale = (1.0).xxx / neutralCurve(whiteLevel, a, b, c, d, e, f);
+    color = neutralCurve(color * whiteScale, a, b, c, d, e, f);
+    color *= whiteScale;
+
+    // Post-curve white point adjustment
+    color = color / whiteClip.xxx;
+
+    return color;
+}
+
 half4 frag_tcg(v2f_img i) : SV_Target
 {
     half4 color = tex2D(_MainTex, i.uv);
@@ -190,6 +221,8 @@ half4 frag_tcg(v2f_img i) : SV_Target
     color.rgb = tonemapPhotographic(color.rgb);
 #elif defined(TONEMAPPING_REINHARD)
     color.rgb = tonemapReinhard(color.rgb);
+#elif defined(TONEMAPPING_NEUTRAL)
+    color.rgb = tonemapNeutral(color.rgb);
 #endif
 
 #if ENABLE_COLOR_GRADING

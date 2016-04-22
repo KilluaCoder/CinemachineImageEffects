@@ -20,7 +20,13 @@ namespace UnityStandardAssets.CinematicEffects
         /// Checks if the ambient-only mode is supported under the current settings.
         public bool isAmbientOnlySupported
         {
-            get { return targetCamera.hdr && isGBufferAvailable; }
+            get { return targetCamera.hdr && occlusionSource == OcclusionSource.GBuffer; }
+        }
+
+        /// Checks if the G-buffer is available
+        public bool isGBufferAvailable
+        {
+            get { return targetCamera.actualRenderingPath == RenderingPath.DeferredShading; }
         }
 
         #endregion
@@ -56,6 +62,18 @@ namespace UnityStandardAssets.CinematicEffects
                     case SampleCount.High:   return 20;
                 }
                 return Mathf.Clamp(settings.sampleCountValue, 1, 256);
+            }
+        }
+
+        OcclusionSource occlusionSource
+        {
+            get
+            {
+                if (settings.occlusionSource == OcclusionSource.GBuffer && !isGBufferAvailable)
+                    // An unavailable source was chosen: fallback to DepthNormalsTexture.
+                    return OcclusionSource.DepthNormalsTexture;
+                else
+                    return settings.occlusionSource;
             }
         }
 
@@ -119,16 +137,6 @@ namespace UnityStandardAssets.CinematicEffects
 
         // Property observer
         PropertyObserver propertyObserver { get; set; }
-
-        // Check if the G-buffer is available
-        bool isGBufferAvailable
-        {
-            get
-            {
-                var path = targetCamera.actualRenderingPath;
-                return path == RenderingPath.DeferredShading;
-            }
-        }
 
         // Reference to the quad mesh in the built-in assets
         // (used in MRT blitting)
@@ -259,9 +267,13 @@ namespace UnityStandardAssets.CinematicEffects
             m.SetFloat("_Radius", radius);
             m.SetFloat("_TargetScale", downsampling ? 0.5f : 1);
 
-            // Use G-buffer if available.
-            if (isGBufferAvailable)
-                m.EnableKeyword("_SOURCE_GBUFFER");
+            // Occlusion source  
+            if (occlusionSource == OcclusionSource.GBuffer)  
+                m.EnableKeyword("_SOURCE_GBUFFER");  
+            else if (occlusionSource == OcclusionSource.DepthTexture)  
+                m.EnableKeyword("_SOURCE_DEPTH");  
+            else  
+                m.EnableKeyword("_SOURCE_DEPTHNORMALS");  
 
             // Sample count
             if (sampleCount == SampleCount.Lowest)
@@ -287,9 +299,12 @@ namespace UnityStandardAssets.CinematicEffects
             if (ambientOnly)
                 targetCamera.AddCommandBuffer(CameraEvent.BeforeReflections, aoCommands);
 
-            // Requires DepthNormals when G-buffer is not available.
-            if (!isGBufferAvailable)
-                targetCamera.depthTextureMode |= DepthTextureMode.DepthNormals;
+            // Enable depth textures which the occlusion source requires.  
+            if (occlusionSource == OcclusionSource.DepthTexture)  
+                targetCamera.depthTextureMode |= DepthTextureMode.Depth;  
+
+            if (occlusionSource != OcclusionSource.GBuffer)  
+                targetCamera.depthTextureMode |= DepthTextureMode.DepthNormals;  
         }
 
         void OnDisable()

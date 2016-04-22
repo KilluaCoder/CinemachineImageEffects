@@ -1,6 +1,3 @@
-// Upgrade NOTE: commented out 'float4x4 _WorldToCamera', a built-in variable
-// Upgrade NOTE: replaced '_WorldToCamera' with 'unity_WorldToCamera'
-
 Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
 {
     Properties
@@ -51,8 +48,11 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
     #if _SOURCE_GBUFFER
     sampler2D _CameraGBufferTexture2;
     sampler2D_float _CameraDepthTexture;
-    // float4x4 _WorldToCamera;
+    float4x4 _WorldToCamera;
     #else
+    #if _SOURCE_DEPTH
+    sampler2D_float _CameraDepthTexture;
+    #endif
     sampler2D_float _CameraDepthNormalsTexture;
     #endif
 
@@ -116,7 +116,7 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
     // Depth/normal sampling functions
     float SampleDepth(float2 uv)
     {
-    #if _SOURCE_GBUFFER
+    #if _SOURCE_GBUFFER || _SOURCE_DEPTH
         float d = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv);
         return LinearEyeDepth(d) + CheckBounds(uv, d);
     #else
@@ -130,7 +130,7 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
     {
     #if _SOURCE_GBUFFER
         float3 norm = tex2D(_CameraGBufferTexture2, uv).xyz * 2 - 1;
-        return mul((float3x3)unity_WorldToCamera, norm);
+        return mul((float3x3)_WorldToCamera, norm);
     #else
         float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
         return DecodeViewNormalStereo(cdn) * float3(1, 1, -1);
@@ -139,7 +139,7 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
 
     float SampleDepthNormal(float2 uv, out float3 normal)
     {
-    #if _SOURCE_GBUFFER
+    #if _SOURCE_GBUFFER || _SOURCE_DEPTH
         normal = SampleNormal(uv);
         return SampleDepth(uv);
     #else
@@ -420,7 +420,7 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         {
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
-            #pragma multi_compile _SOURCE_DEPTHNORMALS _SOURCE_GBUFFER
+            #pragma multi_compile _SOURCE_DEPTH _SOURCE_DEPTHNORMALS _SOURCE_GBUFFER
             #pragma multi_compile _ _SAMPLECOUNT_LOWEST
             #pragma vertex vert_img
             #pragma fragment frag_ao
@@ -431,7 +431,7 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         {
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
-            #pragma multi_compile _SOURCE_DEPTHNORMALS _SOURCE_GBUFFER
+            #pragma multi_compile _ _SOURCE_GBUFFER
             #pragma vertex vert_img
             #pragma fragment frag_blur1
             #pragma target 3.0
@@ -441,7 +441,7 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         {
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
-            #pragma multi_compile _SOURCE_DEPTHNORMALS _SOURCE_GBUFFER
+            #pragma multi_compile _ _SOURCE_GBUFFER
             #pragma vertex vert_img
             #pragma fragment frag_blur2
             #pragma target 3.0

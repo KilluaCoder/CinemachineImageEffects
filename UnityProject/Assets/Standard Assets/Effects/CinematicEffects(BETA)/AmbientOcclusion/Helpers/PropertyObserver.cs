@@ -9,6 +9,7 @@ namespace UnityStandardAssets.CinematicEffects
         {
             // AO properties
             bool _downsampling;
+            OcclusionSource _occlusionSource;
             bool _ambientOnly;
 
             // Camera properties
@@ -20,6 +21,7 @@ namespace UnityStandardAssets.CinematicEffects
             {
                 return
                     _downsampling != setting.downsampling ||
+                    _occlusionSource != setting.occlusionSource ||
                     _ambientOnly != setting.ambientOnly ||
                     _pixelWidth != camera.pixelWidth ||
                     _pixelHeight != camera.pixelHeight;
@@ -29,6 +31,7 @@ namespace UnityStandardAssets.CinematicEffects
             public void Update(Settings setting, Camera camera)
             {
                 _downsampling = setting.downsampling;
+                _occlusionSource = setting.occlusionSource;
                 _ambientOnly = setting.ambientOnly;
                 _pixelWidth = camera.pixelWidth;
                 _pixelHeight = camera.pixelHeight;

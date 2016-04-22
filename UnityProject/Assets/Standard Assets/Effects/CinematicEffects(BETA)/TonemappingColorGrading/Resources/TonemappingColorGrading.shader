@@ -264,6 +264,20 @@ Shader "Hidden/TonemappingColorGrading"
             ENDCG
         }
 
+        // Tonemapping (Neutral Hejl/Habble)
+        Pass
+        {
+            CGPROGRAM
+                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ ENABLE_COLOR_GRADING
+                #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
+                #pragma fragment frag_tcg
+                #define TONEMAPPING_NEUTRAL
+                #include "TonemappingColorGrading.cginc"
+            ENDCG
+        }
+
         // Eye adaptation debug slider
         Pass
         {

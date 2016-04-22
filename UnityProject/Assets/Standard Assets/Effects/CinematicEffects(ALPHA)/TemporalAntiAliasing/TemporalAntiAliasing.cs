@@ -156,8 +156,8 @@ public class TemporalAntiAliasing : MonoBehaviour
 
         Graphics.Blit(source, temporary, material, 0);
 
-        Graphics.Blit(temporary, destination);
         Graphics.Blit(temporary, m_History);
+        Graphics.Blit(temporary, destination);
 
         RenderTexture.ReleaseTemporary(temporary);
     }

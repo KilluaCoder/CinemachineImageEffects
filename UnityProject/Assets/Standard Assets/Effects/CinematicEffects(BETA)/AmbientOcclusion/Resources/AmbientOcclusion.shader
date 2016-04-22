@@ -1,6 +1,3 @@
-// Upgrade NOTE: commented out 'float4x4 _WorldToCamera', a built-in variable
-// Upgrade NOTE: replaced '_WorldToCamera' with 'unity_WorldToCamera'
-
 Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
 {
     Properties
@@ -51,7 +48,7 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
     #if _SOURCE_GBUFFER
     sampler2D _CameraGBufferTexture2;
     sampler2D_float _CameraDepthTexture;
-    // float4x4 _WorldToCamera;
+    float4x4 _WorldToCamera;
     #else
     sampler2D_float _CameraDepthNormalsTexture;
     #endif
@@ -130,7 +127,7 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
     {
     #if _SOURCE_GBUFFER
         float3 norm = tex2D(_CameraGBufferTexture2, uv).xyz * 2 - 1;
-        return mul((float3x3)unity_WorldToCamera, norm);
+        return mul((float3x3)_WorldToCamera, norm);
     #else
         float4 cdn = tex2D(_CameraDepthNormalsTexture, uv);
         return DecodeViewNormalStereo(cdn) * float3(1, 1, -1);

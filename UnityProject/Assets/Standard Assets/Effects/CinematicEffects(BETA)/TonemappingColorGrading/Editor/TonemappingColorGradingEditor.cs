@@ -277,8 +277,19 @@ namespace UnityStandardAssets.CinematicEffects
                                 field.propertyType == SerializedPropertyType.AnimationCurve &&
                                 concreteTarget.tonemapping.tonemapper != TonemappingColorGrading.Tonemapper.Curve)
                                 continue;
+                            
+                            // Special case for the neutral tonemapper
+                            bool neutralParam = field.name.StartsWith("neutral");
 
-                            EditorGUILayout.PropertyField(field);
+                            if (group.Key.FieldType == typeof(TonemappingColorGrading.TonemappingSettings) &&
+                                concreteTarget.tonemapping.tonemapper != TonemappingColorGrading.Tonemapper.Neutral &&
+                                neutralParam)
+                                continue;
+
+                            if (neutralParam)
+                                EditorGUILayout.PropertyField(field, new GUIContent(ObjectNames.NicifyVariableName(field.name.Substring(7))));
+                            else
+                                EditorGUILayout.PropertyField(field);
                         }
 
                         // Bake button

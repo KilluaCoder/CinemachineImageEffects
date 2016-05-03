@@ -11,6 +11,12 @@ namespace UnityStandardAssets.CinematicEffects
             Lowest, Low, Medium, High, Variable
         }
 
+        /// Values for Settings.occlusionSource, determining the source buffer of occlusion.
+        public enum OcclusionSource
+        {
+            DepthTexture, DepthNormalsTexture, GBuffer
+        }
+
         /// Class used for storing settings of AmbientOcclusion.
         [Serializable]
         public class Settings
@@ -41,11 +47,16 @@ namespace UnityStandardAssets.CinematicEffects
             public bool downsampling;
 
             /// Enables the ambient-only mode in that the effect only affects
-            /// ambient lighting. This mode is only available with deferred
-            /// shading and HDR rendering.
+            /// ambient lighting. This mode is only available with G-buffer
+            /// source and HDR rendering.
             [SerializeField]
             [Tooltip("If checked, the effect only affects ambient lighting.")]
             public bool ambientOnly;
+
+            /// Source buffer on which the occlusion estimator is based.
+            [SerializeField]
+            [Tooltip("Source buffer on which the occlusion estimator is based.")]
+            public OcclusionSource occlusionSource;
 
             [SerializeField]
             public bool debug;
@@ -62,7 +73,8 @@ namespace UnityStandardAssets.CinematicEffects
                         sampleCount = SampleCount.Medium,
                         sampleCountValue = 24,
                         downsampling = false,
-                        ambientOnly = false
+                        ambientOnly = false,
+                        occlusionSource = OcclusionSource.DepthNormalsTexture
                     };
                 }
             }

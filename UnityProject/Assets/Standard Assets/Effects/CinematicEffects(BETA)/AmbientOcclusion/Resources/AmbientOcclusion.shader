@@ -215,7 +215,11 @@ Shader "Hidden/Image Effects/Cinematic/AmbientOcclusion"
         for (int s = 0; s < _SampleCount; s++)
         {
             // Sample point
+    #if SHADER_API_D3D11
+            float3 v_s1 = PickSamplePoint(uv, floor(1.0001 * s)); // Nvidia fix
+    #else
             float3 v_s1 = PickSamplePoint(uv, s);
+    #endif
             v_s1 = faceforward(v_s1, -norm_o, v_s1);
             float3 vpos_s1 = vpos_o + v_s1;
 

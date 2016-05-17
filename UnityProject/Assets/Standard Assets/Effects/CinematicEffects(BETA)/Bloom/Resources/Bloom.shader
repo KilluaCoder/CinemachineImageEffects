@@ -175,7 +175,7 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
         half3 m = s0.rgb;
     #endif
 
-    #if GAMMA_COLOR
+    #if UNITY_COLORSPACE_GAMMA
         m = GammaToLinearSpace(m);
     #endif
         // Pixel brightness
@@ -216,11 +216,11 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
     {
         half4 base = tex2D(_BaseTex, i.uvBase);
         half3 blur = UpsampleFilter(i.uvMain);
-    #if GAMMA_COLOR
+    #if UNITY_COLORSPACE_GAMMA
         base.rgb = GammaToLinearSpace(base.rgb);
     #endif
         half3 cout = base.rgb + blur * _Intensity;
-    #if GAMMA_COLOR
+    #if UNITY_COLORSPACE_GAMMA
         cout = LinearToGammaSpace(cout);
     #endif
         return half4(cout, base.a);
@@ -234,7 +234,7 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
             #pragma multi_compile _ ANTI_FLICKER
-            #pragma multi_compile LINEAR_COLOR GAMMA_COLOR
+            #pragma multi_compile _ UNITY_COLORSPACE_GAMMA
             #pragma vertex vert_img
             #pragma fragment frag_prefilter
             #pragma target 3.0
@@ -274,7 +274,7 @@ Shader "Hidden/Image Effects/Cinematic/Bloom"
             ZTest Always Cull Off ZWrite Off
             CGPROGRAM
             #pragma multi_compile _ HIGH_QUALITY
-            #pragma multi_compile LINEAR_COLOR GAMMA_COLOR
+            #pragma multi_compile _ UNITY_COLORSPACE_GAMMA
             #pragma vertex vert_multitex
             #pragma fragment frag_upsample_final
             #pragma target 3.0

@@ -843,15 +843,7 @@ namespace UnityStandardAssets.CinematicEffects
             if (source.format != RenderTextureFormat.ARGBHalf && source.format != RenderTextureFormat.ARGBFloat)
                 validRenderTextureFormat = false;
 #endif
-
-            if (isGammaColorSpace)
-                material.EnableKeyword("GAMMA_COLORSPACE");
-            else
-                material.DisableKeyword("GAMMA_COLORSPACE");
-
-            material.DisableKeyword("ENABLE_EYE_ADAPTATION");
-            material.DisableKeyword("ENABLE_COLOR_GRADING");
-            material.DisableKeyword("ENABLE_DITHERING");
+            material.shaderKeywords = null;
 
             Texture lutUsed = null;
             float lutContrib = 1f;

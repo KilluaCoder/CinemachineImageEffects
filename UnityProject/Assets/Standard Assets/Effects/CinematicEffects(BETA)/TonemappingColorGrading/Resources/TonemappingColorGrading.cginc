@@ -198,7 +198,7 @@ half4 frag_tcg(v2f_img i) : SV_Target
 {
     half4 color = tex2D(_MainTex, i.uv);
 
-#if GAMMA_COLORSPACE
+#if UNITY_COLORSPACE_GAMMA
     color.rgb = GammaToLinearSpace(color.rgb);
 #endif
 
@@ -238,7 +238,7 @@ half4 frag_tcg(v2f_img i) : SV_Target
     color.rgb -= gradient.xxx;
 #endif
 
-#if GAMMA_COLORSPACE
+#if UNITY_COLORSPACE_GAMMA
     color.rgb = LinearToGammaSpace(color.rgb);
 #endif
 

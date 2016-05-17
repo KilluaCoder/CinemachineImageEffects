@@ -122,7 +122,6 @@ namespace UnityStandardAssets.CinematicEffects
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
             var useRGBM = Application.isMobilePlatform;
-            var isGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma;
 
             // source texture size
             var tw = source.width;
@@ -167,17 +166,6 @@ namespace UnityStandardAssets.CinematicEffects
                 material.EnableKeyword("ANTI_FLICKER");
             else
                 material.DisableKeyword("ANTI_FLICKER");
-
-            if (isGamma)
-            {
-                material.DisableKeyword("LINEAR_COLOR");
-                material.EnableKeyword("GAMMA_COLOR");
-            }
-            else
-            {
-                material.EnableKeyword("LINEAR_COLOR");
-                material.DisableKeyword("GAMMA_COLOR");
-            }
 
             // prefilter pass
             var prefiltered = RenderTexture.GetTemporary(tw, th, 0, rtFormat);

@@ -19,12 +19,6 @@ namespace UnityStandardAssets.CinematicEffects
         #endregion
 
         #region Settings
-        public enum VignetteMode
-        {
-            Classic,
-            Filmic
-        }
-
         [Serializable]
         public struct DistortionSettings
         {
@@ -71,9 +65,6 @@ namespace UnityStandardAssets.CinematicEffects
         {
             public bool enabled;
 
-            [Tooltip("Use the \"Filmic\" mode if you need more control over the vignette shape at the expense of performances.")]
-            public VignetteMode mode;
-
             [ColorUsage(false)]
             [Tooltip("Vignette color. Use the alpha channel for transparency.")]
             public Color color;
@@ -103,7 +94,6 @@ namespace UnityStandardAssets.CinematicEffects
                     return new VignetteSettings
                     {
                         enabled = false,
-                        mode = VignetteMode.Classic,
                         color = new Color(0f, 0f, 0f, 1f),
                         center = new Vector2(0.5f, 0.5f),
                         intensity = 1.4f,
@@ -224,7 +214,7 @@ namespace UnityStandardAssets.CinematicEffects
                 float amount = 1.6f * Math.Max(Mathf.Abs(distortion.amount), 1f);
                 float theta = 0.01745329251994f * Math.Min(160f, amount);
                 float sigma = 2f * Mathf.Tan(theta * 0.5f);
-                var p0 = new Vector4(distortion.centerX, distortion.centerY, distortion.amountX, distortion.amountY);
+                var p0 = new Vector4(distortion.centerX, distortion.centerY, Mathf.Max(distortion.amountX, 1e-4f), Mathf.Max(distortion.amountY, 1e-4f));
                 var p1 = new Vector3(distortion.amount >= 0f ? theta : 1f / theta, sigma, 1f / distortion.scale);
                 material.EnableKeyword(distortion.amount >= 0f ? "DISTORT" : "UNDISTORT");
                 material.SetVector("_DistCenterScale", p0);
@@ -280,19 +270,19 @@ namespace UnityStandardAssets.CinematicEffects
                     material.EnableKeyword("VIGNETTE_DESAT");
                     material.SetFloat("_VignetteDesat", 1f - vignette.desaturate);
                 }
+                
+                material.SetVector("_VignetteCenter", vignette.center);
 
-                if (vignette.mode == VignetteMode.Classic)
+                if (Mathf.Approximately(vignette.roundness, 1f))
                 {
                     material.EnableKeyword("VIGNETTE_CLASSIC");
                     material.SetVector("_VignetteSettings", new Vector2(vignette.intensity, vignette.smoothness));
-                    material.SetVector("_VignetteCenter", vignette.center);
                 }
                 else
                 {
                     material.EnableKeyword("VIGNETTE_FILMIC");
                     float roundness = (1f - vignette.roundness) * 6f + vignette.roundness;
                     material.SetVector("_VignetteSettings", new Vector3(vignette.intensity, vignette.smoothness, roundness));
-                    material.SetVector("_VignetteCenter", vignette.center);
                 }
             }
             

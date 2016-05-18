@@ -1,4 +1,4 @@
-﻿Shader "Hidden/Image Effects/Cinematic/Bloom"
+Shader "Hidden/Image Effects/Cinematic/Bloom"
 {
     Properties
     {

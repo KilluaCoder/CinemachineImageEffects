@@ -115,7 +115,7 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Channels to apply chromatic aberration to.")]
             public Color color;
 
-            [Range(-15f, 15f)]
+            [Range(-50f, 50f)]
             [Tooltip("Amount of tangential distortion.")]
             public float amount;
 

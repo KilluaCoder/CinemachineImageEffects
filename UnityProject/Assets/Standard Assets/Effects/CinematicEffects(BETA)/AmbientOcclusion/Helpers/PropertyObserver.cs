@@ -11,6 +11,7 @@ namespace UnityStandardAssets.CinematicEffects
             bool _downsampling;
             OcclusionSource _occlusionSource;
             bool _ambientOnly;
+            bool _debug;
 
             // Camera properties
             int _pixelWidth;
@@ -23,6 +24,7 @@ namespace UnityStandardAssets.CinematicEffects
                     _downsampling != setting.downsampling ||
                     _occlusionSource != setting.occlusionSource ||
                     _ambientOnly != setting.ambientOnly ||
+                    _debug != setting.debug ||
                     _pixelWidth != camera.pixelWidth ||
                     _pixelHeight != camera.pixelHeight;
             }
@@ -33,6 +35,7 @@ namespace UnityStandardAssets.CinematicEffects
                 _downsampling = setting.downsampling;
                 _occlusionSource = setting.occlusionSource;
                 _ambientOnly = setting.ambientOnly;
+                _debug = setting.debug;
                 _pixelWidth = camera.pixelWidth;
                 _pixelHeight = camera.pixelHeight;
             }

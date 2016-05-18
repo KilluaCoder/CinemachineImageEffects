@@ -58,7 +58,9 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Source buffer on which the occlusion estimator is based.")]
             public OcclusionSource occlusionSource;
 
+            /// Displays occlusion for debug purpose.
             [SerializeField]
+            [Tooltip("Displays occlusion for debug purpose.")]
             public bool debug;
 
             /// Returns the default settings.

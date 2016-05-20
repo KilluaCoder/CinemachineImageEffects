@@ -9,62 +9,69 @@
 sampler2D_float _CameraDepthTexture;
 
 
-float distanceSquared(float2 A, float2 B) {
-    A -= B;
-    return dot(A, A);
+float distanceSquared(float2 A, float2 B)
+{
+        A -= B;
+        return dot(A, A);
 }
 
-float distanceSquared(float3 A, float3 B) {
-    A -= B;
-    return dot(A, A);
+float distanceSquared(float3 A, float3 B)
+{
+        A -= B;
+        return dot(A, A);
 }
 
-void swap(inout float v0, inout float v1) {
-    float temp = v0;
-    v0 = v1;
-    v1 = temp;
+void swap(inout float v0, inout float v1)
+{
+        float temp = v0;
+        v0 = v1;
+        v1 = temp;
 }
 
 
-bool isIntersecting(float rayZMin, float rayZMax, float sceneZ, float layerThickness) {
+bool isIntersecting(float rayZMin, float rayZMax, float sceneZ, float layerThickness)
+{
     return (rayZMax >= sceneZ - layerThickness) && (rayZMin <= sceneZ);
 }
 
 void rayIterations(in bool traceBehindObjects, inout float2 P, inout float stepDirection, inout float end, inout int stepCount, inout int maxSteps, inout bool intersecting,
         inout float sceneZ, inout float2 dP, inout float3 Q, inout float3 dQ, inout float k, inout float dk,
         inout float rayZMin, inout float rayZMax, inout float prevZMaxEstimate, inout bool permute, inout float2 hitPixel,
-        inout float2 invSize, inout float layerThickness) {
+        inout float2 invSize, inout float layerThickness)
+{
+        bool stop = intersecting;
 
-    bool stop = intersecting;
-    UNITY_LOOP
-    for (;
-                ( (P.x * stepDirection) <= end) &&
-                  (stepCount < maxSteps) &&
-                  (!stop);
-                P += dP, Q.z += dQ.z, k += dk, stepCount += 1) {
+        UNITY_LOOP
 
-        // The depth range that the ray covers within this loop iteration.
-        // Assume that the ray is moving in increasing z and swap if backwards.
-        rayZMin = prevZMaxEstimate;
-        //rayZMin = (dQ.z * -0.5 + Q.z) / (dk * -0.5 + k);
-        // Compute the value at 1/2 pixel into the future
-        rayZMax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
-        prevZMaxEstimate = rayZMax;
-        if (rayZMin > rayZMax) { swap(rayZMin, rayZMax); }
+        for (; (P.x * stepDirection) <= end && stepCount < maxSteps && !stop; P += dP, Q.z += dQ.z, k += dk, stepCount += 1)
+        {
+                // The depth range that the ray covers within this loop iteration.
+                // Assume that the ray is moving in increasing z and swap if backwards.
+                rayZMin = prevZMaxEstimate;
+                //rayZMin = (dQ.z * -0.5 + Q.z) / (dk * -0.5 + k);
+                // Compute the value at 1/2 pixel into the future
+                rayZMax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
+                prevZMaxEstimate = rayZMax;
 
-        // Undo the homogeneous operation to obtain the camera-space
-        // Q at each point
-        hitPixel = permute ? P.yx : P;
+                if (rayZMin > rayZMax)
+                {
+                        swap(rayZMin, rayZMax);
+                }
 
-        sceneZ = tex2Dlod(_CameraDepthTexture, float4(hitPixel * invSize,0,0)).r;
-        sceneZ = -LinearEyeDepth(sceneZ);
+                // Undo the homogeneous operation to obtain the camera-space
+                // Q at each point
+                hitPixel = permute ? P.yx : P;
 
-        bool isBehind = (rayZMin <= sceneZ);
-        intersecting = isBehind && (rayZMax >= sceneZ - layerThickness);
-        stop = traceBehindObjects ? intersecting : isBehind;
+                sceneZ = tex2Dlod(_CameraDepthTexture, float4(hitPixel * invSize,0,0)).r;
+                sceneZ = -LinearEyeDepth(sceneZ);
 
-    } // pixel on ray
-    P -= dP, Q.z -= dQ.z, k -= dk;
+                bool isBehind = (rayZMin <= sceneZ);
+                intersecting = isBehind && (rayZMax >= sceneZ - layerThickness);
+                stop = traceBehindObjects ? intersecting : isBehind;
+
+        } // pixel on ray
+
+        P -= dP, Q.z -= dQ.z, k -= dk;
 }
 
 /**
@@ -83,7 +90,6 @@ bool castDenseScreenSpaceRay
     float           maxRayTraceDistance,
     out float2      hitPixel,
     int             stepRate,
-    bool            refine,
     bool            traceBehindObjects,
     out float3      csHitPoint,
     out float       stepCount) {
@@ -223,34 +229,6 @@ bool castDenseScreenSpaceRay
 
 
     stepCount = originalStepCount;
-    if (refine && intersecting && stepRate > 1) {
-
-
-        // We're going back a step.
-        P -= dP, Q.z -= dQ.z, k -= dk;
-        prevZMaxEstimate = Q.z / k;
-        rayZMin = prevZMaxEstimate;
-        rayZMax = prevZMaxEstimate;
-
-        intersecting = false;
-        int refinementStepCount = 0;
-        int refinementMaxSteps = stepRate;
-
-        float refinementConstant = 1.0 / stepRate;
-        dQ.z *= refinementConstant;
-        dP *= refinementConstant;
-        dk *= refinementConstant;
-
-        // Refinement
-        rayIterations(traceBehindObjects, P, stepDirection, end,  refinementStepCount,  refinementMaxSteps, intersecting,
-            sceneZ, dP, Q, dQ,  k,  dk,
-            rayZMin,  rayZMax,  prevZMaxEstimate, permute, hitPixel,
-            invSize,  layerThickness);
-        stepCount += refinementStepCount * refinementConstant - 1.0;
-        //stepCount = refinementStepCount;
-        intersecting = true;
-    }
-
 
     // Loop only advanced the Z component. Now that we know where we are going
     // update xy

@@ -8,9 +8,6 @@ namespace UnityStandardAssets.CinematicEffects
         [ExecuteInEditMode]
         [RequireComponent(typeof(Camera))]
         [AddComponentMenu("Cinematic Image Effects/Screen Space Reflections")]
-#if UNITY_5_4_OR_NEWER
-        [ImageEffectAllowedInSceneView]
-#endif
         public class ScreenSpaceReflection : MonoBehaviour
         {
                 public enum SSRResolution
@@ -212,6 +209,7 @@ namespace UnityStandardAssets.CinematicEffects
                 private static int kFilteredReflections;
                 private static int kBlurTexture;
                 private static int kFinalReflectionTexture;
+                private static int kTempTexture;
 
                 // Shader pass indices used by the effect
                 private enum PassIndex
@@ -249,6 +247,7 @@ namespace UnityStandardAssets.CinematicEffects
                         kBlurTexture = Shader.PropertyToID("_BlurTexture");
                         kFilteredReflections = Shader.PropertyToID("_FilteredReflections");
                         kFinalReflectionTexture = Shader.PropertyToID("_FinalReflectionTexture");
+                        kTempTexture = Shader.PropertyToID("_TempTexture");
                 }
 
                 void OnDisable()
@@ -395,9 +394,15 @@ namespace UnityStandardAssets.CinematicEffects
                                 }
 
                                 m_CommandBuffer.Blit(kReflectionTextures[0], kFinalReflectionTexture, material, (int)PassIndex.CompositeSSR);
-                                m_CommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, (RenderTexture) null, material, (int)PassIndex.CompositeFinal);
 
-                                camera_.AddCommandBuffer(CameraEvent.AfterImageEffects, m_CommandBuffer);
+                                m_CommandBuffer.GetTemporaryRT(kTempTexture, rtW, rtH, 0, FilterMode.Point, intermediateFormat);
+
+                                m_CommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, kTempTexture, material, (int)PassIndex.CompositeFinal);
+                                m_CommandBuffer.Blit(kTempTexture, BuiltinRenderTextureType.CameraTarget);
+
+
+                                m_CommandBuffer.ReleaseTemporaryRT(kTempTexture);
+                                camera_.AddCommandBuffer(CameraEvent.AfterFinalPass, m_CommandBuffer);
                         }
                 }
         }

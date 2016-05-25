@@ -261,7 +261,7 @@ namespace UnityStandardAssets.CinematicEffects
                         {
                                 if (m_CommandBuffer != null)
                                 {
-                                        camera_.RemoveCommandBuffer(CameraEvent.AfterImageEffects, m_CommandBuffer);
+                                        camera_.RemoveCommandBuffer(CameraEvent.AfterFinalPass, m_CommandBuffer);
                                 }
 
                                 m_CommandBuffer = null;

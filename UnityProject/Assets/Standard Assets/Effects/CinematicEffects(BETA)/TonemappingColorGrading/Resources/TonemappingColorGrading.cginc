@@ -56,22 +56,13 @@ half4 frag_exp(v2f_img i) : SV_Target
 
 half3 apply_lut(sampler2D tex, half3 uvw, half3 scaleOffset)
 {
-#if !UNITY_COLORSPACE_GAMMA
-    uvw = LinearToGammaSpace(uvw);
-#endif
-
     // Strip format where `height = sqrt(width)`
     uvw.z *= scaleOffset.z;
     half shift = floor(uvw.z);
     uvw.xy = uvw.xy * scaleOffset.z * scaleOffset.xy + scaleOffset.xy * 0.5;
     uvw.x += shift * scaleOffset.y;
     uvw.xyz = lerp(tex2D(tex, uvw.xy).rgb, tex2D(tex, uvw.xy + half2(scaleOffset.y, 0)).rgb, uvw.z - shift);
-
-#if !UNITY_COLORSPACE_GAMMA
-    return GammaToLinearSpace(uvw);
-#else
     return uvw;
-#endif
 }
 
 half3 ToCIE(half3 color)
@@ -255,7 +246,13 @@ half4 frag_tcg(v2f_img i) : SV_Target
 #endif
 
 #if ENABLE_USER_LUT
-    half3 lc = apply_lut(_UserLutTex, saturate(color.rgb), _UserLutParams.xyz);
+    #if !UNITY_COLORSPACE_GAMMA
+        half3 lc = apply_lut(_UserLutTex, saturate(LinearToGammaSpace(color.rgb)), _UserLutParams.xyz);
+        lc = GammaToLinearSpace(lc);
+    #else
+        half3 lc = apply_lut(_UserLutTex, saturate(color.rgb), _UserLutParams.xyz);
+    #endif
+
     color.rgb = lerp(color.rgb, lc, _UserLutParams.w);
 #endif
 

@@ -131,7 +131,8 @@ namespace UnityStandardAssets.CinematicEffects
             Hable,
             HejlDawson,
             Photographic,
-            Reinhard
+            Reinhard,
+            Neutral
         }
 
         [Serializable]
@@ -148,6 +149,25 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Custom tonemapping curve.")]
             public AnimationCurve curve;
 
+            // Neutral settings
+            [Range(-0.1f, 0.1f)]
+            public float neutralBlackIn;
+
+            [Range(1f, 20f)]
+            public float neutralWhiteIn;
+
+            [Range(-0.09f, 0.1f)]
+            public float neutralBlackOut;
+
+            [Range(1f, 19f)]
+            public float neutralWhiteOut;
+
+            [Range(0.1f, 20f)]
+            public float neutralWhiteLevel;
+
+            [Range(1f, 10f)]
+            public float neutralWhiteClip;
+
             public static TonemappingSettings defaultSettings
             {
                 get
@@ -155,9 +175,15 @@ namespace UnityStandardAssets.CinematicEffects
                     return new TonemappingSettings
                     {
                         enabled = false,
-                        tonemapper = Tonemapper.ACES,
+                        tonemapper = Tonemapper.Neutral,
                         exposure = 1f,
-                        curve = CurvesSettings.defaultCurve
+                        curve = CurvesSettings.defaultCurve,
+                        neutralBlackIn = 0.02f,
+                        neutralWhiteIn = 10f,
+                        neutralBlackOut = 0f,
+                        neutralWhiteOut = 10f,
+                        neutralWhiteLevel = 5.3f,
+                        neutralWhiteClip = 10f
                     };
                 }
             }
@@ -217,7 +243,13 @@ namespace UnityStandardAssets.CinematicEffects
         [Serializable]
         public struct BasicsSettings
         {
-            [Range(-0.5f, 0.5f), Tooltip("Shift the hue of all colors.")]
+            [Range(-2f, 2f), Tooltip("Sets the white balance to a custom color temperature.")]
+            public float temperatureShift;
+
+            [Range(-2f, 2f), Tooltip("Sets the white balance to compensate for a green or magenta tint.")]
+            public float tint;
+
+            [Space, Range(-0.5f, 0.5f), Tooltip("Shift the hue of all colors.")]
             public float hue;
 
             [Range(0f, 2f), Tooltip("Pushes the intensity of all colors.")]
@@ -226,7 +258,7 @@ namespace UnityStandardAssets.CinematicEffects
             [Range(-1f, 1f), Tooltip("Adjusts the saturation so that clipping is minimized as colors approach full saturation.")]
             public float vibrance;
 
-            [Range(0f, 5f), Tooltip("Brightens or darkens all colors.")]
+            [Range(0f, 10f), Tooltip("Brightens or darkens all colors.")]
             public float value;
 
             [Space, Range(0f, 2f), Tooltip("Expands or shrinks the overall range of tonal values.")]
@@ -244,6 +276,8 @@ namespace UnityStandardAssets.CinematicEffects
                 {
                     return new BasicsSettings
                     {
+                        temperatureShift = 0f,
+                        tint = 0f,
                         contrast = 1f,
                         hue = 0f,
                         saturation = 1f,
@@ -341,7 +375,10 @@ namespace UnityStandardAssets.CinematicEffects
             [Space, IndentedGroup]
             public CurvesSettings curves;
 
-            [Space, Tooltip("Displays the generated LUT in the top left corner of the GameView.")]
+            [Space, Tooltip("Use dithering to try and minimize color banding in dark areas.")]
+            public bool useDithering;
+
+            [Tooltip("Displays the generated LUT in the top left corner of the GameView.")]
             public bool showDebug;
 
             public static ColorGradingSettings defaultSettings
@@ -351,6 +388,7 @@ namespace UnityStandardAssets.CinematicEffects
                     return new ColorGradingSettings
                     {
                         enabled = false,
+                        useDithering = false,
                         showDebug = false,
                         precision = ColorGradingPrecision.Normal,
                         colorWheels = ColorWheelsSettings.defaultSettings,
@@ -546,6 +584,7 @@ namespace UnityStandardAssets.CinematicEffects
             TonemappingHejlDawson,
             TonemappingPhotographic,
             TonemappingReinhard,
+            TonemappingNeutral,
             AdaptationDebug
         }
 
@@ -635,6 +674,45 @@ namespace UnityStandardAssets.CinematicEffects
             tex2D.Apply();
 
             return tex2D;
+        }
+
+        // An analytical model of chromaticity of the standard illuminant, by Judd et al.
+        // http://en.wikipedia.org/wiki/Standard_illuminant#Illuminant_series_D
+        // Slightly modifed to adjust it with the D65 white point (x=0.31271, y=0.32902).
+        private float StandardIlluminantY(float x)
+        {
+            return 2.87f * x - 3f * x * x - 0.27509507f;
+        }
+
+        // CIE xy chromaticity to CAT02 LMS.
+        // http://en.wikipedia.org/wiki/LMS_color_space#CAT02
+        private Vector3 CIExyToLMS(float x, float y)
+        {
+            float Y = 1f;
+            float X = Y * x / y;
+            float Z = Y * (1f - x - y) / y;
+
+            float L =  0.7328f * X + 0.4296f * Y - 0.1624f * Z;
+            float M = -0.7036f * X + 1.6975f * Y + 0.0061f * Z;
+            float S =  0.0030f * X + 0.0136f * Y + 0.9834f * Z;
+
+            return new Vector3(L, M, S);
+        }
+
+        private Vector3 GetWhiteBalance()
+        {
+            float t1 = colorGrading.basics.temperatureShift;
+            float t2 = colorGrading.basics.tint;
+
+            // Get the CIE xy chromaticity of the reference white point.
+            // Note: 0.31271 = x value on the D65 white point
+            float x = 0.31271f - t1 * (t1 < 0f ? 0.1f : 0.05f);
+            float y = StandardIlluminantY(x) + t2 * 0.05f;
+
+            // Calculate the coefficients in the LMS space.
+            Vector3 w1 = new Vector3(0.949237f, 1.03542f, 1.08728f); // D65 white point
+            Vector3 w2 = CIExyToLMS(x, y);
+            return new Vector3(w1.x / w2.x, w1.y / w2.y, w1.z / w2.z);
         }
 
         private static Color NormalizeColor(Color c)
@@ -765,14 +843,7 @@ namespace UnityStandardAssets.CinematicEffects
             if (source.format != RenderTextureFormat.ARGBHalf && source.format != RenderTextureFormat.ARGBFloat)
                 validRenderTextureFormat = false;
 #endif
-
-            if (isGammaColorSpace)
-                material.EnableKeyword("GAMMA_COLORSPACE");
-            else
-                material.DisableKeyword("GAMMA_COLORSPACE");
-
-            material.DisableKeyword("ENABLE_EYE_ADAPTATION");
-            material.DisableKeyword("ENABLE_COLOR_GRADING");
+            material.shaderKeywords = null;
 
             Texture lutUsed = null;
             float lutContrib = 1f;
@@ -867,6 +938,28 @@ namespace UnityStandardAssets.CinematicEffects
                     material.SetFloat("_ToneCurveRange", m_TonemapperCurveRange);
                     material.SetTexture("_ToneCurve", tonemapperCurve);
                 }
+                else if (tonemapping.tonemapper == Tonemapper.Neutral)
+                {
+                    const float scaleFactor = 20f;
+                    const float scaleFactorHalf = scaleFactor * 0.5f;
+
+                    float inBlack = tonemapping.neutralBlackIn * scaleFactor + 1f;
+                    float outBlack = tonemapping.neutralBlackOut * scaleFactorHalf + 1f;
+                    float inWhite = tonemapping.neutralWhiteIn / scaleFactor;
+                    float outWhite = 1f - tonemapping.neutralWhiteOut / scaleFactor;
+                    float blackRatio = inBlack / outBlack;
+                    float whiteRatio = inWhite / outWhite;
+
+                    const float a = 0.2f;
+                    float b = Mathf.Max(0f, Mathf.LerpUnclamped(0.57f, 0.37f, blackRatio));
+                    float c = Mathf.LerpUnclamped(0.01f, 0.24f, whiteRatio);
+                    float d = Mathf.Max(0f, Mathf.LerpUnclamped(0.02f, 0.20f, blackRatio));
+                    const float e = 0.02f;
+                    const float f = 0.30f;
+
+                    material.SetVector("_NeutralTonemapperParams1", new Vector4(a, b, c, d));
+                    material.SetVector("_NeutralTonemapperParams2", new Vector4(e, f, tonemapping.neutralWhiteLevel, tonemapping.neutralWhiteClip / scaleFactorHalf));
+                }
 
                 material.SetFloat("_Exposure", tonemapping.exposure);
                 renderPass += (int)tonemapping.tonemapper + 1;
@@ -903,10 +996,11 @@ namespace UnityStandardAssets.CinematicEffects
                     GenerateLiftGammaGain(out lift, out gamma, out gain);
                     GenCurveTexture();
 
+                    material.SetVector("_WhiteBalance", GetWhiteBalance());
                     material.SetVector("_Lift", lift);
                     material.SetVector("_Gamma", gamma);
                     material.SetVector("_Gain", gain);
-                    material.SetVector("_ContrastGainGamma", new Vector3(colorGrading.basics.contrast, colorGrading.basics.gain, colorGrading.basics.gamma));
+                    material.SetVector("_ContrastGainGamma", new Vector3(colorGrading.basics.contrast, colorGrading.basics.gain, 1f / colorGrading.basics.gamma));
                     material.SetFloat("_Vibrance", colorGrading.basics.vibrance);
                     material.SetVector("_HSV", new Vector4(colorGrading.basics.hue, colorGrading.basics.saturation, colorGrading.basics.value));
                     material.SetVector("_ChannelMixerRed", colorGrading.channelMixer.channels[0]);
@@ -921,6 +1015,9 @@ namespace UnityStandardAssets.CinematicEffects
                 lutUsed = internalLutRt;
                 lutContrib = 1f;
                 material.EnableKeyword("ENABLE_COLOR_GRADING");
+
+                if (colorGrading.useDithering)
+                    material.EnableKeyword("ENABLE_DITHERING");
             }
 
             if (lutUsed != null)

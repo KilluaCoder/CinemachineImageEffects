@@ -6,6 +6,8 @@ half4 _MainTex_TexelSize;
 half _Exposure;
 half _ToneCurveRange;
 sampler2D _ToneCurve;
+half4 _NeutralTonemapperParams1;
+half4 _NeutralTonemapperParams2;
 
 sampler2D _LutTex;
 half4 _LutParams;
@@ -141,7 +143,7 @@ half3 tonemapHejlDawson(half3 color)
     const half d = 0.06;
 
     color *= _Exposure;
-    color = max(color, color - 0.004);
+    color = max((0.0).xxx, color - (0.004).xxx);
     color = (color * (a * color + b)) / (color * (a * color + c) + d);
     return color * color;
 }
@@ -163,11 +165,40 @@ half3 tonemapCurve(half3 color)
     return FromCIE(cie);
 }
 
+half3 neutralCurve(half3 x, half a, half b, half c, half d, half e, half f)
+{
+    return ((x * (a * x + c * b) + d * e) / (x * (a * x + b) + d * f)) - e / f;
+}
+
+half3 tonemapNeutral(half3 color)
+{
+    color *= _Exposure;
+
+    // Tonemap
+    half a = _NeutralTonemapperParams1.x;
+    half b = _NeutralTonemapperParams1.y;
+    half c = _NeutralTonemapperParams1.z;
+    half d = _NeutralTonemapperParams1.w;
+    half e = _NeutralTonemapperParams2.x;
+    half f = _NeutralTonemapperParams2.y;
+    half whiteLevel = _NeutralTonemapperParams2.z;
+    half whiteClip = _NeutralTonemapperParams2.w;
+
+    half3 whiteScale = (1.0).xxx / neutralCurve(whiteLevel, a, b, c, d, e, f);
+    color = neutralCurve(color * whiteScale, a, b, c, d, e, f);
+    color *= whiteScale;
+
+    // Post-curve white point adjustment
+    color = color / whiteClip.xxx;
+
+    return color;
+}
+
 half4 frag_tcg(v2f_img i) : SV_Target
 {
     half4 color = tex2D(_MainTex, i.uv);
 
-#if GAMMA_COLORSPACE
+#if UNITY_COLORSPACE_GAMMA
     color.rgb = GammaToLinearSpace(color.rgb);
 #endif
 
@@ -190,6 +221,8 @@ half4 frag_tcg(v2f_img i) : SV_Target
     color.rgb = tonemapPhotographic(color.rgb);
 #elif defined(TONEMAPPING_REINHARD)
     color.rgb = tonemapReinhard(color.rgb);
+#elif defined(TONEMAPPING_NEUTRAL)
+    color.rgb = tonemapNeutral(color.rgb);
 #endif
 
 #if ENABLE_COLOR_GRADING
@@ -198,12 +231,14 @@ half4 frag_tcg(v2f_img i) : SV_Target
     color.rgb = lerp(color.rgb, color_corrected, _LutParams.w);
 #endif
 
+#if ENABLE_DITHERING
     // Interleaved Gradient Noise from http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare (slide 122)
     half3 magic = float3(0.06711056, 0.00583715, 52.9829189);
     half gradient = frac(magic.z * frac(dot(i.uv / _MainTex_TexelSize, magic.xy))) / 255.0;
     color.rgb -= gradient.xxx;
+#endif
 
-#if GAMMA_COLORSPACE
+#if UNITY_COLORSPACE_GAMMA
     color.rgb = LinearToGammaSpace(color.rgb);
 #endif
 

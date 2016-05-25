@@ -4,7 +4,6 @@ using System;
 namespace UnityStandardAssets.CinematicEffects
 {
     //Improvement ideas:
-    //  In hdr do local tonemapping/inverse tonemapping to stabilize bokeh.
     //  Use rgba8 buffer in ldr / in some pass in hdr (in correlation to previous point and remapping coc from -1/0/1 to 0/0.5/1)
     //  Use temporal stabilisation.
     //  Add a mode to do bokeh texture in quarter res as well
@@ -177,11 +176,14 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Applies a median filter for even smoother bokeh.")]
             public FilterQuality medianFilter;
 
-            [Tooltip("Dilates near blur to make it smoother.")]
+            [Tooltip("Dilates near blur over in focus area.")]
             public bool dilateNearBlur;
 
-            [Tooltip("Uses high quality upsampling for the blur passes.")]
+            [Tooltip("Uses high quality upsampling.")]
             public bool highQualityUpsampling;
+
+            [Tooltip("Prevent haloing from bright in focus region over dark out of focus region.")]
+            public bool preventHaloing;
 
             public static QualitySettings[] presetQualitySettings =
             {
@@ -191,7 +193,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = false,
                     medianFilter = FilterQuality.None,
                     dilateNearBlur = false,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = false
                 },
 
                 // Low
@@ -200,7 +203,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.None,
                     dilateNearBlur = false,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = false
                 },
 
                 // Medium
@@ -209,7 +213,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.Normal,
                     dilateNearBlur = false,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = false
                 },
 
                 // High
@@ -218,7 +223,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.Normal,
                     dilateNearBlur = true,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = false
                 },
 
                 // Very high
@@ -227,7 +233,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.High,
                     dilateNearBlur = true,
-                    highQualityUpsampling = false
+                    highQualityUpsampling = false,
+                    preventHaloing = true
                 },
 
                 // Ultra
@@ -236,7 +243,8 @@ namespace UnityStandardAssets.CinematicEffects
                     prefilterBlur = true,
                     medianFilter = FilterQuality.High,
                     dilateNearBlur = true,
-                    highQualityUpsampling = true
+                    highQualityUpsampling = true,
+                    preventHaloing = true
                 }
             };
         }
@@ -593,6 +601,11 @@ namespace UnityStandardAssets.CinematicEffects
             RenderTexture colorAndCoc = m_RTU.GetTemporaryRenderTexture(rtW, rtH);
             RenderTexture colorAndCoc2 = m_RTU.GetTemporaryRenderTexture(rtW, rtH);
 
+            if (m_CurrentQualitySettings.preventHaloing)
+                filmicDepthOfFieldMaterial.EnableKeyword("USE_SPECIAL_FETCH_FOR_COC");
+            else
+                filmicDepthOfFieldMaterial.DisableKeyword("USE_SPECIAL_FETCH_FOR_COC");
+
             // Downsample to Color + COC buffer and apply boost
             Vector4 cocParam;
             Vector4 cocCoe;
@@ -641,6 +654,7 @@ namespace UnityStandardAssets.CinematicEffects
                 filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(nearBlurRadius * 0.75f, 0.0f, 0.0f, 0.0f));
                 Graphics.Blit(blurredFgCoc2, blurredFgCoc, filmicDepthOfFieldMaterial, (int)Passes.DilateFgCoc);
                 m_RTU.ReleaseTemporaryRenderTexture(blurredFgCoc2);
+                blurredFgCoc.filterMode = FilterMode.Point;
             }
 
             // Blur downsampled color to fill the gap between samples

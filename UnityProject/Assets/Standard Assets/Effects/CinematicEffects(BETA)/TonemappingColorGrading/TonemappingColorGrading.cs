@@ -426,18 +426,6 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
         [SerializeField, SettingsGroup]
-        private LUTSettings m_Lut = LUTSettings.defaultSettings;
-        public LUTSettings lut
-        {
-            get { return m_Lut; }
-            set
-            {
-                m_Lut = value;
-                SetDirty();
-            }
-        }
-
-        [SerializeField, SettingsGroup]
         private ColorGradingSettings m_ColorGrading = ColorGradingSettings.defaultSettings;
         public ColorGradingSettings colorGrading
         {
@@ -447,6 +435,14 @@ namespace UnityStandardAssets.CinematicEffects
                 m_ColorGrading = value;
                 SetDirty();
             }
+        }
+
+        [SerializeField, SettingsGroup]
+        private LUTSettings m_Lut = LUTSettings.defaultSettings;
+        public LUTSettings lut
+        {
+            get { return m_Lut; }
+            set { m_Lut = value; }
         }
         #endregion
 
@@ -843,10 +839,8 @@ namespace UnityStandardAssets.CinematicEffects
             if (source.format != RenderTextureFormat.ARGBHalf && source.format != RenderTextureFormat.ARGBFloat)
                 validRenderTextureFormat = false;
 #endif
-            material.shaderKeywords = null;
 
-            Texture lutUsed = null;
-            float lutContrib = 1f;
+            material.shaderKeywords = null;
 
             RenderTexture rtSquared = null;
             RenderTexture[] rts = null;
@@ -965,33 +959,10 @@ namespace UnityStandardAssets.CinematicEffects
                 renderPass += (int)tonemapping.tonemapper + 1;
             }
 
-            if (lut.enabled)
-            {
-                Texture tex = lut.texture;
-
-                if (lut.texture == null || !CheckUserLut())
-                    tex = identityLut;
-
-                lutUsed = tex;
-                lutContrib = lut.contribution;
-                material.EnableKeyword("ENABLE_COLOR_GRADING");
-            }
-
             if (colorGrading.enabled)
             {
                 if (m_Dirty || !m_InternalLut.IsCreated())
                 {
-                    if (lutUsed == null)
-                    {
-                        material.SetVector("_UserLutParams", new Vector4(1f / identityLut.width, 1f / identityLut.height, identityLut.height - 1f, 1f));
-                        material.SetTexture("_UserLutTex", identityLut);
-                    }
-                    else
-                    {
-                        material.SetVector("_UserLutParams", new Vector4(1f / lutUsed.width, 1f / lutUsed.height, lutUsed.height - 1f, lut.contribution));
-                        material.SetTexture("_UserLutTex", lutUsed);
-                    }
-
                     Color lift, gamma, gain;
                     GenerateLiftGammaGain(out lift, out gamma, out gain);
                     GenCurveTexture();
@@ -1011,19 +982,21 @@ namespace UnityStandardAssets.CinematicEffects
                     Graphics.Blit(identityLut, internalLutRt, material, (int)Pass.LutGen);
                     m_Dirty = false;
                 }
-
-                lutUsed = internalLutRt;
-                lutContrib = 1f;
+                
                 material.EnableKeyword("ENABLE_COLOR_GRADING");
 
                 if (colorGrading.useDithering)
                     material.EnableKeyword("ENABLE_DITHERING");
+                
+                material.SetTexture("_InternalLutTex", internalLutRt);
+                material.SetVector("_InternalLutParams", new Vector3(1f / internalLutRt.width, 1f / internalLutRt.height, internalLutRt.height - 1f));
             }
 
-            if (lutUsed != null)
+            if (lut.enabled && lut.texture != null && CheckUserLut())
             {
-                material.SetTexture("_LutTex", lutUsed);
-                material.SetVector("_LutParams", new Vector4(1f / lutUsed.width, 1f / lutUsed.height, lutUsed.height - 1f, lutContrib));
+                material.SetTexture("_UserLutTex", lut.texture);
+                material.SetVector("_UserLutParams", new Vector4(1f / lut.texture.width, 1f / lut.texture.height, lut.texture.height - 1f, lut.contribution));
+                material.EnableKeyword("ENABLE_USER_LUT");
             }
 
             Graphics.Blit(source, destination, material, renderPass);

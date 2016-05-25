@@ -17,6 +17,7 @@ namespace UnityStandardAssets.CinematicEffects
         {
             public string name;
             public bool experimental;
+            public bool quality;
             public List<SerializedProperty> properties;
         }
         private List<InfoMap> m_GroupFields = new List<InfoMap>();
@@ -49,8 +50,9 @@ namespace UnityStandardAssets.CinematicEffects
                     {
                         infoGroup = new InfoMap();
                         infoGroup.properties = new List<SerializedProperty>();
-                        infoGroup.name = setting.Name;
-                        infoGroup.experimental = setting.GetCustomAttributes(typeof(SMAA.ExperimentalGroup), false).Length > 0;
+                        infoGroup.name = group.Name;
+                        infoGroup.quality = group.FieldType == typeof(SMAA.QualitySettings);
+                        infoGroup.experimental = group.GetCustomAttributes(typeof(SMAA.ExperimentalGroup), false).Length > 0;
                         m_GroupFields.Add(infoGroup);
                     }
 
@@ -70,11 +72,13 @@ namespace UnityStandardAssets.CinematicEffects
             foreach (var setting in m_TopLevelFields)
                 EditorGUILayout.PropertyField(setting);
 
-            if ((target as SMAA).settings.quality != SMAA.QualityPreset.Custom)
-                return EditorGUI.EndChangeCheck();
-
             foreach (var group in m_GroupFields)
             {
+                if (group.quality && (target as SMAA).settings.quality != SMAA.QualityPreset.Custom)
+                {
+                    continue;
+                }
+
                 string title = ObjectNames.NicifyVariableName(group.name);
                 if (group.experimental)
                     title += " (Experimental)";

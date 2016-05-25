@@ -1,25 +1,25 @@
 #include "UnityCG.cginc"
 
 RWStructuredBuffer<uint4> _Histogram;
+Texture2D<float4> _Source;
+
+CBUFFER_START (Params)
+    uint4 _Channels;
+    uint _IsLinear;
+    float _Height;
+CBUFFER_END
 
 // Gathering pass
-Texture2D<float4> _Source;
-uint4 _Channels;
-uint _IsLinear;
-
 groupshared uint4 gs_histogram[256];
 
 #pragma kernel KHistogramGather
-[numthreads(32,32,1)]
+[numthreads(32,32,1)] // Needs at least 256 threads per group
 void KHistogramGather(uint3 id : SV_DispatchThreadID, uint3 _group_thread_id : SV_GroupThreadID)
 {
     const uint thread_id = _group_thread_id.y * 32 + _group_thread_id.x;
     
-    if (thread_id == 0)
-    {
-        for (int i = 0; i < 256; i++)
-            gs_histogram[i] = uint4(0, 0, 0, 0);
-    }
+    if (thread_id < 256)
+        gs_histogram[thread_id] = uint4(0, 0, 0, 0);
     
     uint sw, sh;
     _Source.GetDimensions(sw, sh);
@@ -45,22 +45,19 @@ void KHistogramGather(uint3 id : SV_DispatchThreadID, uint3 _group_thread_id : S
     }
 
     GroupMemoryBarrierWithGroupSync();
-
-    if (thread_id == 0)
+    
+    // Merge
+    if (thread_id < 256)
     {
-        for (int i = 0; i < 256; i++)
-        {
-            uint4 h = gs_histogram[i];
-            InterlockedAdd(_Histogram[i].x, h.x); // Red
-            InterlockedAdd(_Histogram[i].y, h.y); // Green
-            InterlockedAdd(_Histogram[i].z, h.z); // Blue
-            InterlockedAdd(_Histogram[i].w, h.w); // Luminance
-        }
+        uint4 h = gs_histogram[thread_id];
+        InterlockedAdd(_Histogram[thread_id].x, h.x); // Red
+        InterlockedAdd(_Histogram[thread_id].y, h.y); // Green
+        InterlockedAdd(_Histogram[thread_id].z, h.z); // Blue
+        InterlockedAdd(_Histogram[thread_id].w, h.w); // Luminance
     }
 }
 
 // Scaling pass
-float _Height;
 groupshared uint4 gs_pyramid[256];
 
 #pragma kernel KHistogramScale

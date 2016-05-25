@@ -1,12 +1,13 @@
 using UnityEngine;
-using UnityEngine.Serialization;
-using System;
 
 namespace UnityStandardAssets.CinematicEffects
 {
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
     [AddComponentMenu("Image Effects/Anti-aliasing")]
+#if UNITY_5_4_OR_NEWER
+    [ImageEffectAllowedInSceneView]
+#endif
     public class AntiAliasing : MonoBehaviour
     {
         public enum Method

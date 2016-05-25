@@ -13,7 +13,7 @@ SceneSettings:
 --- !u!104 &2
 RenderSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 6
+  serializedVersion: 7
   m_Fog: 0
   m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   m_FogMode: 3
@@ -37,12 +37,12 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
+  m_IndirectSpecularColor: {r: 0.44692534, g: 0.49678725, b: 0.5750856, a: 1}
 --- !u!157 &3
 LightmapSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 6
+  serializedVersion: 7
   m_GIWorkflowMode: 0
-  m_LightmapsMode: 1
   m_GISettings:
     serializedVersion: 2
     m_BounceScale: 1
@@ -53,17 +53,22 @@ LightmapSettings:
     m_EnableBakedLightmaps: 1
     m_EnableRealtimeLightmaps: 1
   m_LightmapEditorSettings:
-    serializedVersion: 3
+    serializedVersion: 4
     m_Resolution: 2
     m_BakeResolution: 40
     m_TextureWidth: 1024
     m_TextureHeight: 1024
+    m_AO: 0
     m_AOMaxDistance: 1
-    m_Padding: 2
     m_CompAOExponent: 0
+    m_CompAOExponentDirect: 0
+    m_Padding: 2
     m_LightmapParameters: {fileID: 0}
+    m_LightmapsBakeMode: 1
     m_TextureCompression: 1
+    m_DirectLightInLightProbes: 1
     m_FinalGather: 0
+    m_FinalGatherFiltering: 1
     m_FinalGatherRayCount: 1024
     m_ReflectionCompression: 2
   m_LightingDataAsset: {fileID: 0}
@@ -112,16 +117,20 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
   m_Materials:
   - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
   m_SubsetIndices: 
   m_StaticBatchRoot: {fileID: 0}
-  m_UseLightProbes: 1
-  m_ReflectionProbeUsage: 1
   m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
   m_ScaleInLightmap: 1
   m_PreserveUVs: 1
+  m_IgnoreNormalsForChartDetection: 0
   m_ImportantGI: 0
+  m_MinimumChartSize: 4
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
@@ -158,6 +167,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &582270017
 GameObject:
   m_ObjectHideFlags: 0
@@ -171,7 +181,11 @@ GameObject:
   - 124: {fileID: 582270022}
   - 81: {fileID: 582270021}
   - 114: {fileID: 582270020}
+  - 114: {fileID: 582270029}
   - 114: {fileID: 582270019}
+  - 114: {fileID: 582270028}
+  - 114: {fileID: 582270027}
+  - 114: {fileID: 582270026}
   - 114: {fileID: 582270018}
   m_Layer: 0
   m_Name: Main Camera
@@ -188,17 +202,36 @@ MonoBehaviour:
   m_GameObject: {fileID: 582270017}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdc35e0180670ab4e8d2f9439137791f, type: 3}
+  m_Script: {fileID: 11500000, guid: ff5335a7357baa3489a469d0ca0f40f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  displayType: 0
-  edgeType: 2
-  areaTex: {fileID: 2800000, guid: e62aa7035ea66c94b90b2d8774d02cca, type: 3}
-  searchTex: {fileID: 2800000, guid: 387ed7c38eb63554db846987adb98e68, type: 3}
-  temporalType: 1
-  temporalAccumulationWeight: 0.3
-  depthThreshold: 0.1
-  smaaShader: {fileID: 4800000, guid: 4505fec7a81214243b8e59edf89e3a53, type: 3}
+  distortion:
+    enabled: 0
+    amount: 0
+    centerX: 0.5
+    centerY: 0.5
+    amountX: 1
+    amountY: 1
+    scale: 1
+  vignette:
+    enabled: 1
+    mode: 0
+    color: {r: 0, g: 0, b: 0, a: 1}
+    intensity: 0.95
+    smoothness: 1.5
+    radius: 0.7
+    spread: 0.4
+    falloff: 0.5
+    roundness: 1
+    blur: 0
+    desaturate: 0
+  chromaticAberration:
+    enabled: 1
+    mode: 1
+    tangential: 1.78
+    axial: 1.55
+    contrastDependency: 1.1
+  m_Shader: {fileID: 4800000, guid: 136ab50fe2b9ad64d9c22adc3668abb7, type: 3}
 --- !u!114 &582270019
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207,31 +240,43 @@ MonoBehaviour:
   m_GameObject: {fileID: 582270017}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 58a7625302996c94ba07a8ca3351f668, type: 3}
+  m_Script: {fileID: 11500000, guid: fdc35e0180670ab4e8d2f9439137791f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debugClamp: 0
-  histogramComputeShader: {fileID: 7200000, guid: 5ee4b74fa28a3e74e89423dd49705fc5,
-    type: 3}
-  histogramShader: {fileID: 4800000, guid: 9a8e838691462194482a43a02e424876, type: 3}
-  m_FilmicCurve:
-    enabled: 0
-    exposureBias: 0
-    contrast: 1
-    toe: 0
-    lutShoulder: 0
-  m_ColorGrading:
-    enabled: 1
-    whiteBalance: {r: 1, g: 1, b: 1, a: 1}
-    saturation: 0.97
-    gamma: 1
-    lutColors:
-      shadows: {r: 1, g: 0.4175383, b: 0.6040339, a: 1}
-      midtones: {r: 0.5367572, g: 0.3135361, b: 1, a: 1}
-      highlights: {r: 1, g: 1, b: 1, a: 1}
-  m_UserLutTexture: {fileID: 0}
-  tonemapShader: {fileID: 4800000, guid: 964b34bbab7f5e64fa40f37eaccac1ad, type: 3}
-  validRenderTextureFormat: 1
+  m_SMAA:
+    settings:
+      debugPass: 0
+      quality: 2
+      edgeDetectionMethod: 2
+    quality:
+      diagonalDetection: 1
+      cornerDetection: 1
+      threshold: 0.1
+      depthThreshold: 0.01
+      maxSearchSteps: 16
+      maxDiagonalSearchSteps: 8
+      cornerRounding: 25
+      localContrastAdaptationFactor: 2
+    predication:
+      enabled: 0
+      threshold: 0.01
+      scale: 2
+      strength: 0.4
+    temporal:
+      enabled: 0
+      fuzzSize: 2
+  m_FXAA:
+    preset:
+      qualitySettings:
+        subpixelAliasingRemovalAmount: 0.75
+        edgeDetectionThreshold: 0.166
+        minimumRequiredLuminance: 0.0833
+      consoleSettings:
+        subpixelSpreadAmount: 0.5
+        edgeSharpnessAmount: 8
+        edgeDetectionThreshold: 0.125
+        minimumRequiredLuminance: 0.05
+  m_Method: 0
 --- !u!114 &582270020
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -275,7 +320,7 @@ MonoBehaviour:
       highlightSuppression: 0
     debugSettings:
       debugMode: 0
-  ssrShader: {fileID: 4800000, guid: 7e2fcc83af19e744787647ec0ac5d42c, type: 3}
+  m_Shader: {fileID: 4800000, guid: 7e2fcc83af19e744787647ec0ac5d42c, type: 3}
 --- !u!81 &582270021
 AudioListener:
   m_ObjectHideFlags: 0
@@ -315,7 +360,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 60
+  field of view: 66.7
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -343,6 +388,232 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &582270026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 582270017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58a7625302996c94ba07a8ca3351f668, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_HistogramComputeShader: {fileID: 7200000, guid: 5ee4b74fa28a3e74e89423dd49705fc5,
+    type: 3}
+  m_HistogramShader: {fileID: 4800000, guid: 9a8e838691462194482a43a02e424876, type: 3}
+  histogramRefreshOnPlay: 1
+  m_EyeAdaptation:
+    enabled: 0
+    middleGrey: 0.5
+    min: -3
+    max: 3
+    speed: 1.5
+    showDebug: 0
+  m_Tonemapping:
+    enabled: 0
+    tonemapper: 0
+    exposure: 1
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - time: 0
+        value: 0
+        inSlope: 1
+        outSlope: 1
+        tangentMode: 0
+      - time: 1
+        value: 1
+        inSlope: 1
+        outSlope: 1
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+  m_Lut:
+    enabled: 0
+    texture: {fileID: 0}
+    contribution: 1
+  m_ColorGrading:
+    enabled: 1
+    precision: 16
+    colorWheels:
+      shadows: {r: 1, g: 0.8525732, b: 0.68343675, a: 1}
+      midtones: {r: 0.5940654, g: 0.6125708, b: 1, a: 1}
+      highlights: {r: 1, g: 0.8298994, b: 0.6219049, a: 1}
+    basics:
+      temperatureShift: 0
+      tint: 0
+      hue: 0
+      saturation: 1
+      vibrance: 0
+      value: 1
+      contrast: 1.17
+      gain: 1
+      gamma: 0.87
+    channelMixer:
+      currentChannel: 0
+      channels:
+      - {x: 1, y: 0, z: 0}
+      - {x: 0, y: 1, z: 0}
+      - {x: 0, y: 0, z: 1}
+    curves:
+      master:
+        serializedVersion: 2
+        m_Curve:
+        - time: 0
+          value: 0
+          inSlope: 1
+          outSlope: 1
+          tangentMode: 0
+        - time: 1
+          value: 1
+          inSlope: 1
+          outSlope: 1
+          tangentMode: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 0
+      red:
+        serializedVersion: 2
+        m_Curve:
+        - time: 0
+          value: 0
+          inSlope: 1
+          outSlope: 1
+          tangentMode: 0
+        - time: 1
+          value: 1
+          inSlope: 1
+          outSlope: 1
+          tangentMode: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 0
+      green:
+        serializedVersion: 2
+        m_Curve:
+        - time: 0
+          value: 0
+          inSlope: 1
+          outSlope: 1
+          tangentMode: 0
+        - time: 1
+          value: 1
+          inSlope: 1
+          outSlope: 1
+          tangentMode: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 0
+      blue:
+        serializedVersion: 2
+        m_Curve:
+        - time: 0
+          value: 0
+          inSlope: 1
+          outSlope: 1
+          tangentMode: 0
+        - time: 1
+          value: 1
+          inSlope: 1
+          outSlope: 1
+          tangentMode: 0
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 0
+    useDithering: 0
+    showDebug: 0
+  m_Shader: {fileID: 4800000, guid: 964b34bbab7f5e64fa40f37eaccac1ad, type: 3}
+--- !u!114 &582270027
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 582270017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a338d679868f45439ea43c7ae035e36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  settings:
+    visualizeBluriness: 0
+    tweakMode: 0
+    quality: 3
+    apertureShape: 0
+    apertureOrientation: 0
+  quality:
+    prefilterBlur: 1
+    medianFilter: 1
+    dilateNearBlur: 1
+    highQualityUpsampling: 0
+    preventHaloing: 0
+  focus:
+    transform: {fileID: 0}
+    plane: 0.235
+    nearPlane: 0
+    farPlane: 1
+    fStops: 3.1
+    rangeAdjustment: 0.846
+  bokehTexture:
+    texture: {fileID: 0}
+    scale: 1
+    intensity: 50
+    threshold: 2
+    spawnHeuristic: 0.15
+  blur:
+    nearRadius: 20
+    farRadius: 20
+    boostPoint: 0.75
+    nearBoostAmount: 0
+    farBoostAmount: 0
+  m_FilmicDepthOfFieldShader: {fileID: 4800000, guid: bff0e5458fb914f5c9985ba4f09171d2,
+    type: 3}
+  m_MedianFilterShader: {fileID: 4800000, guid: a058b22d4123add4b807e832604e5e7b,
+    type: 3}
+  m_TextureBokehShader: {fileID: 4800000, guid: c961b8ed1f00f924d804ada5143bd0e8,
+    type: 3}
+--- !u!114 &582270028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 582270017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32187365ced0c42219cde2b57c99b323, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  settings:
+    threshold: 0.821
+    radius: 2
+    intensity: 1
+    highQuality: 1
+    antiFlicker: 0
+  m_Shader: {fileID: 4800000, guid: e45d4f28262b04d10a075856ab5fdb5e, type: 3}
+--- !u!114 &582270029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 582270017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e89654dcf6db746d2a57aeaaa14f5e83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  settings:
+    intensity: 0.63
+    radius: 0.77
+    sampleCount: 3
+    sampleCountValue: 24
+    blurIterations: 4
+    downsampling: 0
+    ambientOnly: 0
+    debug: 0
+  _aoShader: {fileID: 4800000, guid: 65e203e5acda447acbf9dc1ef78c4a39, type: 3}
+  _quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &679496422
 GameObject:
   m_ObjectHideFlags: 0
@@ -366,7 +637,7 @@ Light:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 679496422}
   m_Enabled: 1
-  serializedVersion: 6
+  serializedVersion: 7
   m_Type: 1
   m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
   m_Intensity: 1
@@ -388,10 +659,10 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_Lightmapping: 4
+  m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
-  m_AreaSize: {x: 1, y: 1}
 --- !u!4 &679496424
 Transform:
   m_ObjectHideFlags: 0
@@ -404,6 +675,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1811410480
 GameObject:
   m_ObjectHideFlags: 0
@@ -431,16 +703,20 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
   m_Materials:
   - {fileID: 2100000, guid: b706f609a7093af4db28e05117efda98, type: 2}
   m_SubsetIndices: 
   m_StaticBatchRoot: {fileID: 0}
-  m_UseLightProbes: 1
-  m_ReflectionProbeUsage: 1
   m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
   m_ScaleInLightmap: 1
   m_PreserveUVs: 1
+  m_IgnoreNormalsForChartDetection: 0
   m_ImportantGI: 0
+  m_MinimumChartSize: 4
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
@@ -477,3 +753,4 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

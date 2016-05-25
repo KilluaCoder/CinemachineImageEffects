@@ -21,6 +21,10 @@ namespace UnityStandardAssets.CinematicEffects
         public bool OnInspectorGUI(IAntiAliasing target)
         {
             var fxaaTarget = (FXAA)target;
+
+            if (!fxaaTarget.validSourceFormat)
+                EditorGUILayout.HelpBox("FXAA should be used at the end of the post-processing stack after conversion to LDR (after Tonemapping) to maximize quality and avoid artifacts.", MessageType.Warning);
+
             int selectedPreset = 2;
 
             if (fxaaTarget.preset.Equals(FXAA.Preset.extremePerformancePreset))

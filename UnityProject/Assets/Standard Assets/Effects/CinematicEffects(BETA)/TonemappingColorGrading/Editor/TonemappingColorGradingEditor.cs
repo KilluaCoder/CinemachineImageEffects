@@ -277,8 +277,19 @@ namespace UnityStandardAssets.CinematicEffects
                                 field.propertyType == SerializedPropertyType.AnimationCurve &&
                                 concreteTarget.tonemapping.tonemapper != TonemappingColorGrading.Tonemapper.Curve)
                                 continue;
+                            
+                            // Special case for the neutral tonemapper
+                            bool neutralParam = field.name.StartsWith("neutral");
 
-                            EditorGUILayout.PropertyField(field);
+                            if (group.Key.FieldType == typeof(TonemappingColorGrading.TonemappingSettings) &&
+                                concreteTarget.tonemapping.tonemapper != TonemappingColorGrading.Tonemapper.Neutral &&
+                                neutralParam)
+                                continue;
+
+                            if (neutralParam)
+                                EditorGUILayout.PropertyField(field, new GUIContent(ObjectNames.NicifyVariableName(field.name.Substring(7))));
+                            else
+                                EditorGUILayout.PropertyField(field);
                         }
 
                         // Bake button
@@ -468,7 +479,28 @@ namespace UnityStandardAssets.CinematicEffects
             int kernel = cs.FindKernel("KHistogramGather");
             cs.SetBuffer(kernel, "_Histogram", m_HistogramBuffer);
             cs.SetTexture(kernel, "_Source", source);
-            cs.SetVector("_SourceSize", new Vector2(source.width, source.height));
+
+            int[] channels = null;
+            switch (mode)
+            {
+                case HistogramMode.Luminance:
+                    channels = new[] { 0, 0, 0, 1 };
+                    break;
+                case HistogramMode.RGB:
+                    channels = new[] { 1, 1, 1, 0 };
+                    break;
+                case HistogramMode.Red:
+                    channels = new[] { 1, 0, 0, 0 };
+                    break;
+                case HistogramMode.Green:
+                    channels = new[] { 0, 1, 0, 0 };
+                    break;
+                case HistogramMode.Blue:
+                    channels = new[] { 0, 0, 1, 0 };
+                    break;
+            }
+
+            cs.SetInts("_Channels", channels);
             cs.SetInt("_IsLinear", concreteTarget.isGammaColorSpace ? 0 : 1);
             cs.Dispatch(kernel, Mathf.CeilToInt(source.width / 32f), Mathf.CeilToInt(source.height / 32f), 1);
 
@@ -477,7 +509,7 @@ namespace UnityStandardAssets.CinematicEffects
             cs.SetFloat("_Height", rect.height);
             cs.Dispatch(kernel, 1, 1, 1);
 
-            if (m_HistogramTexture == null || m_HistogramTexture.height != rect.height || m_HistogramTexture.width != rect.width)
+            if (m_HistogramTexture == null)
             {
                 DestroyImmediate(m_HistogramTexture);
                 m_HistogramTexture = new RenderTexture((int)rect.width, (int)rect.height, 0, RenderTextureFormat.ARGB32);

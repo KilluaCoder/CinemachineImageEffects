@@ -60,7 +60,7 @@ Shader "Hidden/TonemappingColorGrading"
                     half4 p = lerp(half4(c.bg, K.wz), half4(c.gb, K.xy), step(c.b, c.g));
                     half4 q = lerp(half4(p.xyw, c.r), half4(c.r, p.yzx), step(p.x, c.r));
                     half d = q.x - min(q.w, q.y);
-                    half e = 1.0e-10;
+                    half e = 1.0e-4;
                     return half3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
                 }
 
@@ -171,7 +171,7 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
@@ -184,7 +184,7 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
@@ -198,7 +198,7 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
@@ -212,7 +212,7 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
@@ -226,7 +226,7 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
@@ -240,7 +240,7 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
@@ -254,12 +254,26 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_REINHARD
+                #include "TonemappingColorGrading.cginc"
+            ENDCG
+        }
+
+        // Tonemapping (Neutral Hejl/Habble)
+        Pass
+        {
+            CGPROGRAM
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
+                #pragma multi_compile __ ENABLE_COLOR_GRADING
+                #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
+                #pragma fragment frag_tcg
+                #define TONEMAPPING_NEUTRAL
                 #include "TonemappingColorGrading.cginc"
             ENDCG
         }

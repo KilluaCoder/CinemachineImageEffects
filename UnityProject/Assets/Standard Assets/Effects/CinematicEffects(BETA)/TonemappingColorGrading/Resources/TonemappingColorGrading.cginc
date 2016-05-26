@@ -9,8 +9,11 @@ sampler2D _ToneCurve;
 half4 _NeutralTonemapperParams1;
 half4 _NeutralTonemapperParams2;
 
-sampler2D _LutTex;
-half4 _LutParams;
+sampler2D _InternalLutTex;
+half3 _InternalLutParams;
+
+sampler2D _UserLutTex;
+half4 _UserLutParams;
 
 sampler2D _LumTex;
 half _AdaptationSpeed;
@@ -51,14 +54,15 @@ half4 frag_exp(v2f_img i) : SV_Target
     return half4(avg, avg, avg, saturate(0.0125 * _AdaptationSpeed));
 }
 
-half3 apply_lut(sampler2D tex, half3 uv, half3 scaleOffset)
+half3 apply_lut(sampler2D tex, half3 uvw, half3 scaleOffset)
 {
-    uv.z *= scaleOffset.z;
-    half shift = floor(uv.z);
-    uv.xy = uv.xy * scaleOffset.z * scaleOffset.xy + 0.5 * scaleOffset.xy;
-    uv.x += shift * scaleOffset.y;
-    uv.xyz = lerp(tex2D(tex, uv.xy).rgb, tex2D(tex, uv.xy + half2(scaleOffset.y, 0)).rgb, uv.z - shift);
-    return uv;
+    // Strip format where `height = sqrt(width)`
+    uvw.z *= scaleOffset.z;
+    half shift = floor(uvw.z);
+    uvw.xy = uvw.xy * scaleOffset.z * scaleOffset.xy + scaleOffset.xy * 0.5;
+    uvw.x += shift * scaleOffset.y;
+    uvw.xyz = lerp(tex2D(tex, uvw.xy).rgb, tex2D(tex, uvw.xy + half2(scaleOffset.y, 0)).rgb, uvw.z - shift);
+    return uvw;
 }
 
 half3 ToCIE(half3 color)
@@ -227,8 +231,7 @@ half4 frag_tcg(v2f_img i) : SV_Target
 
 #if ENABLE_COLOR_GRADING
     // LUT color grading
-    half3 color_corrected = apply_lut(_LutTex, saturate(color.rgb), _LutParams.xyz);
-    color.rgb = lerp(color.rgb, color_corrected, _LutParams.w);
+    color.rgb = apply_lut(_InternalLutTex, saturate(color.rgb), _InternalLutParams);
 #endif
 
 #if ENABLE_DITHERING
@@ -240,6 +243,17 @@ half4 frag_tcg(v2f_img i) : SV_Target
 
 #if UNITY_COLORSPACE_GAMMA
     color.rgb = LinearToGammaSpace(color.rgb);
+#endif
+
+#if ENABLE_USER_LUT
+    #if !UNITY_COLORSPACE_GAMMA
+        half3 lc = apply_lut(_UserLutTex, saturate(LinearToGammaSpace(color.rgb)), _UserLutParams.xyz);
+        lc = GammaToLinearSpace(lc);
+    #else
+        half3 lc = apply_lut(_UserLutTex, saturate(color.rgb), _UserLutParams.xyz);
+    #endif
+
+    color.rgb = lerp(color.rgb, lc, _UserLutParams.w);
 #endif
 
     return color;

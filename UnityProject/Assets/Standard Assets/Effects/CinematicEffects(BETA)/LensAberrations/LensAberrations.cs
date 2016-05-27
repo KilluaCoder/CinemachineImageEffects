@@ -77,7 +77,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             [Range(0.01f, 3f), Tooltip("Smoothness of the vignette borders.")]
             public float smoothness;
-            
+
             [AdvancedSetting, Range(0f, 1f), Tooltip("Lower values will make a square-ish vignette.")]
             public float roundness;
 
@@ -208,7 +208,7 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
             material.shaderKeywords = null;
-            
+
             if (distortion.enabled)
             {
                 float amount = 1.6f * Math.Max(Mathf.Abs(distortion.amount), 1f);
@@ -260,7 +260,7 @@ namespace UnityStandardAssets.CinematicEffects
                     material.SetTexture("_BlurTex", rt2);
                     material.SetFloat("_VignetteBlur", vignette.blur * 3f);
                     material.EnableKeyword("VIGNETTE_BLUR");
-                    
+
                     if (distortion.enabled)
                         material.EnableKeyword(distortion.amount >= 0f ? "DISTORT" : "UNDISTORT");
                 }
@@ -270,7 +270,7 @@ namespace UnityStandardAssets.CinematicEffects
                     material.EnableKeyword("VIGNETTE_DESAT");
                     material.SetFloat("_VignetteDesat", 1f - vignette.desaturate);
                 }
-                
+
                 material.SetVector("_VignetteCenter", vignette.center);
 
                 if (Mathf.Approximately(vignette.roundness, 1f))
@@ -285,7 +285,7 @@ namespace UnityStandardAssets.CinematicEffects
                     material.SetVector("_VignetteSettings", new Vector3(vignette.intensity, vignette.smoothness, roundness));
                 }
             }
-            
+
             int pass = 0;
 
             if (vignette.enabled && chromaticAberration.enabled && distortion.enabled)
@@ -302,7 +302,7 @@ namespace UnityStandardAssets.CinematicEffects
                 pass = (int)Pass.Chroma;
             else if (distortion.enabled)
                 pass = (int)Pass.Distort;
-            
+
             Graphics.Blit(source, destination, material, pass);
 
             m_RTU.ReleaseAllTemporaryRenderTextures();

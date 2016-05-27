@@ -88,8 +88,10 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
         // Texture format used for storing AO
-        RenderTextureFormat aoTextureFormat {
-            get {
+        RenderTextureFormat aoTextureFormat
+        {
+            get
+            {
                 if (SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8))
                     return RenderTextureFormat.R8;
                 else
@@ -295,12 +297,12 @@ namespace UnityStandardAssets.CinematicEffects
             if (ambientOnly)
                 targetCamera.AddCommandBuffer(CameraEvent.BeforeReflections, aoCommands);
 
-            // Enable depth textures which the occlusion source requires.  
-            if (occlusionSource == OcclusionSource.DepthTexture)  
-                targetCamera.depthTextureMode |= DepthTextureMode.Depth;  
+            // Enable depth textures which the occlusion source requires.
+            if (occlusionSource == OcclusionSource.DepthTexture)
+                targetCamera.depthTextureMode |= DepthTextureMode.Depth;
 
-            if (occlusionSource != OcclusionSource.GBuffer)  
-                targetCamera.depthTextureMode |= DepthTextureMode.DepthNormals;  
+            if (occlusionSource != OcclusionSource.GBuffer)
+                targetCamera.depthTextureMode |= DepthTextureMode.DepthNormals;
         }
 
         void OnDisable()

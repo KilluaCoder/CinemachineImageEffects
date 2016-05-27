@@ -79,7 +79,6 @@ namespace UnityStandardAssets.CinematicEffects
     [CustomEditor(typeof(ScreenSpaceReflection))]
     internal class ScreenSpaceReflectionEditor : Editor
     {
-
         [NonSerialized]
         private List<SerializedProperty> m_Properties = new List<SerializedProperty>();
 

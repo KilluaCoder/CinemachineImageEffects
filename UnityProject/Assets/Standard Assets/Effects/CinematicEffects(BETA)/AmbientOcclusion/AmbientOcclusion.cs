@@ -87,6 +87,16 @@ namespace UnityStandardAssets.CinematicEffects
             get { return settings.ambientOnly && !settings.debug && isAmbientOnlySupported; }
         }
 
+        // Texture format used for storing AO
+        RenderTextureFormat aoTextureFormat {
+            get {
+                if (SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8))
+                    return RenderTextureFormat.R8;
+                else
+                    return RenderTextureFormat.Default;
+            }
+        }
+
         // AO shader
         Shader aoShader
         {
@@ -159,7 +169,7 @@ namespace UnityStandardAssets.CinematicEffects
             var tw = targetCamera.pixelWidth;
             var th = targetCamera.pixelHeight;
             var ts = downsampling ? 2 : 1;
-            var format = RenderTextureFormat.R8;
+            var format = aoTextureFormat;
             var rwMode = RenderTextureReadWrite.Linear;
             var filter = FilterMode.Bilinear;
 
@@ -214,7 +224,7 @@ namespace UnityStandardAssets.CinematicEffects
             var tw = source.width;
             var th = source.height;
             var ts = downsampling ? 2 : 1;
-            var format = RenderTextureFormat.R8;
+            var format = aoTextureFormat;
             var rwMode = RenderTextureReadWrite.Linear;
             var useGBuffer = settings.occlusionSource == OcclusionSource.GBuffer;
 

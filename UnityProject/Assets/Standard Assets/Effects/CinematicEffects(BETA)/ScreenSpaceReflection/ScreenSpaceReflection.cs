@@ -268,6 +268,21 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            if (camera_ != null)
+            {
+                if (m_CommandBuffer != null)
+                {
+                    camera_.RemoveCommandBuffer(CameraEvent.AfterFinalPass, m_CommandBuffer);
+                }
+
+                m_CommandBuffer = null;
+            }
+        }
+#endif
+
         // [ImageEffectOpaque]
         public void OnPreRender()
         {
@@ -395,7 +410,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 m_CommandBuffer.Blit(kReflectionTextures[0], kFinalReflectionTexture, material, (int)PassIndex.CompositeSSR);
 
-                m_CommandBuffer.GetTemporaryRT(kTempTexture, rtW, rtH, 0, FilterMode.Point, intermediateFormat);
+                m_CommandBuffer.GetTemporaryRT(kTempTexture, camera_.pixelWidth, camera_.pixelHeight, 0, FilterMode.Bilinear, intermediateFormat);
 
                 m_CommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, kTempTexture, material, (int)PassIndex.CompositeFinal);
                 m_CommandBuffer.Blit(kTempTexture, BuiltinRenderTextureType.CameraTarget);

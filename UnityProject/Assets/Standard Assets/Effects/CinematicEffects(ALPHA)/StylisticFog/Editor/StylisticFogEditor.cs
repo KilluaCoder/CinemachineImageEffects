@@ -45,8 +45,13 @@ namespace UnityStandardAssets.CinematicEffects
 			_fogFactorIntensityCurve = serializedObject.FindProperty("settings.fogFactorIntensityCurve");
 			_densityFalloff = serializedObject.FindProperty("settings.densityFalloff");
 
-			m_UseHeight = new AnimBool(false);
+			StylisticFog targetInstance = (StylisticFog)target;
+
+			m_UseHeight = new AnimBool(targetInstance.settings.fogMode == StylisticFog.FogMode.Height);
 			m_UseHeight.valueChanged.AddListener(Repaint);
+
+			m_UseDistance = new AnimBool(targetInstance.settings.fogMode == StylisticFog.FogMode.Distance);
+			m_UseDistance.valueChanged.AddListener(Repaint);
 		}
 
 		public override void OnInspectorGUI()

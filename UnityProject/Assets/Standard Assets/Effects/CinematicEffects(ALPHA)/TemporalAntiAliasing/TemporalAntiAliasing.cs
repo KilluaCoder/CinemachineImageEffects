@@ -162,7 +162,7 @@ public class TemporalAntiAliasing : MonoBehaviour
         offset.x *= 1.0f / camera_.pixelWidth;
         offset.y *= 1.0f / camera_.pixelHeight;
 
-        material.SetVector("_Fuzz", -offset);
+        material.SetVector("_Fuzz", offset);
     }
 
     void OnRenderImage(RenderTexture source, RenderTexture destination)

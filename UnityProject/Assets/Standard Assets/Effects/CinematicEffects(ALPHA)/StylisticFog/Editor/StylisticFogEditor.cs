@@ -20,7 +20,7 @@ namespace UnityStandardAssets.CinematicEffects
 		SerializedProperty _nearPlane;
 		SerializedProperty _fogSkybox;
 		SerializedProperty _colorSelection;
-		SerializedProperty _useHeight;
+		SerializedProperty _fogMode;
 		SerializedProperty _flipHeight;
 		SerializedProperty _height;
 		SerializedProperty _baseDensity;
@@ -28,6 +28,7 @@ namespace UnityStandardAssets.CinematicEffects
 		SerializedProperty _densityFalloff;
 
 		AnimBool m_UseHeight;
+		AnimBool m_UseDistance;
 
 		void OnEnable()
 		{
@@ -38,8 +39,8 @@ namespace UnityStandardAssets.CinematicEffects
 			_farPlane        = serializedObject.FindProperty("settings.startDist");
 			_nearPlane       = serializedObject.FindProperty("settings.endDist");
 			_fogSkybox       = serializedObject.FindProperty("settings.fogSkybox");
-			_useHeight       = serializedObject.FindProperty("settings.useHeight");
-			_height          = serializedObject.FindProperty("settings.height");
+			_fogMode         = serializedObject.FindProperty("settings.fogMode");
+			_height          = serializedObject.FindProperty("settings.baseHeight");
 			_baseDensity     = serializedObject.FindProperty("settings.baseDensity");
 			_fogFactorIntensityCurve = serializedObject.FindProperty("settings.fogFactorIntensityCurve");
 			_densityFalloff = serializedObject.FindProperty("settings.densityFalloff");
@@ -53,6 +54,11 @@ namespace UnityStandardAssets.CinematicEffects
 			StylisticFog targetInstance = (StylisticFog)target;
 
 			serializedObject.Update();
+
+			// Which fog type to apply
+			EditorGUILayout.PropertyField(_fogMode);
+			m_UseHeight.target = (targetInstance.settings.fogMode == StylisticFog.FogMode.Height);
+			m_UseDistance.target = (targetInstance.settings.fogMode == StylisticFog.FogMode.Distance);
 
 			bool propertyTextureRebake = false;
 			bool densityTextureRebake = false;
@@ -73,12 +79,17 @@ namespace UnityStandardAssets.CinematicEffects
 			if (EditorGUI.EndChangeCheck())
 				densityTextureRebake = true;
 
-
 			EditorGUILayout.Space();
 
 			// Where the fog starts and where the fog reaches max saturation
 			EditorGUI.BeginChangeCheck();
-			EditorGUILayout.PropertyField(_nearPlane);
+
+			if (EditorGUILayout.BeginFadeGroup(m_UseDistance.faded))
+			{
+				EditorGUILayout.PropertyField(_nearPlane);
+			}
+			EditorGUILayout.EndFadeGroup();
+
 			EditorGUILayout.PropertyField(_farPlane);
 			if (EditorGUI.EndChangeCheck())
 				checkNearFarDistances = true;
@@ -89,8 +100,6 @@ namespace UnityStandardAssets.CinematicEffects
 			EditorGUILayout.PropertyField(_fogSkybox);
 
 			// Parameters used when the fog volume is height based
-			EditorGUILayout.PropertyField(_useHeight);
-			m_UseHeight.target = _useHeight.boolValue;
 			if (EditorGUILayout.BeginFadeGroup(m_UseHeight.faded))
 			{
 

@@ -14,6 +14,12 @@ namespace UnityStandardAssets.CinematicEffects
 	public class StylisticFog : MonoBehaviour
 	{
 
+		public enum FogMode
+		{
+			Distance,
+			Height
+		}
+
 		[Serializable]
 		public struct FogSettings
 		{
@@ -47,12 +53,12 @@ namespace UnityStandardAssets.CinematicEffects
 			public bool fogSkybox;
 
 			[SerializeField]
-			[Tooltip("Wheter to apply fog to the skybox")]
-			public bool useHeight;
+			[Tooltip("The type of fog to apply")]
+			public FogMode fogMode;
 
 			[SerializeField]
 			[Tooltip("Height where the fog starts")]
-			public float height;
+			public float baseHeight;
 
 			[SerializeField]
 			[Tooltip("Fog density at fog altitude given by height.")]
@@ -60,7 +66,7 @@ namespace UnityStandardAssets.CinematicEffects
 
 			[SerializeField]
 			[Tooltip("The rate at which the thickness of the fog decays with altitude")]
-			[Range(0.001f,1f)]
+			[Range(-1f,1f)]
 			public float densityFalloff;
 
 			[SerializeField]
@@ -78,8 +84,8 @@ namespace UnityStandardAssets.CinematicEffects
 					startDist = 0f,
 					endDist = 200f,
 					fogSkybox = true,
-					useHeight = false,
-					height = 0f,
+					fogMode = FogMode.Distance,
+					baseHeight = 0f,
 					baseDensity = 0.1f,
 					fogFactorIntensityCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f),
 					densityFalloff = 0.5f,
@@ -199,20 +205,18 @@ namespace UnityStandardAssets.CinematicEffects
 			material.SetFloat("_FogStartDist", settings.startDist);
 			material.SetFloat("_FogEndDist", settings.endDist);
 
-
 			// Decide wheter the skybox is included in by the fog
 			if (settings.fogSkybox)
 				material.DisableKeyword("OMMIT_SKYBOX");
 			else
 				material.EnableKeyword("OMMIT_SKYBOX");
 
-
 			// Set height specific parameters
-			if(settings.useHeight)
+			if(settings.fogMode == FogMode.Height)
 			{
 				material.EnableKeyword("USE_HEIGHT");
 
-				material.SetFloat("_Height", settings.height);
+				material.SetFloat("_Height", settings.baseHeight);
 				material.SetFloat("_BaseDensity", settings.baseDensity);
 				material.SetFloat("_DensityFalloff", settings.densityFalloff);
 			}
@@ -220,8 +224,6 @@ namespace UnityStandardAssets.CinematicEffects
 			{
 				material.DisableKeyword("USE_HEIGHT");
 			}
-
-
 
 			Graphics.Blit(source, destination, material);
 		}

@@ -9,8 +9,8 @@ namespace UnityStandardAssets.CinematicEffects
 {
 	[CanEditMultipleObjects]
 	[CustomEditor(typeof(StylisticFog))]
-    public class StylisticFogEditor : Editor
-    {
+	public class StylisticFogEditor : Editor
+	{
 
 		SerializedProperty _fogOpacityCurve;
 		SerializedProperty _fogColorRCurve;
@@ -24,7 +24,7 @@ namespace UnityStandardAssets.CinematicEffects
 		SerializedProperty _flipHeight;
 		SerializedProperty _height;
 		SerializedProperty _baseDensity;
-        SerializedProperty _fogFactorIntensityCurve;
+		SerializedProperty _fogFactorIntensityCurve;
 		SerializedProperty _densityFalloff;
 
 		AnimBool m_UseHeight;
@@ -42,21 +42,21 @@ namespace UnityStandardAssets.CinematicEffects
 			_height          = serializedObject.FindProperty("settings.height");
 			_baseDensity     = serializedObject.FindProperty("settings.baseDensity");
 			_fogFactorIntensityCurve = serializedObject.FindProperty("settings.fogFactorIntensityCurve");
-            _densityFalloff = serializedObject.FindProperty("settings.densityFalloff");
+			_densityFalloff = serializedObject.FindProperty("settings.densityFalloff");
 
 			m_UseHeight = new AnimBool(false);
 			m_UseHeight.valueChanged.AddListener(Repaint);
 		}
 
 		public override void OnInspectorGUI()
-        {
+		{
 			StylisticFog targetInstance = (StylisticFog)target;
 
 			serializedObject.Update();
 
 			bool propertyTextureRebake = false;
 			bool densityTextureRebake = false;
-            bool checkNearFarDistances = false;
+			bool checkNearFarDistances = false;
 
 			// Curves to modify the color properties of the fog.
 			EditorGUI.BeginChangeCheck();
@@ -69,21 +69,21 @@ namespace UnityStandardAssets.CinematicEffects
 
 			// The curve that defines how much the fog cntributes according to its intensity.
 			EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(_fogFactorIntensityCurve);
-            if (EditorGUI.EndChangeCheck())
-                densityTextureRebake = true;
+			EditorGUILayout.PropertyField(_fogFactorIntensityCurve);
+			if (EditorGUI.EndChangeCheck())
+				densityTextureRebake = true;
 
-            
+
 			EditorGUILayout.Space();
 
 			// Where the fog starts and where the fog reaches max saturation
-            EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(_nearPlane);
+			EditorGUI.BeginChangeCheck();
+			EditorGUILayout.PropertyField(_nearPlane);
 			EditorGUILayout.PropertyField(_farPlane);
-            if (EditorGUI.EndChangeCheck())
-                checkNearFarDistances = true;
+			if (EditorGUI.EndChangeCheck())
+				checkNearFarDistances = true;
 
-            EditorGUILayout.Space();
+			EditorGUILayout.Space();
 
 			// Bool to decide if the skybox will be affected by fog.
 			EditorGUILayout.PropertyField(_fogSkybox);
@@ -94,13 +94,13 @@ namespace UnityStandardAssets.CinematicEffects
 			if (EditorGUILayout.BeginFadeGroup(m_UseHeight.faded))
 			{
 
-                EditorGUILayout.LabelField("Height Parameters");
+				EditorGUILayout.LabelField("Height Parameters");
 
 				EditorGUI.indentLevel++;
 
 				EditorGUILayout.PropertyField(_height);
 				EditorGUILayout.PropertyField(_baseDensity);
-                EditorGUILayout.PropertyField(_densityFalloff);
+				EditorGUILayout.PropertyField(_densityFalloff);
 				
 				EditorGUI.indentLevel--;
 			}
@@ -108,22 +108,22 @@ namespace UnityStandardAssets.CinematicEffects
 
 			if (propertyTextureRebake)
 			{
-                targetInstance.BakeFogProperty();
+				targetInstance.BakeFogProperty();
 			}
 
 			if(densityTextureRebake)
 			{
-                targetInstance.BakeFogIntensity();
+				targetInstance.BakeFogIntensity();
 			}
 
-            if (checkNearFarDistances)
-            {
-                targetInstance.correctStartEndDistances();
-            }
-            
+			if (checkNearFarDistances)
+			{
+				targetInstance.correctStartEndDistances();
+			}
+
 			serializedObject.ApplyModifiedProperties();
 		}
-    }
+	}
 }
 
 

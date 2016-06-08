@@ -5,13 +5,13 @@ using System.IO;
 namespace UnityStandardAssets.CinematicEffects
 {
 
-    [ExecuteInEditMode]
-    [RequireComponent(typeof(Camera))]
-    [AddComponentMenu("Image Effects/Stylistic Fog")]
+	[ExecuteInEditMode]
+	[RequireComponent(typeof(Camera))]
+	[AddComponentMenu("Image Effects/Stylistic Fog")]
 #if UNITY_5_4_OR_NEWER
     [ImageEffectAllowedInSceneView]
 #endif
-    public class StylisticFog : MonoBehaviour
+	public class StylisticFog : MonoBehaviour
 	{
 
 		[Serializable]
@@ -54,14 +54,14 @@ namespace UnityStandardAssets.CinematicEffects
 			[Tooltip("Height where the fog starts")]
 			public float height;
 
-            [SerializeField]
-            [Tooltip("Fog density at fog altitude given by height.")]
-            public float baseDensity;
+			[SerializeField]
+			[Tooltip("Fog density at fog altitude given by height.")]
+			public float baseDensity;
 
-            [SerializeField]
+			[SerializeField]
 			[Tooltip("The rate at which the thickness of the fog decays with altitude")]
-            [Range(0.001f,1f)]
-            public float densityFalloff;
+			[Range(0.001f,1f)]
+			public float densityFalloff;
 
 			[SerializeField]
 			[Tooltip("Density of fog based on height")]
@@ -69,20 +69,20 @@ namespace UnityStandardAssets.CinematicEffects
 
 			public static FogSettings defaultSettings()
 			{
-                return new FogSettings()
-                {
-                    fogOpacityCurve = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
-                    fogColorR = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
-                    fogColorG = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
-                    fogColorB = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
-                    startDist = 0f,
-                    endDist = 200f,
-                    fogSkybox = true,
-                    useHeight = false,
-                    height = 0f,
-                    baseDensity = 0.1f,
-                    fogFactorIntensityCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f),
-                    densityFalloff = 0.5f,
+				return new FogSettings()
+				{
+					fogOpacityCurve = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
+					fogColorR = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
+					fogColorG = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
+					fogColorB = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
+					startDist = 0f,
+					endDist = 200f,
+					fogSkybox = true,
+					useHeight = false,
+					height = 0f,
+					baseDensity = 0.1f,
+					fogFactorIntensityCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f),
+					densityFalloff = 0.5f,
 				};
 			}
 		}
@@ -132,52 +132,52 @@ namespace UnityStandardAssets.CinematicEffects
 
 		public Vector4 fogPlane = new Vector4(0f, 1f, 0f, 0f);
 
-        [SerializeField, HideInInspector]
-        private Shader m_Shader;
+		[SerializeField, HideInInspector]
+		private Shader m_Shader;
 		
-        public Shader shader
-        {
-            get
-            {
-                if (m_Shader == null)
-                {
-                    const string shaderName = "Hidden/Image Effects/StylisticFog";
-                    m_Shader = Shader.Find(shaderName);
-                }
+		public Shader shader
+		{
+			get
+			{
+				if (m_Shader == null)
+				{
+					const string shaderName = "Hidden/Image Effects/StylisticFog";
+					m_Shader = Shader.Find(shaderName);
+				}
 
-                return m_Shader;
-            }
-        }
+				return m_Shader;
+			}
+		}
 
-        private Material m_Material;
-        public Material material
-        {
-            get
-            {
-                if (m_Material == null)
-                    m_Material = ImageEffectHelper.CheckShaderAndCreateMaterial(shader);
+		private Material m_Material;
+		public Material material
+		{
+			get
+			{
+				if (m_Material == null)
+					m_Material = ImageEffectHelper.CheckShaderAndCreateMaterial(shader);
 
-                return m_Material;
-            }
-        }
+				return m_Material;
+			}
+		}
 
 
-        #region Private Members
-        private void OnEnable()
-        {
-            if (!ImageEffectHelper.IsSupported(shader, true, false, this))
-                enabled = false;
+		#region Private Members
+		private void OnEnable()
+		{
+			if (!ImageEffectHelper.IsSupported(shader, true, false, this))
+				enabled = false;
 
-            GetComponent<Camera>().depthTextureMode |= DepthTextureMode.Depth;
+			GetComponent<Camera>().depthTextureMode |= DepthTextureMode.Depth;
 
 			BakeFogIntensity();
 			BakeFogProperty();
-        }
+		}
 
-        private void OnDisable()
-        {
-            if (m_Material != null)
-                DestroyImmediate(m_Material);
+		private void OnDisable()
+		{
+			if (m_Material != null)
+				DestroyImmediate(m_Material);
 
 			if (m_FogPropertyTexture != null)
 				DestroyImmediate(m_FogPropertyTexture);
@@ -186,28 +186,28 @@ namespace UnityStandardAssets.CinematicEffects
 				DestroyImmediate(m_FogHeightDensityTexture);
 
 			m_Material = null;
-        }
+		}
 
-        private void OnRenderImage(RenderTexture source, RenderTexture destination)
-        {
-            // Set variables that need no processing
-            Matrix4x4 inverseViewMatrix = GetComponent<Camera>().cameraToWorldMatrix;
+		private void OnRenderImage(RenderTexture source, RenderTexture destination)
+		{
+			// Set variables that need no processing
+			Matrix4x4 inverseViewMatrix = GetComponent<Camera>().cameraToWorldMatrix;
 			material.SetTexture("_FogPropertyTexture", fogPropertyTexture);
-            material.SetTexture("_FogHeightDensityTexture", fogHeightDensityTexture);
+			material.SetTexture("_FogHeightDensityTexture", fogHeightDensityTexture);
 
-            material.SetMatrix("_InverseViewMatrix", inverseViewMatrix);
-            material.SetFloat("_FogStartDist", settings.startDist);
-            material.SetFloat("_FogEndDist", settings.endDist);
+			material.SetMatrix("_InverseViewMatrix", inverseViewMatrix);
+			material.SetFloat("_FogStartDist", settings.startDist);
+			material.SetFloat("_FogEndDist", settings.endDist);
 
 
-            // Decide wheter the skybox is included in by the fog
+			// Decide wheter the skybox is included in by the fog
 			if (settings.fogSkybox)
 				material.DisableKeyword("OMMIT_SKYBOX");
 			else
 				material.EnableKeyword("OMMIT_SKYBOX");
 
 
-            // Set height specific parameters
+			// Set height specific parameters
 			if(settings.useHeight)
 			{
 				material.EnableKeyword("USE_HEIGHT");
@@ -220,18 +220,18 @@ namespace UnityStandardAssets.CinematicEffects
 			{
 				material.DisableKeyword("USE_HEIGHT");
 			}
-            
-            
 
-            Graphics.Blit(source, destination, material);
-        }
+
+
+			Graphics.Blit(source, destination, material);
+		}
 
 		public void BakeFogProperty()
 		{
 			if(m_FogPropertyTexture == null)
 			{
 				return;
-            }
+			}
 
 			Color[] pixels = new Color[1024];
 
@@ -260,22 +260,22 @@ namespace UnityStandardAssets.CinematicEffects
 			for (float i = 0f; i <= 1f; i += 1f / 1024f)
 			{
 				int index = (int)Mathf.Floor(i * 1023f);
-                float density = settings.fogFactorIntensityCurve.Evaluate(i);
-                density = (density == 1f) ? 0.9999f : density;
-                pixels[index] = EncodeFloatAsColor(density);
+				float density = settings.fogFactorIntensityCurve.Evaluate(i);
+				density = (density == 1f) ? 0.9999f : density;
+				pixels[index] = EncodeFloatAsColor(density);
 			}
 
 			m_FogHeightDensityTexture.SetPixels(pixels);
 			m_FogHeightDensityTexture.Apply();
 		}
 
-        public void correctStartEndDistances()
-        {
-            if (settings.endDist > settings.startDist)
-            {
-                settings.startDist = settings.endDist + 0.1f;
-            }
-        }
+		public void correctStartEndDistances()
+		{
+			if (settings.endDist > settings.startDist)
+			{
+				settings.startDist = settings.endDist + 0.1f;
+			}
+		}
 
 		// From http://aras-p.info/blog/2009/07/30/encoding-floats-to-rgba-the-final/
 		private Color EncodeFloatAsColor(float f)

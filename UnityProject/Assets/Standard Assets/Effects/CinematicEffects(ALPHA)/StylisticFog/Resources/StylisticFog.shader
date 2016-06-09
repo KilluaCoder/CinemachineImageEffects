@@ -8,6 +8,7 @@
 	CGINCLUDE
 	#pragma shader_feature OMMIT_SKYBOX
 	#pragma shader_feature USE_HEIGHT
+	#pragma shader_feature USE_DISTANCE
 	#pragma shader_feature SELECT_COLOR_BY_FOG_AMOUNT
 	#include "UnityCG.cginc"
 
@@ -17,14 +18,16 @@
 	sampler2D _CameraDepthTexture;
 	sampler2D _FogPropertyTexture;
 
-	// Row 0: Fog density function
-	// Row 1: Numerically integrated density function
-	sampler2D _FogHeightDensityTexture;
+	sampler2D _FogFactorIntensityTexture;
 
 	float4x4 _InverseViewMatrix;
 
 	uniform float _FogStartDist;
 	uniform float _FogEndDist;
+
+	uniform float _CameraUnderFog;
+	uniform float _CameraDepthInfog;
+	uniform float4 _FogPlane;
 
 	uniform float _Height;
 	uniform float _BaseDensity;
@@ -39,6 +42,20 @@
 		float3 vpos = float3((uv * 2 - 1) / p11_22, -1) * viewDepth;
 		float4 wpos = mul(inverseViewMatrix, float4(vpos, 1));
 		return wpos;
+	}
+
+	// x component holds how much of the view ray is in the fog
+	// y component hold the fraction of the total view length that is in the fog
+	float2 DistanceInFog(float totalDistance, float4 worldPos, float4 viewVector)
+	{
+		float pointDistTofog = dot(_FogPlane, worldPos);
+		float ViewAngleToPlaneNormal = dot(_FogPlane, viewVector);
+
+		float2 dist;
+		dist.y = saturate(_CameraUnderFog - (pointDistTofog) / abs(ViewAngleToPlaneNormal));
+		dist.x = dist.y * totalDistance;
+
+		return dist;
 	}
 
 	inline float ComputeFogAmount(float distance)
@@ -81,15 +98,17 @@
 		float heightIntegrale = _BaseDensity * exp2(-falloffFactor);
 		heightIntegrale *= (1 - exp2(-falloffAngle * effectiveDistance)) / (falloffAngle);
 
-		fogAmount = 1.0 - saturate(exp2(-heightIntegrale));
-
-#else // defined(USE_HEIGHT)
-
-		fogAmount = ComputeFogAmount(effectiveDistance);
+		fogAmount += 1.0 - saturate(exp2(-heightIntegrale));
 
 #endif // defined(USE_HEIGHT)
 
-		fogFactor = DecodeFloatRGBA(tex2D(_FogHeightDensityTexture, float2(fogAmount, 0.)));
+#if defined(USE_DISTANCE)
+
+		fogAmount += ComputeFogAmount(effectiveDistance);
+
+#endif // defined(USE_DISTANCE)
+
+		fogFactor = DecodeFloatRGBA(tex2D(_FogFactorIntensityTexture, float2(fogAmount, 0.)));
 
 		float4 fogCol;
 		fogCol = tex2D(_FogPropertyTexture, float2(fogFactor, 0));

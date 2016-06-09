@@ -17,12 +17,22 @@ namespace UnityStandardAssets.CinematicEffects
 		public enum FogMode
 		{
 			Distance,
-			Height
+			Height,
+			Both
 		}
 
 		[Serializable]
 		public struct FogSettings
 		{
+
+			[SerializeField]
+			[Tooltip("Fog intensity depends on distance.")]
+			public bool useHeight;
+
+			[SerializeField]
+			[Tooltip("Fog intensity depends on height.")]
+			public bool useDistance;
+
 			// Cureves for the color texture
 			[SerializeField]
 			[Tooltip("Determines the opacity based on fog intensity.")]
@@ -77,6 +87,8 @@ namespace UnityStandardAssets.CinematicEffects
 			{
 				return new FogSettings()
 				{
+					useDistance = true,
+					useHeight = false,
 					fogOpacityCurve = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
 					fogColorR = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
 					fogColorG = AnimationCurve.Linear(0.25f, 0.25f, 0.75f, 0.75f),
@@ -117,7 +129,7 @@ namespace UnityStandardAssets.CinematicEffects
 		}
 
 		public Texture2D m_FogHeightDensityTexture;
-		public Texture2D fogHeightDensityTexture
+		public Texture2D fogFactorIntensityTexture
 		{
 			get
 			{
@@ -199,7 +211,7 @@ namespace UnityStandardAssets.CinematicEffects
 			// Set variables that need no processing
 			Matrix4x4 inverseViewMatrix = GetComponent<Camera>().cameraToWorldMatrix;
 			material.SetTexture("_FogPropertyTexture", fogPropertyTexture);
-			material.SetTexture("_FogHeightDensityTexture", fogHeightDensityTexture);
+			material.SetTexture("_FogFactorIntensityTexture", fogFactorIntensityTexture);
 
 			material.SetMatrix("_InverseViewMatrix", inverseViewMatrix);
 			material.SetFloat("_FogStartDist", settings.startDist);
@@ -211,10 +223,37 @@ namespace UnityStandardAssets.CinematicEffects
 			else
 				material.EnableKeyword("OMMIT_SKYBOX");
 
+			// Enable distance based fog
+			if(settings.useDistance)
+			{
+				material.EnableKeyword("USE_DISTANCE");
+			}
+			else
+			{
+				material.DisableKeyword("USE_DISTANCE");
+			}
+
 			// Set height specific parameters
-			if(settings.fogMode == FogMode.Height)
+			if (settings.useHeight)
 			{
 				material.EnableKeyword("USE_HEIGHT");
+
+				// Normalise fog volume seperation planes's normal
+				Vector3 fogPlaneNormal = (Vector3)fogPlane;
+				fogPlaneNormal.Normalize();
+				Vector4 normalizedFogPlane = (Vector4)fogPlaneNormal;
+				normalizedFogPlane.w = -settings.baseHeight;
+				material.SetVector("_FogPlane", normalizedFogPlane);
+
+				// Camera position
+				Vector3 cameraWorldSpace = GetComponent<Camera>().transform.position;
+
+				// Homogeneus camera Position
+				Vector4 homogeneusCamPos = (Vector4)cameraWorldSpace;
+				homogeneusCamPos.w = 1.0f;
+				float CameraToFogDistance = Vector4.Dot(normalizedFogPlane, homogeneusCamPos);
+				material.SetFloat("_CameraUnderFog", CameraToFogDistance <= 0f ? 1f : 0f);
+				material.SetFloat("_CameraDepthInfog", CameraToFogDistance);
 
 				material.SetFloat("_Height", settings.baseHeight);
 				material.SetFloat("_BaseDensity", settings.baseDensity);
@@ -262,7 +301,7 @@ namespace UnityStandardAssets.CinematicEffects
 			for (float i = 0f; i <= 1f; i += 1f / 1024f)
 			{
 				int index = (int)Mathf.Floor(i * 1023f);
-				float density = settings.fogFactorIntensityCurve.Evaluate(i);
+				float density = Mathf.Clamp(settings.fogFactorIntensityCurve.Evaluate(i), 0f, 1f);
 				density = (density == 1f) ? 0.9999f : density;
 				pixels[index] = EncodeFloatAsColor(density);
 			}

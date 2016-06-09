@@ -12,6 +12,8 @@ namespace UnityStandardAssets.CinematicEffects
 	public class StylisticFogEditor : Editor
 	{
 
+		SerializedProperty _useDistance;
+		SerializedProperty _useHeight;
 		SerializedProperty _fogOpacityCurve;
 		SerializedProperty _fogColorRCurve;
 		SerializedProperty _fogColorGCurve;
@@ -32,6 +34,8 @@ namespace UnityStandardAssets.CinematicEffects
 
 		void OnEnable()
 		{
+			_useDistance     = serializedObject.FindProperty("settings.useDistance");
+			_useHeight       = serializedObject.FindProperty("settings.useHeight");
 			_fogOpacityCurve = serializedObject.FindProperty("settings.fogOpacityCurve");
 			_fogColorRCurve  = serializedObject.FindProperty("settings.fogColorR");
 			_fogColorGCurve  = serializedObject.FindProperty("settings.fogColorG");
@@ -60,14 +64,15 @@ namespace UnityStandardAssets.CinematicEffects
 
 			serializedObject.Update();
 
-			// Which fog type to apply
-			EditorGUILayout.PropertyField(_fogMode);
-			m_UseHeight.target = (targetInstance.settings.fogMode == StylisticFog.FogMode.Height);
-			m_UseDistance.target = (targetInstance.settings.fogMode == StylisticFog.FogMode.Distance);
-
 			bool propertyTextureRebake = false;
 			bool densityTextureRebake = false;
 			bool checkNearFarDistances = false;
+
+			EditorGUILayout.PropertyField(_useDistance);
+			EditorGUILayout.PropertyField(_useHeight);
+
+			m_UseHeight.target = targetInstance.settings.useHeight;
+			m_UseDistance.target = targetInstance.settings.useDistance;
 
 			// Curves to modify the color properties of the fog.
 			EditorGUI.BeginChangeCheck();

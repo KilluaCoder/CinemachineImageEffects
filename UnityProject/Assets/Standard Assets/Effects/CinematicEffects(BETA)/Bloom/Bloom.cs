@@ -30,6 +30,10 @@ namespace UnityStandardAssets.CinematicEffects
                 get { return Mathf.GammaToLinearSpace(thresholdGamma); }
             }
 
+            [SerializeField, Range(0, 1)]
+            [Tooltip("Makes transition between under/over-threshold gradual.")]
+            public float softKnee;
+
             [SerializeField, Range(1, 7)]
             [Tooltip("Changes extent of veiling effects in a screen resolution-independent fashion.")]
             public float radius;
@@ -53,6 +57,7 @@ namespace UnityStandardAssets.CinematicEffects
                     var settings = new Settings
                     {
                         threshold = 0.9f,
+                        softKnee = 0.5f,
                         radius = 2.0f,
                         intensity = 0.7f,
                         highQuality = true,
@@ -146,8 +151,7 @@ namespace UnityStandardAssets.CinematicEffects
             var threshold = settings.thresholdLinear;
             material.SetFloat("_Threshold", threshold);
 
-            const float softKneeRatio = 0.5f;
-            var knee = threshold * softKneeRatio + 1e-5f;
+            var knee = threshold * settings.softKnee + 1e-5f;
             var curve = new Vector3(threshold - knee, knee * 2, 0.25f / knee);
             material.SetVector("_Curve", curve);
 

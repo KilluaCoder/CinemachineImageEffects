@@ -7,7 +7,6 @@ using UnityEditor.AnimatedValues;
 
 namespace UnityStandardAssets.CinematicEffects
 {
-	[CanEditMultipleObjects]
 	[CustomEditor(typeof(StylisticFog))]
 	public class StylisticFogEditor : Editor
 	{
@@ -22,7 +21,6 @@ namespace UnityStandardAssets.CinematicEffects
 		SerializedProperty _nearPlane;
 		SerializedProperty _fogSkybox;
 		SerializedProperty _colorSelection;
-		SerializedProperty _fogMode;
 		SerializedProperty _flipHeight;
 		SerializedProperty _height;
 		SerializedProperty _baseDensity;
@@ -43,7 +41,6 @@ namespace UnityStandardAssets.CinematicEffects
 			_farPlane        = serializedObject.FindProperty("settings.startDist");
 			_nearPlane       = serializedObject.FindProperty("settings.endDist");
 			_fogSkybox       = serializedObject.FindProperty("settings.fogSkybox");
-			_fogMode         = serializedObject.FindProperty("settings.fogMode");
 			_height          = serializedObject.FindProperty("settings.baseHeight");
 			_baseDensity     = serializedObject.FindProperty("settings.baseDensity");
 			_fogFactorIntensityCurve = serializedObject.FindProperty("settings.fogFactorIntensityCurve");
@@ -51,10 +48,10 @@ namespace UnityStandardAssets.CinematicEffects
 
 			StylisticFog targetInstance = (StylisticFog)target;
 
-			m_UseHeight = new AnimBool(targetInstance.settings.fogMode == StylisticFog.FogMode.Height);
+			m_UseHeight = new AnimBool(targetInstance.settings.useHeight);
 			m_UseHeight.valueChanged.AddListener(Repaint);
 
-			m_UseDistance = new AnimBool(targetInstance.settings.fogMode == StylisticFog.FogMode.Distance);
+			m_UseDistance = new AnimBool(targetInstance.settings.useDistance);
 			m_UseDistance.valueChanged.AddListener(Repaint);
 		}
 
@@ -65,7 +62,7 @@ namespace UnityStandardAssets.CinematicEffects
 			serializedObject.Update();
 
 			bool propertyTextureRebake = false;
-			bool densityTextureRebake = false;
+			bool intensityTextureRebake = false;
 			bool checkNearFarDistances = false;
 
 			EditorGUILayout.PropertyField(_useDistance);
@@ -83,11 +80,11 @@ namespace UnityStandardAssets.CinematicEffects
 			if (EditorGUI.EndChangeCheck())
 				propertyTextureRebake = true;
 
-			// The curve that defines how much the fog cntributes according to its intensity.
+			// The curve that defines how much the fog contributes according to its intensity.
 			EditorGUI.BeginChangeCheck();
 			EditorGUILayout.PropertyField(_fogFactorIntensityCurve);
 			if (EditorGUI.EndChangeCheck())
-				densityTextureRebake = true;
+				intensityTextureRebake = true;
 
 			EditorGUILayout.Space();
 
@@ -120,17 +117,19 @@ namespace UnityStandardAssets.CinematicEffects
 				EditorGUILayout.PropertyField(_height);
 				EditorGUILayout.PropertyField(_baseDensity);
 				EditorGUILayout.PropertyField(_densityFalloff);
-				
+
 				EditorGUI.indentLevel--;
 			}
 			EditorGUILayout.EndFadeGroup();
+
+			serializedObject.ApplyModifiedProperties();
 
 			if (propertyTextureRebake)
 			{
 				targetInstance.BakeFogProperty();
 			}
 
-			if(densityTextureRebake)
+			if (intensityTextureRebake)
 			{
 				targetInstance.BakeFogIntensity();
 			}
@@ -139,8 +138,6 @@ namespace UnityStandardAssets.CinematicEffects
 			{
 				targetInstance.correctStartEndDistances();
 			}
-
-			serializedObject.ApplyModifiedProperties();
 		}
 	}
 }

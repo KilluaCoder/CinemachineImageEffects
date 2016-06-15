@@ -161,9 +161,6 @@ namespace UnityStandardAssets.CinematicEffects
 
         ///////////// Unexposed Variables //////////////////
 
-        [NonSerialized]
-        private RenderTextureUtility m_RTU = new RenderTextureUtility();
-
         [SerializeField]
         private Shader m_Shader;
         public Shader shader

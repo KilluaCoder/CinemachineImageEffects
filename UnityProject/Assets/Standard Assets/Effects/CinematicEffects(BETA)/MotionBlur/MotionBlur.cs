@@ -198,8 +198,6 @@ namespace UnityStandardAssets.CinematicEffects
             reconstruction.SetFloat("_MaxBlurRadius", maxBlurPixels);
             reconstruction.SetTexture("_NeighborMaxTex", neighborMax);
             reconstruction.SetTexture("_VelocityTex", vbuffer);
-
-            source.filterMode = FilterMode.Point;
             Graphics.Blit(source, destination, reconstruction, (int)_debugMode);
 
             // Cleaning up

@@ -6,9 +6,14 @@ half4 _MainTex_TexelSize;
 half _Exposure;
 half _ToneCurveRange;
 sampler2D _ToneCurve;
+half4 _NeutralTonemapperParams1;
+half4 _NeutralTonemapperParams2;
 
-sampler2D _LutTex;
-half4 _LutParams;
+sampler2D _InternalLutTex;
+half3 _InternalLutParams;
+
+sampler2D _UserLutTex;
+half4 _UserLutParams;
 
 sampler2D _LumTex;
 half _AdaptationSpeed;
@@ -49,14 +54,15 @@ half4 frag_exp(v2f_img i) : SV_Target
     return half4(avg, avg, avg, saturate(0.0125 * _AdaptationSpeed));
 }
 
-half3 apply_lut(sampler2D tex, half3 uv, half3 scaleOffset)
+half3 apply_lut(sampler2D tex, half3 uvw, half3 scaleOffset)
 {
-    uv.z *= scaleOffset.z;
-    half shift = floor(uv.z);
-    uv.xy = uv.xy * scaleOffset.z * scaleOffset.xy + 0.5 * scaleOffset.xy;
-    uv.x += shift * scaleOffset.y;
-    uv.xyz = lerp(tex2D(tex, uv.xy).rgb, tex2D(tex, uv.xy + half2(scaleOffset.y, 0)).rgb, uv.z - shift);
-    return uv;
+    // Strip format where `height = sqrt(width)`
+    uvw.z *= scaleOffset.z;
+    half shift = floor(uvw.z);
+    uvw.xy = uvw.xy * scaleOffset.z * scaleOffset.xy + scaleOffset.xy * 0.5;
+    uvw.x += shift * scaleOffset.y;
+    uvw.xyz = lerp(tex2D(tex, uvw.xy).rgb, tex2D(tex, uvw.xy + half2(scaleOffset.y, 0)).rgb, uvw.z - shift);
+    return uvw;
 }
 
 half3 ToCIE(half3 color)
@@ -163,11 +169,40 @@ half3 tonemapCurve(half3 color)
     return FromCIE(cie);
 }
 
+half3 neutralCurve(half3 x, half a, half b, half c, half d, half e, half f)
+{
+    return ((x * (a * x + c * b) + d * e) / (x * (a * x + b) + d * f)) - e / f;
+}
+
+half3 tonemapNeutral(half3 color)
+{
+    color *= _Exposure;
+
+    // Tonemap
+    half a = _NeutralTonemapperParams1.x;
+    half b = _NeutralTonemapperParams1.y;
+    half c = _NeutralTonemapperParams1.z;
+    half d = _NeutralTonemapperParams1.w;
+    half e = _NeutralTonemapperParams2.x;
+    half f = _NeutralTonemapperParams2.y;
+    half whiteLevel = _NeutralTonemapperParams2.z;
+    half whiteClip = _NeutralTonemapperParams2.w;
+
+    half3 whiteScale = (1.0).xxx / neutralCurve(whiteLevel, a, b, c, d, e, f);
+    color = neutralCurve(color * whiteScale, a, b, c, d, e, f);
+    color *= whiteScale;
+
+    // Post-curve white point adjustment
+    color = color / whiteClip.xxx;
+
+    return color;
+}
+
 half4 frag_tcg(v2f_img i) : SV_Target
 {
     half4 color = tex2D(_MainTex, i.uv);
 
-#if GAMMA_COLORSPACE
+#if UNITY_COLORSPACE_GAMMA
     color.rgb = GammaToLinearSpace(color.rgb);
 #endif
 
@@ -190,12 +225,13 @@ half4 frag_tcg(v2f_img i) : SV_Target
     color.rgb = tonemapPhotographic(color.rgb);
 #elif defined(TONEMAPPING_REINHARD)
     color.rgb = tonemapReinhard(color.rgb);
+#elif defined(TONEMAPPING_NEUTRAL)
+    color.rgb = tonemapNeutral(color.rgb);
 #endif
 
 #if ENABLE_COLOR_GRADING
     // LUT color grading
-    half3 color_corrected = apply_lut(_LutTex, saturate(color.rgb), _LutParams.xyz);
-    color.rgb = lerp(color.rgb, color_corrected, _LutParams.w);
+    color.rgb = apply_lut(_InternalLutTex, saturate(color.rgb), _InternalLutParams);
 #endif
 
 #if ENABLE_DITHERING
@@ -205,8 +241,19 @@ half4 frag_tcg(v2f_img i) : SV_Target
     color.rgb -= gradient.xxx;
 #endif
 
-#if GAMMA_COLORSPACE
+#if UNITY_COLORSPACE_GAMMA
     color.rgb = LinearToGammaSpace(color.rgb);
+#endif
+
+#if ENABLE_USER_LUT
+    #if !UNITY_COLORSPACE_GAMMA
+        half3 lc = apply_lut(_UserLutTex, saturate(LinearToGammaSpace(color.rgb)), _UserLutParams.xyz);
+        lc = GammaToLinearSpace(lc);
+    #else
+        half3 lc = apply_lut(_UserLutTex, saturate(color.rgb), _UserLutParams.xyz);
+    #endif
+
+    color.rgb = lerp(color.rgb, lc, _UserLutParams.w);
 #endif
 
     return color;

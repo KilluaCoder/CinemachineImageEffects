@@ -79,14 +79,6 @@ namespace UnityStandardAssets.CinematicEffects
     [CustomEditor(typeof(ScreenSpaceReflection))]
     internal class ScreenSpaceReflectionEditor : Editor
     {
-        private enum SettingsMode
-        {
-            HighQuality,
-            Default,
-            Performance,
-            Custom,
-        }
-
         [NonSerialized]
         private List<SerializedProperty> m_Properties = new List<SerializedProperty>();
 
@@ -106,42 +98,11 @@ namespace UnityStandardAssets.CinematicEffects
 
             EditorGUILayout.Space();
 
-            var currentState = ((ScreenSpaceReflection)target).settings;
-
-            var settingsMode = SettingsMode.Custom;
-            if (currentState.Equals(ScreenSpaceReflection.SSRSettings.performanceSettings))
-                settingsMode = SettingsMode.Performance;
-            else if (currentState.Equals(ScreenSpaceReflection.SSRSettings.defaultSettings))
-                settingsMode = SettingsMode.Default;
-            else if (currentState.Equals(ScreenSpaceReflection.SSRSettings.highQualitySettings))
-                settingsMode = SettingsMode.HighQuality;
-
-            EditorGUI.BeginChangeCheck();
-            settingsMode = (SettingsMode)EditorGUILayout.EnumPopup("Preset", settingsMode);
-            if (EditorGUI.EndChangeCheck())
-                Apply(settingsMode);
-
             // move into the m_Settings fields...
             foreach (var property in m_Properties)
                 EditorGUILayout.PropertyField(property);
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private void Apply(SettingsMode settingsMode)
-        {
-            switch (settingsMode)
-            {
-                case SettingsMode.Default:
-                    Apply(ScreenSpaceReflection.SSRSettings.defaultSettings);
-                    break;
-                case SettingsMode.HighQuality:
-                    Apply(ScreenSpaceReflection.SSRSettings.highQualitySettings);
-                    break;
-                case SettingsMode.Performance:
-                    Apply(ScreenSpaceReflection.SSRSettings.performanceSettings);
-                    break;
-            }
         }
 
         private void Apply(ScreenSpaceReflection.SSRSettings settings)

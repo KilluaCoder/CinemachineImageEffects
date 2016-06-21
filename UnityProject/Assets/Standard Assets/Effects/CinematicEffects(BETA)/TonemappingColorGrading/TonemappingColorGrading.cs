@@ -131,7 +131,8 @@ namespace UnityStandardAssets.CinematicEffects
             Hable,
             HejlDawson,
             Photographic,
-            Reinhard
+            Reinhard,
+            Neutral
         }
 
         [Serializable]
@@ -148,6 +149,25 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Custom tonemapping curve.")]
             public AnimationCurve curve;
 
+            // Neutral settings
+            [Range(-0.1f, 0.1f)]
+            public float neutralBlackIn;
+
+            [Range(1f, 20f)]
+            public float neutralWhiteIn;
+
+            [Range(-0.09f, 0.1f)]
+            public float neutralBlackOut;
+
+            [Range(1f, 19f)]
+            public float neutralWhiteOut;
+
+            [Range(0.1f, 20f)]
+            public float neutralWhiteLevel;
+
+            [Range(1f, 10f)]
+            public float neutralWhiteClip;
+
             public static TonemappingSettings defaultSettings
             {
                 get
@@ -155,9 +175,15 @@ namespace UnityStandardAssets.CinematicEffects
                     return new TonemappingSettings
                     {
                         enabled = false,
-                        tonemapper = Tonemapper.ACES,
+                        tonemapper = Tonemapper.Neutral,
                         exposure = 1f,
-                        curve = CurvesSettings.defaultCurve
+                        curve = CurvesSettings.defaultCurve,
+                        neutralBlackIn = 0.02f,
+                        neutralWhiteIn = 10f,
+                        neutralBlackOut = 0f,
+                        neutralWhiteOut = 10f,
+                        neutralWhiteLevel = 5.3f,
+                        neutralWhiteClip = 10f
                     };
                 }
             }
@@ -400,18 +426,6 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
         [SerializeField, SettingsGroup]
-        private LUTSettings m_Lut = LUTSettings.defaultSettings;
-        public LUTSettings lut
-        {
-            get { return m_Lut; }
-            set
-            {
-                m_Lut = value;
-                SetDirty();
-            }
-        }
-
-        [SerializeField, SettingsGroup]
         private ColorGradingSettings m_ColorGrading = ColorGradingSettings.defaultSettings;
         public ColorGradingSettings colorGrading
         {
@@ -421,6 +435,14 @@ namespace UnityStandardAssets.CinematicEffects
                 m_ColorGrading = value;
                 SetDirty();
             }
+        }
+
+        [SerializeField, SettingsGroup]
+        private LUTSettings m_Lut = LUTSettings.defaultSettings;
+        public LUTSettings lut
+        {
+            get { return m_Lut; }
+            set { m_Lut = value; }
         }
         #endregion
 
@@ -558,6 +580,7 @@ namespace UnityStandardAssets.CinematicEffects
             TonemappingHejlDawson,
             TonemappingPhotographic,
             TonemappingReinhard,
+            TonemappingNeutral,
             AdaptationDebug
         }
 
@@ -817,17 +840,7 @@ namespace UnityStandardAssets.CinematicEffects
                 validRenderTextureFormat = false;
 #endif
 
-            if (isGammaColorSpace)
-                material.EnableKeyword("GAMMA_COLORSPACE");
-            else
-                material.DisableKeyword("GAMMA_COLORSPACE");
-
-            material.DisableKeyword("ENABLE_EYE_ADAPTATION");
-            material.DisableKeyword("ENABLE_COLOR_GRADING");
-            material.DisableKeyword("ENABLE_DITHERING");
-
-            Texture lutUsed = null;
-            float lutContrib = 1f;
+            material.shaderKeywords = null;
 
             RenderTexture rtSquared = null;
             RenderTexture[] rts = null;
@@ -919,38 +932,37 @@ namespace UnityStandardAssets.CinematicEffects
                     material.SetFloat("_ToneCurveRange", m_TonemapperCurveRange);
                     material.SetTexture("_ToneCurve", tonemapperCurve);
                 }
+                else if (tonemapping.tonemapper == Tonemapper.Neutral)
+                {
+                    const float scaleFactor = 20f;
+                    const float scaleFactorHalf = scaleFactor * 0.5f;
+
+                    float inBlack = tonemapping.neutralBlackIn * scaleFactor + 1f;
+                    float outBlack = tonemapping.neutralBlackOut * scaleFactorHalf + 1f;
+                    float inWhite = tonemapping.neutralWhiteIn / scaleFactor;
+                    float outWhite = 1f - tonemapping.neutralWhiteOut / scaleFactor;
+                    float blackRatio = inBlack / outBlack;
+                    float whiteRatio = inWhite / outWhite;
+
+                    const float a = 0.2f;
+                    float b = Mathf.Max(0f, Mathf.LerpUnclamped(0.57f, 0.37f, blackRatio));
+                    float c = Mathf.LerpUnclamped(0.01f, 0.24f, whiteRatio);
+                    float d = Mathf.Max(0f, Mathf.LerpUnclamped(0.02f, 0.20f, blackRatio));
+                    const float e = 0.02f;
+                    const float f = 0.30f;
+
+                    material.SetVector("_NeutralTonemapperParams1", new Vector4(a, b, c, d));
+                    material.SetVector("_NeutralTonemapperParams2", new Vector4(e, f, tonemapping.neutralWhiteLevel, tonemapping.neutralWhiteClip / scaleFactorHalf));
+                }
 
                 material.SetFloat("_Exposure", tonemapping.exposure);
                 renderPass += (int)tonemapping.tonemapper + 1;
-            }
-
-            if (lut.enabled)
-            {
-                Texture tex = lut.texture;
-
-                if (lut.texture == null || !CheckUserLut())
-                    tex = identityLut;
-
-                lutUsed = tex;
-                lutContrib = lut.contribution;
-                material.EnableKeyword("ENABLE_COLOR_GRADING");
             }
 
             if (colorGrading.enabled)
             {
                 if (m_Dirty || !m_InternalLut.IsCreated())
                 {
-                    if (lutUsed == null)
-                    {
-                        material.SetVector("_UserLutParams", new Vector4(1f / identityLut.width, 1f / identityLut.height, identityLut.height - 1f, 1f));
-                        material.SetTexture("_UserLutTex", identityLut);
-                    }
-                    else
-                    {
-                        material.SetVector("_UserLutParams", new Vector4(1f / lutUsed.width, 1f / lutUsed.height, lutUsed.height - 1f, lut.contribution));
-                        material.SetTexture("_UserLutTex", lutUsed);
-                    }
-
                     Color lift, gamma, gain;
                     GenerateLiftGammaGain(out lift, out gamma, out gain);
                     GenCurveTexture();
@@ -970,19 +982,21 @@ namespace UnityStandardAssets.CinematicEffects
                     Graphics.Blit(identityLut, internalLutRt, material, (int)Pass.LutGen);
                     m_Dirty = false;
                 }
-
-                lutUsed = internalLutRt;
-                lutContrib = 1f;
+                
                 material.EnableKeyword("ENABLE_COLOR_GRADING");
 
                 if (colorGrading.useDithering)
                     material.EnableKeyword("ENABLE_DITHERING");
+                
+                material.SetTexture("_InternalLutTex", internalLutRt);
+                material.SetVector("_InternalLutParams", new Vector3(1f / internalLutRt.width, 1f / internalLutRt.height, internalLutRt.height - 1f));
             }
 
-            if (lutUsed != null)
+            if (lut.enabled && lut.texture != null && CheckUserLut())
             {
-                material.SetTexture("_LutTex", lutUsed);
-                material.SetVector("_LutParams", new Vector4(1f / lutUsed.width, 1f / lutUsed.height, lutUsed.height - 1f, lutContrib));
+                material.SetTexture("_UserLutTex", lut.texture);
+                material.SetVector("_UserLutParams", new Vector4(1f / lut.texture.width, 1f / lut.texture.height, lut.texture.height - 1f, lut.contribution));
+                material.EnableKeyword("ENABLE_USER_LUT");
             }
 
             Graphics.Blit(source, destination, material, renderPass);

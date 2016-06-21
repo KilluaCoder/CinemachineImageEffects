@@ -26,9 +26,6 @@ Shader "Hidden/TonemappingColorGrading"
                 #pragma fragment frag_lut_gen
                 #include "TonemappingColorGrading.cginc"
 
-                sampler2D _UserLutTex;
-                half4 _UserLutParams;
-
                 half3 _WhiteBalance;
                 half3 _Lift;
                 half3 _Gamma;
@@ -81,10 +78,6 @@ Shader "Hidden/TonemappingColorGrading"
                 {
                     half3 neutral_lut = tex2D(_MainTex, i.uv).rgb;
                     half3 final_lut = neutral_lut;
-
-                    // User lut + contrib
-                    half3 user_luted = apply_lut(_UserLutTex, final_lut, _UserLutParams.xyz);
-                    final_lut = lerp(final_lut, user_luted, _UserLutParams.w);
 
                     // White balance
                     half3 lms = mul(LIN_2_LMS_MAT, final_lut);
@@ -171,10 +164,11 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
+                #pragma multi_compile __ ENABLE_USER_LUT
                 #pragma fragment frag_tcg
                 #include "TonemappingColorGrading.cginc"
             ENDCG
@@ -184,10 +178,11 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
+                #pragma multi_compile __ ENABLE_USER_LUT
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_ACES
                 #include "TonemappingColorGrading.cginc"
@@ -198,10 +193,11 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
+                #pragma multi_compile __ ENABLE_USER_LUT
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_CURVE
                 #include "TonemappingColorGrading.cginc"
@@ -212,10 +208,11 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
+                #pragma multi_compile __ ENABLE_USER_LUT
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_HABLE
                 #include "TonemappingColorGrading.cginc"
@@ -226,10 +223,11 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
+                #pragma multi_compile __ ENABLE_USER_LUT
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_HEJL_DAWSON
                 #include "TonemappingColorGrading.cginc"
@@ -240,10 +238,11 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
+                #pragma multi_compile __ ENABLE_USER_LUT
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_PHOTOGRAPHIC
                 #include "TonemappingColorGrading.cginc"
@@ -254,12 +253,28 @@ Shader "Hidden/TonemappingColorGrading"
         Pass
         {
             CGPROGRAM
-                #pragma multi_compile __ GAMMA_COLORSPACE
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
                 #pragma multi_compile __ ENABLE_COLOR_GRADING
                 #pragma multi_compile __ ENABLE_EYE_ADAPTATION
                 #pragma multi_compile __ ENABLE_DITHERING
+                #pragma multi_compile __ ENABLE_USER_LUT
                 #pragma fragment frag_tcg
                 #define TONEMAPPING_REINHARD
+                #include "TonemappingColorGrading.cginc"
+            ENDCG
+        }
+
+        // Tonemapping (Neutral Hejl/Habble)
+        Pass
+        {
+            CGPROGRAM
+                #pragma multi_compile __ UNITY_COLORSPACE_GAMMA
+                #pragma multi_compile __ ENABLE_COLOR_GRADING
+                #pragma multi_compile __ ENABLE_EYE_ADAPTATION
+                #pragma multi_compile __ ENABLE_DITHERING
+                #pragma multi_compile __ ENABLE_USER_LUT
+                #pragma fragment frag_tcg
+                #define TONEMAPPING_NEUTRAL
                 #include "TonemappingColorGrading.cginc"
             ENDCG
         }

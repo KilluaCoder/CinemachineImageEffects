@@ -205,6 +205,7 @@ namespace UnitySampleAssets.ImageEffects
 
                 m_History = RenderTexture.GetTemporary(source.width, source.height, 0, source.format, RenderTextureReadWrite.Default);
                 m_History.hideFlags = HideFlags.HideAndDontSave;
+                m_History.filterMode = FilterMode.Point;
 
                 Graphics.Blit(source, m_History);
             }
@@ -212,6 +213,7 @@ namespace UnitySampleAssets.ImageEffects
             material.SetTexture("_HistoryTex", m_History);
 
             RenderTexture temporary = RenderTexture.GetTemporary(source.width, source.height, 0, source.format, RenderTextureReadWrite.Default);
+            temporary.filterMode = FilterMode.Bilinear;
 
             Graphics.Blit(source, temporary, material, 0);
 

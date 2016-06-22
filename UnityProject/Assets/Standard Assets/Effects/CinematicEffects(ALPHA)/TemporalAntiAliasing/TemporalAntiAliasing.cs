@@ -205,7 +205,7 @@ namespace UnitySampleAssets.ImageEffects
 
                 m_History = RenderTexture.GetTemporary(source.width, source.height, 0, source.format, RenderTextureReadWrite.Default);
                 m_History.hideFlags = HideFlags.HideAndDontSave;
-                m_History.filterMode = FilterMode.Point;
+                m_History.filterMode = FilterMode.Bilinear;
 
                 Graphics.Blit(source, m_History);
             }

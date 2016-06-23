@@ -8,6 +8,9 @@ namespace UnitySampleAssets.ImageEffects
     [AddComponentMenu("Image Effects/Temporal Anti-aliasing")]
     public class TemporalAntiAliasing : MonoBehaviour
     {
+        [Range(0, 5)]
+        public float jitterScale = 1;
+
         private Shader m_Shader;
         public Shader shader
         {
@@ -174,6 +177,7 @@ namespace UnitySampleAssets.ImageEffects
         void OnPreCull()
         {
             Vector2 jitter = GenerateRandomOffset();
+            jitter *= jitterScale;
 
 #if UNITY_5_4_OR_NEWER
             camera_.nonJitteredProjectionMatrix = camera_.projectionMatrix;

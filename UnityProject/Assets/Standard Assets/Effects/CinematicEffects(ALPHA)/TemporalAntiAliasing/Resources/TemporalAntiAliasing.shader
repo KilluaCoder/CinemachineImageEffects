@@ -24,7 +24,7 @@ Shader "Hidden/Temporal Anti-aliasing"
         #define TAA_HISTORY_SAMPLE_FILTER 0
         #define TAA_CLIP_HISTORY_SAMPLE 1
 
-        #define TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD .5
+        #define TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD 0.5
 
         #define TAA_DEPTH_SAMPLE_PATTERN 1
         #define TAA_DEPTH_SAMPLE_SPREAD 1.
@@ -196,7 +196,13 @@ Shader "Hidden/Temporal Anti-aliasing"
             }
         }
 
-        float4 fragment(Varyings input) : SV_Target
+        struct PixelOutput
+        {
+            float4 color0 : COLOR0;
+            float4 color1 : COLOR1;
+        };
+
+        PixelOutput fragment(Varyings input) : SV_Target
         {
         #if TAA_DILATE_MOTION_VECTOR_SAMPLE
             float2 motion = tex2D(_CameraMotionVectorsTexture, getClosestFragment(input.uv)).xy;
@@ -356,10 +362,13 @@ Shader "Hidden/Temporal Anti-aliasing"
         #endif
 
         #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
-            return unmap(color);
-        #else
-            return color;
+            color = unmap(color);
         #endif
+
+            PixelOutput outStruct;
+            outStruct.color0 = color;
+            outStruct.color1 = color;
+            return outStruct;
         }
     ENDCG
 

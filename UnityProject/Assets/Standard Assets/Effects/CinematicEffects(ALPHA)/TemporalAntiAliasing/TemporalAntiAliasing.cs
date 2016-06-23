@@ -191,6 +191,23 @@ namespace UnitySampleAssets.ImageEffects
             camera_.ResetProjectionMatrix();
         }
 
+        private static void DoRenderFullScreenQuad(Material mat, int pass)
+        {
+            GL.PushMatrix();
+            GL.LoadOrtho();
+            mat.SetPass(pass);
+
+            //Render the full screen quad manually.
+            GL.Begin(GL.QUADS);
+            GL.TexCoord2(0.0f, 0.0f); GL.Vertex3(0.0f, 0.0f, 0.1f);
+            GL.TexCoord2(1.0f, 0.0f); GL.Vertex3(1.0f, 0.0f, 0.1f);
+            GL.TexCoord2(1.0f, 1.0f); GL.Vertex3(1.0f, 1.0f, 0.1f);
+            GL.TexCoord2(0.0f, 1.0f); GL.Vertex3(0.0f, 1.0f, 0.1f);
+            GL.End();
+
+            GL.PopMatrix();
+        }
+
         public void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
             if (camera_.orthographic)
@@ -211,16 +228,47 @@ namespace UnitySampleAssets.ImageEffects
             }
 
             material.SetTexture("_HistoryTex", m_History);
+            material.SetTexture("_MainTex", source);
 
+            RenderTexture oldRT = RenderTexture.active;
+
+            // generate a temp texture, this will become history next frame
             RenderTexture temporary = RenderTexture.GetTemporary(source.width, source.height, 0, source.format, RenderTextureReadWrite.Default);
             temporary.filterMode = FilterMode.Bilinear;
 
-            Graphics.Blit(source, temporary, material, 0);
+            // destination can be null if we are writing to framebuffer
+            // this means we need an extra blit. Will only happen if
+            // taa is last in the effects stack
+            var destinationToUse = destination;
+            var needsExtraBlit = false;
+            if (destinationToUse == null)
+            {
+                destinationToUse = RenderTexture.GetTemporary(source.width, source.height, 0, source.format, RenderTextureReadWrite.Default);
+                destinationToUse.filterMode = FilterMode.Bilinear;
+                needsExtraBlit = true;
+            }
 
-            Graphics.Blit(temporary, m_History);
-            Graphics.Blit(temporary, destination);
+            // set up MRT, we can do this all in one pass :)
+            var mrb = new RenderBuffer[2];
+            mrb[0] = temporary.colorBuffer;
+            mrb[1] = destinationToUse.colorBuffer;
+            Graphics.SetRenderTarget(mrb, destinationToUse.depthBuffer);
 
-            RenderTexture.ReleaseTemporary(temporary);
+            // Do the render
+            DoRenderFullScreenQuad(material, 0);
+
+            // release the old history / update with new history
+            RenderTexture.ReleaseTemporary(m_History);
+            m_History = temporary;
+
+            // do the extra blit if needed
+            if (needsExtraBlit)
+            {
+                Graphics.Blit(destinationToUse, destination);
+                RenderTexture.ReleaseTemporary(destinationToUse);
+            }
+
+            RenderTexture.active = oldRT;
         }
     }
 }

@@ -219,7 +219,7 @@ Shader "Hidden/Temporal Anti-aliasing"
         #if TAA_REMOVE_COLOR_SAMPLE_JITTER && UNITY_UV_STARTS_AT_TOP
             mainUV -= _MainTex_TexelSize.y < 0 ? _Jitter * float2(1, -1) : _Jitter;
         #elif TAA_REMOVE_COLOR_SAMPLE_JITTER
-            mainUV -= _Jitter
+            mainUV -= _Jitter;
         #endif
 
             float2 mainTexK = TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD * _MainTex_TexelSize.xy;

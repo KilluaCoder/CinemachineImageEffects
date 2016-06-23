@@ -198,11 +198,11 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         struct PixelOutput
         {
-            float4 color0 : COLOR0;
-            float4 color1 : COLOR1;
+            float4 color0 : SV_Target0;
+            float4 color1 : SV_Target1;
         };
 
-        PixelOutput fragment(Varyings input) : SV_Target
+        PixelOutput fragment(Varyings input)
         {
         #if TAA_DILATE_MOTION_VECTOR_SAMPLE
             float2 motion = tex2D(_CameraMotionVectorsTexture, getClosestFragment(input.uv)).xy;

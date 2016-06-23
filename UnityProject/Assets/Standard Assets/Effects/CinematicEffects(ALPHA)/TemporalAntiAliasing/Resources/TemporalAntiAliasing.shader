@@ -52,6 +52,13 @@ Shader "Hidden/Temporal Anti-aliasing"
             float4 position : TEXCOORD2;
         };
 
+        struct Output
+        {
+            float4 color : SV_Target0;
+            float4 history : SV_Target1;
+        };
+
+
         sampler2D _MainTex;
         sampler2D _HistoryTex;
 
@@ -200,13 +207,7 @@ Shader "Hidden/Temporal Anti-aliasing"
             }
         }
 
-        struct PixelOutput
-        {
-            float4 color0 : SV_Target0;
-            float4 color1 : SV_Target1;
-        };
-
-        PixelOutput fragment(Varyings input)
+        Output fragment(Varyings input)
         {
         #if TAA_DILATE_MOTION_VECTOR_SAMPLE
             float2 motion = tex2D(_CameraMotionVectorsTexture, getClosestFragment(input.defaultUV)).xy;
@@ -370,10 +371,11 @@ Shader "Hidden/Temporal Anti-aliasing"
             color = unmap(color);
         #endif
 
-            PixelOutput outStruct;
-            outStruct.color0 = color;
-            outStruct.color1 = color;
-            return outStruct;
+            Output output;
+            output.color = color;
+            output.history = color;
+
+            return output;
         }
     ENDCG
 

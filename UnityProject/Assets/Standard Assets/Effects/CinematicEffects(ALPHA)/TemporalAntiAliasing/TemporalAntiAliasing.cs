@@ -195,11 +195,11 @@ namespace UnitySampleAssets.ImageEffects
             camera_.ResetProjectionMatrix();
         }
 
-        private static void DoRenderFullScreenQuad(Material mat, int pass)
+        private void RenderFullScreenQuad()
         {
             GL.PushMatrix();
             GL.LoadOrtho();
-            mat.SetPass(pass);
+            material.SetPass(0);
 
             //Render the full screen quad manually.
             GL.Begin(GL.QUADS);
@@ -253,13 +253,13 @@ namespace UnitySampleAssets.ImageEffects
             }
 
             // set up MRT, we can do this all in one pass :)
-            var mrb = new RenderBuffer[2];
-            mrb[0] = temporary.colorBuffer;
-            mrb[1] = destinationToUse.colorBuffer;
-            Graphics.SetRenderTarget(mrb, destinationToUse.depthBuffer);
+            var mrt = new RenderBuffer[2];
+            mrt[0] = temporary.colorBuffer;
+            mrt[1] = destinationToUse.colorBuffer;
+            Graphics.SetRenderTarget(mrt, destinationToUse.depthBuffer);
 
             // Do the render
-            DoRenderFullScreenQuad(material, 0);
+            RenderFullScreenQuad();
 
             // release the old history / update with new history
             RenderTexture.ReleaseTemporary(m_History);

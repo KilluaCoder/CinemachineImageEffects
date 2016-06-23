@@ -803,11 +803,6 @@ Shader "Hidden/ScreenSpaceReflection"
                         float2(-0.791559,-0.59771)
                 };
 
-                float toLuma(float4 color)
-                {
-                    return dot(float3(.2126, .7152, .0722), color);
-                }
-
                 float4 fragFilterSharpReflections(v2f i) : SV_Target
                 {
                         // Could improve perf by not computing blur when we won't be sampling the highest level anyways

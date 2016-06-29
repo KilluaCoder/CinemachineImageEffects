@@ -20,86 +20,72 @@ namespace UnityStandardAssets.CinematicEffects
         [SerializeField]
         Settings _settings = Settings.defaultSettings;
 
-        // Debug mode switch.
+        #endregion
+
+        #region Debug settings
+
         enum DebugMode { Off, Velocity, NeighborMax, Depth }
 
-        [SerializeField, Tooltip("The debug visualization mode.")]
+        [SerializeField]
+        [Tooltip("The debug visualization mode.")]
         DebugMode _debugMode;
 
         #endregion
 
         #region Private properties and methods
 
-        [SerializeField] Shader _prefilterShader;
-        [SerializeField] Shader _reconstructionShader;
+        [SerializeField] Shader _shader;
 
-        Material _prefilterMaterial;
-        Material _reconstructionMaterial;
+        Material _material;
+        RenderTexture _accTexture;
+        int _previousFrameCount;
 
         // Shader retrieval
-        Shader prefilterShader
+        Shader shader
         {
             get
             {
-                if (_prefilterShader != null) return _prefilterShader;
-                return Shader.Find("Hidden/Image Effects/Cinematic/MotionBlur/Prefilter");
-            }
-        }
-
-        Shader reconstructionShader
-        {
-            get
-            {
-                if (_reconstructionShader != null) return _reconstructionShader;
-                return Shader.Find("Hidden/Image Effects/Cinematic/MotionBlur/Reconstruction");
+                if (_shader != null) return _shader;
+                return Shader.Find("Hidden/Image Effects/Cinematic/MotionBlur");
             }
         }
 
         // Lazy material initialization
-        Material prefilterMaterial
+        Material material
         {
             get
             {
-                if (_prefilterMaterial == null)
-                    _prefilterMaterial = ImageEffectHelper.CheckShaderAndCreateMaterial(prefilterShader);
-                return _prefilterMaterial;
+                if (_material == null)
+                    _material = ImageEffectHelper.CheckShaderAndCreateMaterial(shader);
+                return _material;
             }
         }
 
-        Material reconstructionMaterial
+        // Scale factor of motion vectors
+        float VelocityScale
         {
             get
             {
-                if (_reconstructionMaterial == null)
-                    _reconstructionMaterial = ImageEffectHelper.CheckShaderAndCreateMaterial(reconstructionShader);
-                return _reconstructionMaterial;
+                if (_settings.exposureTime == ExposureTime.Constant)
+                    return 1.0f / (_settings.shutterSpeed * Time.smoothDeltaTime);
+                else // ExposureTime.DeltaTime
+                    return Mathf.Clamp01(_settings.shutterAngle / 360);
             }
         }
 
         // The count of reconstruction filter loop (== SampleCount/2).
-        int reconstructionLoopCount
+        int LoopCount
         {
             get
             {
                 switch (_settings.sampleCount)
                 {
-                    case SampleCount.Low:    return 2;
-                    case SampleCount.Medium: return 5;
-                    case SampleCount.High:   return 10;
+                    case SampleCount.Low:    return 2;  // 4 samples
+                    case SampleCount.Medium: return 5;  // 10 samples
+                    case SampleCount.High:   return 10; // 20 samples
                 }
-                return Mathf.Clamp(_settings.sampleCountValue / 2, 1, 64);
-            }
-        }
-
-        // Scale factor for motion vectors used to apply the exposure time.
-        float velocityScale
-        {
-            get
-            {
-                if (_settings.exposureMode == ExposureMode.Constant)
-                    return 1.0f / (_settings.shutterSpeed * Time.smoothDeltaTime);
-                else // ExposureMode.DeltaTime
-                    return _settings.exposureTimeScale;
+                // SampleCount.Custom
+                return Mathf.Clamp(_settings.customSampleCount / 2, 1, 64);
             }
         }
 
@@ -125,8 +111,7 @@ namespace UnityStandardAssets.CinematicEffects
         void OnEnable()
         {
             // Check if the shader is supported in the current platform.
-            if (!ImageEffectHelper.IsSupported(prefilterShader, true, false, this) ||
-                !ImageEffectHelper.IsSupported(reconstructionShader, true, false, this))
+            if (!ImageEffectHelper.IsSupported(shader, true, false, this))
             {
                 enabled = false;
                 return;
@@ -139,11 +124,11 @@ namespace UnityStandardAssets.CinematicEffects
 
         void OnDisable()
         {
-            DestroyImmediate(_prefilterMaterial);
-            _prefilterMaterial = null;
+            DestroyImmediate(_material);
+            _material = null;
 
-            DestroyImmediate(_reconstructionMaterial);
-            _reconstructionMaterial = null;
+            if (_accTexture != null) ReleaseTemporaryRT(_accTexture);
+            _accTexture = null;
         }
 
         void OnRenderImage(RenderTexture source, RenderTexture destination)
@@ -162,43 +147,87 @@ namespace UnityStandardAssets.CinematicEffects
             var tileSize = ((maxBlurPixels - 1) / 8 + 1) * 8;
 
             // Pass 1 - Velocity/depth packing
-            var prefilter = prefilterMaterial;
-            prefilter.SetFloat("_VelocityScale", velocityScale);
-            prefilter.SetFloat("_MaxBlurRadius", maxBlurPixels);
+            var m = material;
+            m.SetFloat("_VelocityScale", VelocityScale);
+            m.SetFloat("_MaxBlurRadius", maxBlurPixels);
 
             var vbuffer = GetTemporaryRT(source, 1, packedRTFormat);
-            Graphics.Blit(null, vbuffer, prefilter, 0);
+            Graphics.Blit(null, vbuffer, m, 0);
 
             // Pass 2 - First TileMax filter (1/4 downsize)
             var tile4 = GetTemporaryRT(source, 4, vectorRTFormat);
-            Graphics.Blit(vbuffer, tile4, prefilter, 1);
+            Graphics.Blit(vbuffer, tile4, m, 1);
 
             // Pass 3 - Second TileMax filter (1/2 downsize)
             var tile8 = GetTemporaryRT(source, 8, vectorRTFormat);
-            Graphics.Blit(tile4, tile8, prefilter, 2);
+            Graphics.Blit(tile4, tile8, m, 2);
             ReleaseTemporaryRT(tile4);
 
             // Pass 4 - Third TileMax filter (reduce to tileSize)
             var tileMaxOffs = Vector2.one * (tileSize / 8.0f - 1) * -0.5f;
-            prefilter.SetVector("_TileMaxOffs", tileMaxOffs);
-            prefilter.SetInt("_TileMaxLoop", tileSize / 8);
+            m.SetVector("_TileMaxOffs", tileMaxOffs);
+            m.SetInt("_TileMaxLoop", tileSize / 8);
 
             var tile = GetTemporaryRT(source, tileSize, vectorRTFormat);
-            Graphics.Blit(tile8, tile, prefilter, 3);
+            Graphics.Blit(tile8, tile, m, 3);
             ReleaseTemporaryRT(tile8);
 
             // Pass 5 - NeighborMax filter
             var neighborMax = GetTemporaryRT(source, tileSize, vectorRTFormat);
-            Graphics.Blit(tile, neighborMax, prefilter, 4);
+            Graphics.Blit(tile, neighborMax, m, 4);
             ReleaseTemporaryRT(tile);
 
             // Pass 6 - Reconstruction pass
-            var reconstruction = reconstructionMaterial;
-            reconstruction.SetInt("_LoopCount", reconstructionLoopCount);
-            reconstruction.SetFloat("_MaxBlurRadius", maxBlurPixels);
-            reconstruction.SetTexture("_NeighborMaxTex", neighborMax);
-            reconstruction.SetTexture("_VelocityTex", vbuffer);
-            Graphics.Blit(source, destination, reconstruction, (int)_debugMode);
+            m.SetInt("_LoopCount", LoopCount);
+            m.SetFloat("_MaxBlurRadius", maxBlurPixels);
+            m.SetTexture("_NeighborMaxTex", neighborMax);
+            m.SetTexture("_VelocityTex", vbuffer);
+            m.SetTexture("_AccTex", _accTexture);
+            m.SetFloat("_AccRatio", _settings.accumulationRatio);
+
+            if (_debugMode != DebugMode.Off)
+            {
+                // Debug mode: Blit with the debug shader.
+                Graphics.Blit(source, destination, m, 6 + (int)_debugMode);
+            }
+            else if (_settings.accumulationRatio == 0)
+            {
+                // Reconstruction without color accumulation
+                Graphics.Blit(source, destination, m, 5);
+
+                // Accumulation texture is not needed now.
+                if (_accTexture != null)
+                {
+                    ReleaseTemporaryRT(_accTexture);
+                    _accTexture = null;
+                }
+            }
+            else
+            {
+                // Reconstruction with color accumulation
+                Graphics.Blit(source, destination, m, 6);
+
+                // Accumulation only happens when time advances.
+                if (Time.frameCount != _previousFrameCount)
+                {
+                    // Release the accumulation texture when accumulation is
+                    // disabled or the size of the screen was changed.
+                    if (_accTexture != null &&
+                        (_accTexture.width != source.width ||
+                         _accTexture.height != source.height))
+                    {
+                        ReleaseTemporaryRT(_accTexture);
+                        _accTexture = null;
+                    }
+
+                    // Create an accumulation texture if not ready.
+                    if (_accTexture == null)
+                        _accTexture = GetTemporaryRT(source, 1, source.format);
+
+                    Graphics.Blit(destination, _accTexture);
+                    _previousFrameCount = Time.frameCount;
+                }
+            }
 
             // Cleaning up
             ReleaseTemporaryRT(vbuffer);

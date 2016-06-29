@@ -1,7 +1,6 @@
 // Editor script for the motion blur effect
 
-// Debug items are hidden by default (not very useful in most cases).
-// #define SHOW_DEBUG
+// #define EDITOR_DETAIL
 
 using UnityEngine;
 using UnityEditor;
@@ -12,31 +11,36 @@ namespace UnityStandardAssets.CinematicEffects
     [CustomEditor(typeof(MotionBlur))]
     public class MotionBlurEditor : Editor
     {
-        SerializedProperty _exposureMode;
-        SerializedProperty _shutterSpeed;
-        SerializedProperty _exposureTimeScale;
         SerializedProperty _sampleCount;
-        SerializedProperty _sampleCountValue;
+        SerializedProperty _customSampleCount;
+        SerializedProperty _accumulationRatio;
+        #if EDITOR_DETAIL
+        SerializedProperty _exposureTime;
+        SerializedProperty _shutterAngle;
+        SerializedProperty _shutterSpeed;
         SerializedProperty _maxBlurRadius;
-        #if SHOW_DEBUG
         SerializedProperty _debugMode;
         #endif
 
-        static GUIContent _textScale = new GUIContent("Scale");
-        static GUIContent _textValue = new GUIContent("Value");
+        static GUIContent _textCustomValue = new GUIContent("Custom Value");
+        #if !EDITOR_DETAIL
+        static GUIContent _textBlendRatio = new GUIContent("Blend Ratio");
+        #else
         static GUIContent _textTime = new GUIContent("Time = 1 /");
         static GUIContent _textMaxBlur = new GUIContent("Max Blur Radius %");
+        #endif
 
         void OnEnable()
         {
-            _exposureMode = serializedObject.FindProperty("_settings.exposureMode");
-            _shutterSpeed = serializedObject.FindProperty("_settings.shutterSpeed");
-            _exposureTimeScale = serializedObject.FindProperty("_settings.exposureTimeScale");
             _sampleCount = serializedObject.FindProperty("_settings.sampleCount");
-            _sampleCountValue = serializedObject.FindProperty("_settings.sampleCountValue");
+            _customSampleCount = serializedObject.FindProperty("_settings.customSampleCount");
+            _accumulationRatio = serializedObject.FindProperty("_settings.accumulationRatio");
+            #if EDITOR_DETAIL
+            _exposureTime = serializedObject.FindProperty("_settings.exposureTime");
+            _shutterAngle = serializedObject.FindProperty("_settings.shutterAngle");
+            _shutterSpeed = serializedObject.FindProperty("_settings.shutterSpeed");
             _maxBlurRadius = serializedObject.FindProperty("_settings.maxBlurRadius");
-            #if SHOW_DEBUG
-             _debugMode = serializedObject.FindProperty("_debugMode");
+            _debugMode = serializedObject.FindProperty("_debugMode");
             #endif
         }
 
@@ -44,38 +48,65 @@ namespace UnityStandardAssets.CinematicEffects
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(_exposureMode);
+            #if !EDITOR_DETAIL
 
-            if (_exposureMode.hasMultipleDifferentValues ||
-                _exposureMode.enumValueIndex == (int)MotionBlur.ExposureMode.Constant)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_shutterSpeed, _textTime);
-                EditorGUI.indentLevel--;
-            }
+            // Exposure time simulation options
+            EditorGUILayout.LabelField("Exposure Time Simulation", EditorStyles.boldLabel);
 
-            if (_exposureMode.hasMultipleDifferentValues ||
-                _exposureMode.enumValueIndex == (int)MotionBlur.ExposureMode.DeltaTime)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_exposureTimeScale, _textScale);
-                EditorGUI.indentLevel--;
-            }
+            EditorGUI.indentLevel++;
 
             EditorGUILayout.PropertyField(_sampleCount);
 
-            if (_sampleCount.hasMultipleDifferentValues ||
-                _sampleCount.enumValueIndex == (int)MotionBlur.SampleCount.Variable)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_sampleCountValue, _textValue);
-                EditorGUI.indentLevel--;
-            }
+            var showAllItems = _sampleCount.hasMultipleDifferentValues;
+            var sampleCount = (MotionBlur.SampleCount)_sampleCount.enumValueIndex;
 
+            if (showAllItems || sampleCount == MotionBlur.SampleCount.Custom)
+                EditorGUILayout.PropertyField(_customSampleCount, _textCustomValue);
+
+            EditorGUI.indentLevel--;
+
+            // Color accumulation options
+            EditorGUILayout.LabelField("Color Accumulation", EditorStyles.boldLabel);
+
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_accumulationRatio, _textBlendRatio);
+            EditorGUI.indentLevel--;
+
+            #else
+
+            EditorGUILayout.PropertyField(_exposureTime);
+
+            var showAllItems = _exposureTime.hasMultipleDifferentValues;
+            var exposureTime = (MotionBlur.ExposureTime)_exposureTime.enumValueIndex;
+
+            EditorGUI.indentLevel++;
+
+            if (showAllItems || exposureTime == MotionBlur.ExposureTime.DeltaTime)
+                EditorGUILayout.PropertyField(_shutterAngle);
+
+            if (showAllItems || exposureTime == MotionBlur.ExposureTime.Constant)
+                EditorGUILayout.PropertyField(_shutterSpeed, _textTime);
+
+            EditorGUI.indentLevel--;
+
+            // Sample count options
+            EditorGUILayout.PropertyField(_sampleCount);
+
+            showAllItems = _sampleCount.hasMultipleDifferentValues;
+            var sampleCount = (MotionBlur.SampleCount)_sampleCount.enumValueIndex;
+
+            EditorGUI.indentLevel++;
+
+            if (showAllItems || sampleCount == MotionBlur.SampleCount.Custom)
+                EditorGUILayout.PropertyField(_customSampleCount, _textCustomValue);
+
+            EditorGUI.indentLevel--;
+
+            // Other options
             EditorGUILayout.PropertyField(_maxBlurRadius, _textMaxBlur);
-
-            #if SHOW_DEBUG
+            EditorGUILayout.PropertyField(_accumulationRatio);
             EditorGUILayout.PropertyField(_debugMode);
+
             #endif
 
             serializedObject.ApplyModifiedProperties();

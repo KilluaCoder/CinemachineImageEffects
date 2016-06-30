@@ -13,7 +13,6 @@ namespace UnityStandardAssets.CinematicEffects
     {
         SerializedProperty _sampleCount;
         SerializedProperty _customSampleCount;
-        SerializedProperty _accumulationRatio;
         #if EDITOR_DETAIL
         SerializedProperty _exposureTime;
         SerializedProperty _shutterAngle;
@@ -34,7 +33,6 @@ namespace UnityStandardAssets.CinematicEffects
         {
             _sampleCount = serializedObject.FindProperty("_settings.sampleCount");
             _customSampleCount = serializedObject.FindProperty("_settings.customSampleCount");
-            _accumulationRatio = serializedObject.FindProperty("_settings.accumulationRatio");
             #if EDITOR_DETAIL
             _exposureTime = serializedObject.FindProperty("_settings.exposureTime");
             _shutterAngle = serializedObject.FindProperty("_settings.shutterAngle");
@@ -48,63 +46,42 @@ namespace UnityStandardAssets.CinematicEffects
         {
             serializedObject.Update();
 
-            #if !EDITOR_DETAIL
-
-            // Exposure time simulation options
-            EditorGUILayout.LabelField("Exposure Time Simulation", EditorStyles.boldLabel);
-
-            EditorGUI.indentLevel++;
-
-            EditorGUILayout.PropertyField(_sampleCount);
-
-            var showAllItems = _sampleCount.hasMultipleDifferentValues;
-            var sampleCount = (MotionBlur.SampleCount)_sampleCount.enumValueIndex;
-
-            if (showAllItems || sampleCount == MotionBlur.SampleCount.Custom)
-                EditorGUILayout.PropertyField(_customSampleCount, _textCustomValue);
-
-            EditorGUI.indentLevel--;
-
-            // Color accumulation options
-            EditorGUILayout.LabelField("Color Accumulation", EditorStyles.boldLabel);
-
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_accumulationRatio, _textBlendRatio);
-            EditorGUI.indentLevel--;
-
-            #else
+            #if EDITOR_DETAIL
 
             EditorGUILayout.PropertyField(_exposureTime);
 
-            var showAllItems = _exposureTime.hasMultipleDifferentValues;
             var exposureTime = (MotionBlur.ExposureTime)_exposureTime.enumValueIndex;
+            var showShutterOptions = _exposureTime.hasMultipleDifferentValues;
 
             EditorGUI.indentLevel++;
 
-            if (showAllItems || exposureTime == MotionBlur.ExposureTime.DeltaTime)
+            if (showShutterOptions || exposureTime == MotionBlur.ExposureTime.DeltaTime)
                 EditorGUILayout.PropertyField(_shutterAngle);
 
-            if (showAllItems || exposureTime == MotionBlur.ExposureTime.Constant)
+            if (showShutterOptions || exposureTime == MotionBlur.ExposureTime.Constant)
                 EditorGUILayout.PropertyField(_shutterSpeed, _textTime);
 
             EditorGUI.indentLevel--;
 
+            #endif
+
             // Sample count options
             EditorGUILayout.PropertyField(_sampleCount);
 
-            showAllItems = _sampleCount.hasMultipleDifferentValues;
             var sampleCount = (MotionBlur.SampleCount)_sampleCount.enumValueIndex;
+            var showSampleOptions = _sampleCount.hasMultipleDifferentValues;
 
             EditorGUI.indentLevel++;
 
-            if (showAllItems || sampleCount == MotionBlur.SampleCount.Custom)
+            if (showSampleOptions || sampleCount == MotionBlur.SampleCount.Custom)
                 EditorGUILayout.PropertyField(_customSampleCount, _textCustomValue);
 
             EditorGUI.indentLevel--;
 
+            #if EDITOR_DETAIL
+
             // Other options
             EditorGUILayout.PropertyField(_maxBlurRadius, _textMaxBlur);
-            EditorGUILayout.PropertyField(_accumulationRatio);
             EditorGUILayout.PropertyField(_debugMode);
 
             #endif

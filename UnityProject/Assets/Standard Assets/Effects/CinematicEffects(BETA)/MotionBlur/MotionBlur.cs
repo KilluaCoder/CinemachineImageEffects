@@ -37,8 +37,6 @@ namespace UnityStandardAssets.CinematicEffects
         [SerializeField] Shader _shader;
 
         Material _material;
-        RenderTexture _accTexture;
-        int _previousFrameCount;
 
         // Shader retrieval
         Shader shader
@@ -126,9 +124,6 @@ namespace UnityStandardAssets.CinematicEffects
         {
             DestroyImmediate(_material);
             _material = null;
-
-            if (_accTexture != null) ReleaseTemporaryRT(_accTexture);
-            _accTexture = null;
         }
 
         void OnRenderImage(RenderTexture source, RenderTexture destination)
@@ -182,52 +177,7 @@ namespace UnityStandardAssets.CinematicEffects
             m.SetFloat("_MaxBlurRadius", maxBlurPixels);
             m.SetTexture("_NeighborMaxTex", neighborMax);
             m.SetTexture("_VelocityTex", vbuffer);
-            m.SetTexture("_AccTex", _accTexture);
-            m.SetFloat("_AccRatio", _settings.accumulationRatio);
-
-            if (_debugMode != DebugMode.Off)
-            {
-                // Debug mode: Blit with the debug shader.
-                Graphics.Blit(source, destination, m, 6 + (int)_debugMode);
-            }
-            else if (_settings.accumulationRatio == 0)
-            {
-                // Reconstruction without color accumulation
-                Graphics.Blit(source, destination, m, 5);
-
-                // Accumulation texture is not needed now.
-                if (_accTexture != null)
-                {
-                    ReleaseTemporaryRT(_accTexture);
-                    _accTexture = null;
-                }
-            }
-            else
-            {
-                // Reconstruction with color accumulation
-                Graphics.Blit(source, destination, m, 6);
-
-                // Accumulation only happens when time advances.
-                if (Time.frameCount != _previousFrameCount)
-                {
-                    // Release the accumulation texture when accumulation is
-                    // disabled or the size of the screen was changed.
-                    if (_accTexture != null &&
-                        (_accTexture.width != source.width ||
-                         _accTexture.height != source.height))
-                    {
-                        ReleaseTemporaryRT(_accTexture);
-                        _accTexture = null;
-                    }
-
-                    // Create an accumulation texture if not ready.
-                    if (_accTexture == null)
-                        _accTexture = GetTemporaryRT(source, 1, source.format);
-
-                    Graphics.Blit(destination, _accTexture);
-                    _previousFrameCount = Time.frameCount;
-                }
-            }
+            Graphics.Blit(source, destination, m, 5 + (int)_debugMode);
 
             // Cleaning up
             ReleaseTemporaryRT(vbuffer);

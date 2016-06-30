@@ -66,11 +66,6 @@ namespace UnityStandardAssets.CinematicEffects
              "of the screen height. Larger values may introduce artifacts.")]
             public float maxBlurRadius;
 
-            /// Color accumulation ratio.
-            [SerializeField, Range(0.0f, 0.99f)]
-            [Tooltip("Color accumulation ratio.")]
-            public float accumulationRatio;
-
             /// Returns the default settings.
             public static Settings defaultSettings
             {
@@ -83,8 +78,7 @@ namespace UnityStandardAssets.CinematicEffects
                         shutterSpeed = 48,
                         sampleCount = SampleCount.Medium,
                         customSampleCount = 10,
-                        maxBlurRadius = 5,
-                        accumulationRatio = 0
+                        maxBlurRadius = 5
                     };
                 }
             }

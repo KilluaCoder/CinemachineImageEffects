@@ -6,10 +6,6 @@
 sampler2D _MainTex;
 float4 _MainTex_TexelSize;
 
-// Color accumulation texture
-sampler2D _AccTex;
-float4 _AccTex_TexelSize;
-
 // Camera depth texture
 sampler2D_float _CameraDepthTexture;
 float4 _CameraDepthTexture_TexelSize;
@@ -38,9 +34,6 @@ half _MaxBlurRadius;
 
 // Filter parameters/coefficients
 int _LoopCount;
-
-// Color accumulation blend ratio
-float _AccRatio;
 
 // Vertex shader for multiple texture blitting
 struct v2f_multitex

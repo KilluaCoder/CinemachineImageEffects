@@ -6,6 +6,9 @@ using UnityEngine.Rendering;
 namespace UnityStandardAssets.CinematicEffects
 {
     [ExecuteInEditMode]
+#if UNITY_5_4_OR_NEWER
+    [ImageEffectAllowedInSceneView]
+#endif
     [RequireComponent(typeof(Camera))]
     [AddComponentMenu("Cinematic Image Effects/Screen Space Reflections")]
     public class ScreenSpaceReflection : MonoBehaviour

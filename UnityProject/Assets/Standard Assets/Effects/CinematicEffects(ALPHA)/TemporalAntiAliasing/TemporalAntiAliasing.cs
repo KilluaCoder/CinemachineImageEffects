@@ -234,8 +234,6 @@ namespace UnitySampleAssets.ImageEffects
             material.SetTexture("_HistoryTex", m_History);
             material.SetTexture("_MainTex", source);
 
-            RenderTexture oldRT = RenderTexture.active;
-
             // generate a temp texture, this will become history next frame
             RenderTexture temporary = RenderTexture.GetTemporary(source.width, source.height, 0, source.format, RenderTextureReadWrite.Default);
             temporary.filterMode = FilterMode.Bilinear;
@@ -272,7 +270,7 @@ namespace UnitySampleAssets.ImageEffects
                 RenderTexture.ReleaseTemporary(destinationToUse);
             }
 
-            RenderTexture.active = oldRT;
+            RenderTexture.active = destination;
         }
     }
 }

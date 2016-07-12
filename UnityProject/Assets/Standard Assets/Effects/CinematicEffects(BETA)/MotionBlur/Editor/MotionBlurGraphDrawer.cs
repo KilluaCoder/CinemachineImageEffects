@@ -5,11 +5,11 @@ using UnityEditor;
 
 namespace UnityStandardAssets.CinematicEffects
 {
-    public class MotionGraphDrawer
+    public class MotionBlurGraphDrawer
     {
         #region Public methods
 
-        public MotionGraphDrawer(Texture blendingIcon)
+        public MotionBlurGraphDrawer(Texture blendingIcon)
         {
             _blendingIcon = blendingIcon;
 

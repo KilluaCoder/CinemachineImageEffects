@@ -37,6 +37,7 @@ namespace UnityStandardAssets.CinematicEffects
         [SerializeField] Shader _shader;
 
         Material _material;
+        HistoryBuffer _historyBuffer;
 
         // Shader retrieval
         Shader shader
@@ -56,34 +57,6 @@ namespace UnityStandardAssets.CinematicEffects
                 if (_material == null)
                     _material = ImageEffectHelper.CheckShaderAndCreateMaterial(shader);
                 return _material;
-            }
-        }
-
-        // Scale factor of motion vectors
-        float VelocityScale
-        {
-            get
-            {
-                if (_settings.exposureTime == ExposureTime.Constant)
-                    return 1.0f / (_settings.shutterSpeed * Time.smoothDeltaTime);
-                else // ExposureTime.DeltaTime
-                    return Mathf.Clamp01(_settings.shutterAngle / 360);
-            }
-        }
-
-        // The count of reconstruction filter loop (== SampleCount/2).
-        int LoopCount
-        {
-            get
-            {
-                switch (_settings.sampleCount)
-                {
-                    case SampleCount.Low:    return 2;  // 4 samples
-                    case SampleCount.Medium: return 5;  // 10 samples
-                    case SampleCount.High:   return 10; // 20 samples
-                }
-                // SampleCount.Custom
-                return Mathf.Clamp(_settings.customSampleCount / 2, 1, 64);
             }
         }
 
@@ -115,6 +88,8 @@ namespace UnityStandardAssets.CinematicEffects
                 return;
             }
 
+            _historyBuffer = new HistoryBuffer();
+
             // Requires depth and motion vectors.
             GetComponent<Camera>().depthTextureMode |=
                 DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
@@ -124,6 +99,9 @@ namespace UnityStandardAssets.CinematicEffects
         {
             DestroyImmediate(_material);
             _material = null;
+
+            _historyBuffer.Release();
+            _historyBuffer = null;
         }
 
         void OnRenderImage(RenderTexture source, RenderTexture destination)
@@ -142,8 +120,10 @@ namespace UnityStandardAssets.CinematicEffects
             var tileSize = ((maxBlurPixels - 1) / 8 + 1) * 8;
 
             // Pass 1 - Velocity/depth packing
+            // Motion vectors are scaled by an empirical factor of 1.45.
             var m = material;
-            m.SetFloat("_VelocityScale", VelocityScale);
+            var velocityScale = _settings.shutterAngle / 360 * 1.45f;
+            m.SetFloat("_VelocityScale", velocityScale);
             m.SetFloat("_MaxBlurRadius", maxBlurPixels);
 
             var vbuffer = GetTemporaryRT(source, 1, packedRTFormat);
@@ -173,11 +153,34 @@ namespace UnityStandardAssets.CinematicEffects
             ReleaseTemporaryRT(tile);
 
             // Pass 6 - Reconstruction pass
-            m.SetInt("_LoopCount", LoopCount);
+            var temp = GetTemporaryRT(destination, 1, destination.format);
+            m.SetInt("_LoopCount", Mathf.Clamp(_settings.sampleCount / 2, 1, 64));
             m.SetFloat("_MaxBlurRadius", maxBlurPixels);
             m.SetTexture("_NeighborMaxTex", neighborMax);
             m.SetTexture("_VelocityTex", vbuffer);
-            Graphics.Blit(source, destination, m, 5 + (int)_debugMode);
+
+            if (_debugMode != DebugMode.Off)
+            {
+                // Blit with the debug shader.
+                Graphics.Blit(source, destination, m, 6 + (int)_debugMode);
+            }
+            else if (_settings.frameBlending > 0)
+            {
+                Graphics.Blit(source, temp, m, 5);
+
+                // Pass 7 - Frame blending
+                _historyBuffer.SetMaterialProperties(m, _settings.frameBlending);
+                Graphics.Blit(temp, destination, m, 6);
+
+                // Update frame history
+                _historyBuffer.PushFrame(temp);
+                ReleaseTemporaryRT(temp);
+            }
+            else
+            {
+                // No frame blending: Directory output to the destination.
+                Graphics.Blit(source, destination, m, 5);
+            }
 
             // Cleaning up
             ReleaseTemporaryRT(vbuffer);

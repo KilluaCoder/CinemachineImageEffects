@@ -18,7 +18,7 @@ namespace UnityStandardAssets.CinematicEffects
     [CustomEditor(typeof(MotionBlur))]
     public class MotionBlurEditor : Editor
     {
-        MotionGraphDrawer _graph;
+        MotionBlurGraphDrawer _graph;
 
         SerializedProperty _shutterAngle;
         SerializedProperty _sampleCount;
@@ -41,7 +41,7 @@ namespace UnityStandardAssets.CinematicEffects
 
         public override void OnInspectorGUI()
         {
-            if (_graph == null) _graph = new MotionGraphDrawer(_blendingIcon);
+            if (_graph == null) _graph = new MotionBlurGraphDrawer(_blendingIcon);
 
             serializedObject.Update();
 

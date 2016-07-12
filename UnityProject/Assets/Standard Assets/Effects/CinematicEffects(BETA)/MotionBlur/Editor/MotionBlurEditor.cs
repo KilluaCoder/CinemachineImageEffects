@@ -1,6 +1,13 @@
 // Editor script for the motion blur effect
 
-// #define EDITOR_DETAIL
+// Suppress "assigned but never used" warning
+#pragma warning disable 414
+
+// Show fancy graphs
+#define SHOW_GRAPHS
+
+// Show advanced options (not useful in most cases)
+// #define ADVANCED_OPTIONS
 
 using UnityEngine;
 using UnityEditor;
@@ -11,79 +18,59 @@ namespace UnityStandardAssets.CinematicEffects
     [CustomEditor(typeof(MotionBlur))]
     public class MotionBlurEditor : Editor
     {
-        SerializedProperty _sampleCount;
-        SerializedProperty _customSampleCount;
-        #if EDITOR_DETAIL
-        SerializedProperty _exposureTime;
-        SerializedProperty _shutterAngle;
-        SerializedProperty _shutterSpeed;
-        SerializedProperty _maxBlurRadius;
-        SerializedProperty _debugMode;
-        #endif
+        MotionGraphDrawer _graph;
 
-        static GUIContent _textCustomValue = new GUIContent("Custom Value");
-        #if !EDITOR_DETAIL
-        static GUIContent _textBlendRatio = new GUIContent("Blend Ratio");
-        #else
-        static GUIContent _textTime = new GUIContent("Time = 1 /");
-        static GUIContent _textMaxBlur = new GUIContent("Max Blur Radius %");
-        #endif
+        SerializedProperty _shutterAngle;
+        SerializedProperty _sampleCount;
+        SerializedProperty _maxBlurRadius;
+        SerializedProperty _frameBlending;
+        SerializedProperty _debugMode;
+
+        [SerializeField] Texture2D _blendingIcon;
+
+        static GUIContent _textStrength = new GUIContent("Strength");
 
         void OnEnable()
         {
-            _sampleCount = serializedObject.FindProperty("_settings.sampleCount");
-            _customSampleCount = serializedObject.FindProperty("_settings.customSampleCount");
-            #if EDITOR_DETAIL
-            _exposureTime = serializedObject.FindProperty("_settings.exposureTime");
             _shutterAngle = serializedObject.FindProperty("_settings.shutterAngle");
-            _shutterSpeed = serializedObject.FindProperty("_settings.shutterSpeed");
+            _sampleCount = serializedObject.FindProperty("_settings.sampleCount");
             _maxBlurRadius = serializedObject.FindProperty("_settings.maxBlurRadius");
+            _frameBlending = serializedObject.FindProperty("_settings.frameBlending");
             _debugMode = serializedObject.FindProperty("_debugMode");
-            #endif
         }
 
         public override void OnInspectorGUI()
         {
+            if (_graph == null) _graph = new MotionGraphDrawer(_blendingIcon);
+
             serializedObject.Update();
 
-            #if EDITOR_DETAIL
+            EditorGUILayout.LabelField("Shutter Speed Simulation", EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(_exposureTime);
-
-            var exposureTime = (MotionBlur.ExposureTime)_exposureTime.enumValueIndex;
-            var showShutterOptions = _exposureTime.hasMultipleDifferentValues;
-
-            EditorGUI.indentLevel++;
-
-            if (showShutterOptions || exposureTime == MotionBlur.ExposureTime.DeltaTime)
-                EditorGUILayout.PropertyField(_shutterAngle);
-
-            if (showShutterOptions || exposureTime == MotionBlur.ExposureTime.Constant)
-                EditorGUILayout.PropertyField(_shutterSpeed, _textTime);
-
-            EditorGUI.indentLevel--;
-
+            #if SHOW_GRAPHS
+            _graph.DrawShutterGraph(_shutterAngle.floatValue);
             #endif
 
-            // Sample count options
+            EditorGUILayout.PropertyField(_shutterAngle);
             EditorGUILayout.PropertyField(_sampleCount);
 
-            var sampleCount = (MotionBlur.SampleCount)_sampleCount.enumValueIndex;
-            var showSampleOptions = _sampleCount.hasMultipleDifferentValues;
+            #if ADVANCED_OPTIONS
+            EditorGUILayout.PropertyField(_maxBlurRadius);
+            #endif
 
-            EditorGUI.indentLevel++;
+            EditorGUILayout.Space();
 
-            if (showSampleOptions || sampleCount == MotionBlur.SampleCount.Custom)
-                EditorGUILayout.PropertyField(_customSampleCount, _textCustomValue);
+            EditorGUILayout.LabelField("Multi Frame Blending", EditorStyles.boldLabel);
 
-            EditorGUI.indentLevel--;
+            #if SHOW_GRAPHS
+            _graph.DrawBlendingGraph(_frameBlending.floatValue);
+            #endif
 
-            #if EDITOR_DETAIL
+            EditorGUILayout.PropertyField(_frameBlending, _textStrength);
 
-            // Other options
-            EditorGUILayout.PropertyField(_maxBlurRadius, _textMaxBlur);
+            #if ADVANCED_OPTIONS
+            EditorGUILayout.Space();
             EditorGUILayout.PropertyField(_debugMode);
-
             #endif
 
             serializedObject.ApplyModifiedProperties();

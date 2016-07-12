@@ -1,11 +1,10 @@
 fileFormatVersion: 2
-guid: b076bf0da2a7448bc8e39c3ccd7c2726
-timeCreated: 1468309720
+guid: 5874959f591ba4dd790f04c32609afb3
+timeCreated: 1468309349
 licenseType: Pro
 MonoImporter:
   serializedVersion: 2
-  defaultReferences:
-  - _blendingIcon: {fileID: 2800000, guid: d99d70716ed2e4735ba36a13b42f8e4f, type: 3}
+  defaultReferences: []
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

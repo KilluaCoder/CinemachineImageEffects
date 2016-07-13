@@ -3,56 +3,110 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEditor.AnimatedValues;
-
+using System.Reflection;
+using System.Linq;
 
 namespace UnityStandardAssets.CinematicEffects
 {
+
 	[CustomEditor(typeof(StylisticFog))]
+	[CanEditMultipleObjects]
 	public class StylisticFogEditor : Editor
 	{
+		private List<SerializedProperty> m_TopLevelFields = new List<SerializedProperty>();
 
-		SerializedProperty _useDistance;
-		SerializedProperty _useHeight;
-		SerializedProperty _fogOpacityCurve;
-		SerializedProperty _fogColorRCurve;
-		SerializedProperty _fogColorGCurve;
-		SerializedProperty _fogColorBCurve;
-		SerializedProperty _farPlane;
-		SerializedProperty _nearPlane;
-		SerializedProperty _fogSkybox;
-		SerializedProperty _colorSelection;
-		SerializedProperty _flipHeight;
-		SerializedProperty _height;
-		SerializedProperty _baseDensity;
-		SerializedProperty _fogFactorIntensityCurve;
-		SerializedProperty _densityFalloff;
-
-		AnimBool m_UseHeight;
-		AnimBool m_UseDistance;
-
-		void OnEnable()
+		class ColorSourceDisplay
 		{
-			_useDistance     = serializedObject.FindProperty("settings.useDistance");
-			_useHeight       = serializedObject.FindProperty("settings.useHeight");
-			_fogOpacityCurve = serializedObject.FindProperty("settings.fogOpacityCurve");
-			_fogColorRCurve  = serializedObject.FindProperty("settings.fogColorR");
-			_fogColorGCurve  = serializedObject.FindProperty("settings.fogColorG");
-			_fogColorBCurve  = serializedObject.FindProperty("settings.fogColorB");
-			_farPlane        = serializedObject.FindProperty("settings.startDist");
-			_nearPlane       = serializedObject.FindProperty("settings.endDist");
-			_fogSkybox       = serializedObject.FindProperty("settings.fogSkybox");
-			_height          = serializedObject.FindProperty("settings.baseHeight");
-			_baseDensity     = serializedObject.FindProperty("settings.baseDensity");
-			_fogFactorIntensityCurve = serializedObject.FindProperty("settings.fogFactorIntensityCurve");
-			_densityFalloff = serializedObject.FindProperty("settings.densityFalloff");
+			private Dictionary<StylisticFog.ColorSelectionType, List<SerializedProperty>> properties = new Dictionary<StylisticFog.ColorSelectionType, List<SerializedProperty>>();
 
-			StylisticFog targetInstance = (StylisticFog)target;
+			public void PopulateMap(SerializedObject so, string path)
+			{
+				properties.Clear();
 
-			m_UseHeight = new AnimBool(targetInstance.settings.useHeight);
-			m_UseHeight.valueChanged.AddListener(Repaint);
+				var fields = typeof(StylisticFog.FogColorSource).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(StylisticFog.FogColorSource.DisplayOnSelectionType), false).Any());
 
-			m_UseDistance = new AnimBool(targetInstance.settings.useDistance);
-			m_UseDistance.valueChanged.AddListener(Repaint);
+				foreach (var field in fields)
+				{
+					var displayAttributes = field.GetCustomAttributes(typeof(StylisticFog.FogColorSource.DisplayOnSelectionType), false) as StylisticFog.FogColorSource.DisplayOnSelectionType[];
+					StylisticFog.FogColorSource.DisplayOnSelectionType usedAttribute = displayAttributes[0];
+					if (usedAttribute != null)
+					{
+						if (!properties.ContainsKey(usedAttribute.selectionType))
+							properties[usedAttribute.selectionType] = new List<SerializedProperty>();
+
+						properties[usedAttribute.selectionType].Add(so.FindProperty(path + "." + field.Name));
+					}
+				}
+					
+			}
+
+			public void OnInspectorGUI(StylisticFog.ColorSelectionType currentSelection)
+			{
+				if (!properties.ContainsKey(currentSelection))
+					return;
+
+				foreach(var prop in properties[currentSelection])
+					EditorGUILayout.PropertyField(prop);
+			}
+		}
+		
+		class InfoMap
+		{
+			public string name;
+			public bool distanceFog;
+			public bool heightFog;
+			public List<SerializedProperty> properties;
+		}
+		private List<InfoMap> m_GroupFields = new List<InfoMap>();
+
+		private ColorSourceDisplay distanceFogColorDisplay = new ColorSourceDisplay();
+		private ColorSourceDisplay heightFogColorDisplay = new ColorSourceDisplay();
+
+		/*
+		private void updateColorDisplay(SerializedObject so, ColorSourceDisplay colorDisplay, string path )
+		{
+			var selectionType = so.FindProperty(path + "");
+		}
+
+		private void updateColorDisplays(SerializedObject so)
+		{
+			updateColorDisplay(so, distanceFogColorDisplay, "distanceColorSource");
+			updateColorDisplay(so, heightFogColorDisplay, "heightColorSource");
+		}
+		*/
+
+		public void OnEnable()
+		{
+
+			distanceFogColorDisplay.PopulateMap(serializedObject, "distanceColorSource");
+			heightFogColorDisplay.PopulateMap(serializedObject, "heightColorSource");
+			
+			var settingsGroups = typeof(StylisticFog).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(StylisticFog.SettingsGroup), false).Any());
+
+			foreach (var group in settingsGroups)
+			{
+				var searchPath = group.Name + ".";
+
+				foreach (var setting in group.FieldType.GetFields(BindingFlags.Instance | BindingFlags.Public))
+				{
+					var infoGroup = m_GroupFields.FirstOrDefault(x => x.name == group.Name);
+					if (infoGroup == null)
+					{
+						infoGroup = new InfoMap();
+						infoGroup.properties = new List<SerializedProperty>();
+						infoGroup.name = group.Name;
+						infoGroup.distanceFog = group.FieldType == typeof(StylisticFog.DistanceFogSettings);
+						infoGroup.heightFog = group.FieldType == typeof(StylisticFog.HeightFogSettings);
+						m_GroupFields.Add(infoGroup);
+					}
+
+					var property = serializedObject.FindProperty(searchPath + setting.Name);
+					if (property != null)
+					{
+						infoGroup.properties.Add(property);
+					}
+				}
+			}
 		}
 
 		public override void OnInspectorGUI()
@@ -61,82 +115,50 @@ namespace UnityStandardAssets.CinematicEffects
 
 			serializedObject.Update();
 
-			bool propertyTextureRebake = false;
-			bool intensityTextureRebake = false;
-			bool checkNearFarDistances = false;
+			foreach (var setting in m_TopLevelFields)
+				EditorGUILayout.PropertyField(setting);
 
-			EditorGUILayout.PropertyField(_useDistance);
-			EditorGUILayout.PropertyField(_useHeight);
-
-			m_UseHeight.target = targetInstance.settings.useHeight;
-			m_UseDistance.target = targetInstance.settings.useDistance;
-
-			// Curves to modify the color properties of the fog.
-			EditorGUI.BeginChangeCheck();
-			EditorGUILayout.PropertyField(_fogOpacityCurve);
-			EditorGUILayout.PropertyField(_fogColorRCurve);
-			EditorGUILayout.PropertyField(_fogColorGCurve);
-			EditorGUILayout.PropertyField(_fogColorBCurve);
-			if (EditorGUI.EndChangeCheck())
-				propertyTextureRebake = true;
-
-			// The curve that defines how much the fog contributes according to its intensity.
-			EditorGUI.BeginChangeCheck();
-			EditorGUILayout.PropertyField(_fogFactorIntensityCurve);
-			if (EditorGUI.EndChangeCheck())
-				intensityTextureRebake = true;
-
-			EditorGUILayout.Space();
-
-			// Where the fog starts and where the fog reaches max saturation
-			EditorGUI.BeginChangeCheck();
-
-			if (EditorGUILayout.BeginFadeGroup(m_UseDistance.faded))
-			{
-				EditorGUILayout.PropertyField(_nearPlane);
-			}
-			EditorGUILayout.EndFadeGroup();
-
-			EditorGUILayout.PropertyField(_farPlane);
-			if (EditorGUI.EndChangeCheck())
-				checkNearFarDistances = true;
-
-			EditorGUILayout.Space();
-
-			// Bool to decide if the skybox will be affected by fog.
-			EditorGUILayout.PropertyField(_fogSkybox);
-
-			// Parameters used when the fog volume is height based
-			if (EditorGUILayout.BeginFadeGroup(m_UseHeight.faded))
+			foreach (var group in m_GroupFields)
 			{
 
-				EditorGUILayout.LabelField("Height Parameters");
+				EditorGUI.BeginChangeCheck();
 
+				string title = ObjectNames.NicifyVariableName(group.name);
+
+				EditorGUILayout.Space();
+				EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
 				EditorGUI.indentLevel++;
 
-				EditorGUILayout.PropertyField(_height);
-				EditorGUILayout.PropertyField(_baseDensity);
-				EditorGUILayout.PropertyField(_densityFalloff);
+				var enabledField = group.properties.FirstOrDefault(x => x.propertyPath == group.name + ".enabled");
+				if (enabledField != null && !enabledField.boolValue)
+				{
+					EditorGUILayout.PropertyField(enabledField);
+					EditorGUI.indentLevel--;
+					serializedObject.ApplyModifiedProperties();
+					continue;
+				}
+
+				foreach (var field in group.properties)
+					EditorGUILayout.PropertyField(field);
+
+				if (group.distanceFog)
+				{
+					distanceFogColorDisplay.OnInspectorGUI(targetInstance.distanceFog.colorSelectionType);
+				}
+
+				if (group.heightFog)
+				{
+					heightFogColorDisplay.OnInspectorGUI(targetInstance.heightFog.colorSelectionType);
+				}
 
 				EditorGUI.indentLevel--;
-			}
-			EditorGUILayout.EndFadeGroup();
 
-			serializedObject.ApplyModifiedProperties();
+				serializedObject.ApplyModifiedProperties();
 
-			if (propertyTextureRebake)
-			{
-				targetInstance.BakeFogProperty();
-			}
-
-			if (intensityTextureRebake)
-			{
-				targetInstance.BakeFogIntensity();
-			}
-
-			if (checkNearFarDistances)
-			{
-				targetInstance.correctStartEndDistances();
+				if (EditorGUI.EndChangeCheck())
+				{
+					targetInstance.UpdateProperties();
+				}
 			}
 		}
 	}

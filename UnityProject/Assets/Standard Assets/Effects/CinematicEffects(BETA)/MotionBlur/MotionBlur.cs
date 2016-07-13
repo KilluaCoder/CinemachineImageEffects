@@ -153,7 +153,6 @@ namespace UnityStandardAssets.CinematicEffects
             ReleaseTemporaryRT(tile);
 
             // Pass 6 - Reconstruction pass
-            var temp = GetTemporaryRT(destination, 1, destination.format);
             m.SetInt("_LoopCount", Mathf.Clamp(_settings.sampleCount / 2, 1, 64));
             m.SetFloat("_MaxBlurRadius", maxBlurPixels);
             m.SetTexture("_NeighborMaxTex", neighborMax);
@@ -166,6 +165,7 @@ namespace UnityStandardAssets.CinematicEffects
             }
             else if (_settings.frameBlending > 0)
             {
+                var temp = GetTemporaryRT(source, 1, source.format);
                 Graphics.Blit(source, temp, m, 5);
 
                 // Pass 7 - Frame blending

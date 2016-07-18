@@ -6,12 +6,6 @@
 	}
 
 	CGINCLUDE
-	// If enabled: Distance fog does not apply to the skybox
-	#pragma shader_feature OMMIT_SKYBOX_DIST
-
-	// If enabled: Height fog does not apply to the skybox
-	#pragma shader_feature OMMIT_SKYBOX_HEIGHT
-
 	// If enabled: Distance fog is applied
 	#pragma shader_feature USE_DISTANCE
 
@@ -37,6 +31,17 @@
 
 	#define SKYBOX_THREASHOLD_VALUE 0.9999
 	#define FOG_AMOUNT_CONTRIBUTION_THREASHOLD 0.0001
+
+	bool _ApplyDistToSkybox;
+	bool _ApplyHeightToSkybox;
+
+	bool _UseDistanceFog;
+	bool _UseHeightFog;
+
+	bool _SharedColorSettings;
+
+	bool _ColorSourceOneIsTexture;
+	bool _ColorSourceTwoIsTexture;
 
 	half4 _MainTex_TexelSize;
 
@@ -78,23 +83,6 @@
 		return o;
 	}
 
-	half3 rgb_to_hsv(half3 c)
-	{
-		half4 K = half4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-		half4 p = lerp(half4(c.bg, K.wz), half4(c.gb, K.xy), step(c.b, c.g));
-		half4 q = lerp(half4(p.xyw, c.r), half4(c.r, p.yzx), step(p.x, c.r));
-		half d = q.x - min(q.w, q.y);
-		half e = 1.0e-4;
-		return half3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-	}
-
-	half3 hsv_to_rgb(half3 c)
-	{
-		half4 K = half4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-		half3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
-		return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
-	}
-
 	// from https://github.com/keijiro/DepthToWorldPos
 	inline float4 DepthToWorld(float depth, float2 uv, float4x4 inverseViewMatrix)
 	{
@@ -118,8 +106,20 @@
 	// where d(h) = _BaseDensity * exp2(-DensityFalloff * h) <=> d(h) = a * exp2(b * h)
 	inline float ComputeHeightFogAmount(float viewDirY, float effectiveDistance)
 	{
-		float relativeHeight = _WorldSpaceCameraPos.y - _Height;
+		float relativeHeight = min(127., _WorldSpaceCameraPos.y - _Height);
 		return _BaseDensity * exp2(-relativeHeight * _DensityFalloff) * (1. - exp2(-effectiveDistance * viewDirY * _DensityFalloff)) / viewDirY;
+	}
+
+	inline half4 GetColorFromPicker(half4 pickerColor, float fogAmount)
+	{
+		half4 fogCol = pickerColor;
+		fogCol.a = saturate(fogAmount * pickerColor.a);
+		return fogCol;
+	}
+
+	inline half4 GetColorFromTexture(sampler2D source, float fogAmount)
+	{
+		return tex2D(source, float2(fogAmount, 0));
 	}
 
 	half4 fragment(v2f_img i) : SV_Target
@@ -129,9 +129,9 @@
 		
 		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
 
-		float4 fragmentToCamera = wpos - float4(_WorldSpaceCameraPos,1.);
-		float3 viewDir = normalize(fragmentToCamera);
-		float totalDistance = length(fragmentToCamera);
+		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
+		float3 viewDir = normalize(cameraToFragment);
+		float totalDistance = length(cameraToFragment);
 
 		float effectiveDistance = max(totalDistance - _FogStartDist, 0.0);
 
@@ -142,77 +142,57 @@
 
 		float linDepth = Linear01Depth(depth);
 
-		// Compute distance fog's contributon
-#if defined(USE_DISTANCE)
-#if defined(OMMIT_SKYBOX_DIST)
-		if (linDepth < SKYBOX_THREASHOLD_VALUE)
+		if (_UseDistanceFog && (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE))
 			distanceFogAmount = ComputeDistanceFogAmount(effectiveDistance);
-#else   // defined(OMMIT_SKYBOX_DIST)
-		distanceFogAmount = ComputeDistanceFogAmount(effectiveDistance);
-#endif // defined(OMMIT_SKYBOX_DIST)
-#endif // defined(USE_DISTANCE)
 
-		// Comute heioght fog's contribution
-#if defined(USE_HEIGHT)
-#if defined(OMMIT_SKYBOX_HEIGHT)
-		if (linDepth < SKYBOX_THREASHOLD_VALUE)
+		if (_UseHeightFog && (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE))
 			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
-#else   // defined(OMMIT_SKYBOX_HEIGHT)
-		heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
-#endif // defined(OMMIT_SKYBOX_HEIGHT)
-#endif // defined(USE_HEIGHT)
 
 		half4 finalFogColor = half4(0., 0., 0., 0.);
 		half4 fogCol = 0.;
 
 		// If shared settings are applied, add the two fog contributions
 		// and pick the color from the shared color source.
-#if defined(SHARED_COLOR_SETTINGS)
-		fogAmount = heightFogAmount + distanceFogAmount;
-#if defined(SHARED_COLOR_PICKER)
-		fogCol = _FogPickerColor0;
-		fogCol.a = saturate(fogAmount * _FogPickerColor0.a);
-#endif // defined(SHARED_COLOR_PICKER)
-#if defined(SHARED_COLOR_TEXTURE)
-		fogCol = tex2D(_FogColorTexture0, float2(fogAmount, 0));
-#endif // defined(SHARED_COLOR_TEXTURE)
-		finalFogColor = lerp(sceneColor, half4(fogCol.xyz, 1.), fogCol.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, max(distanceFogAmount, heightFogAmount) ));
-#endif // defined(SHARED_COLOR_SETTINGS)
+		if (_SharedColorSettings)
+		{
+			fogAmount = heightFogAmount + distanceFogAmount;
+			if (_ColorSourceOneIsTexture)
+			{
+				fogCol = GetColorFromTexture(_FogColorTexture0, fogAmount);
+			}
+			else
+			{
+				return 1.;
+				fogCol = GetColorFromPicker(_FogPickerColor0, fogAmount);
+			}
+			finalFogColor = lerp(sceneColor, half4(fogCol.xyz, 1.), fogCol.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, max(distanceFogAmount, heightFogAmount)));
+		}
+		// seperate color settings
+		// Pick each of the colors and combine
+		else 
+		{
+			half4 distanceColor = 0.;
+			half4 heightColor = 0.;
 
-		// When not using shared color settings
-		// compute each fog type's color and accumulate
-#if !defined(SHARED_COLOR_SETTINGS)
-		half4 distanceColor = 0.;
-		half4 heightColor = 0.;
+			if (_UseDistanceFog)
+			{
+				if (_ColorSourceOneIsTexture)
+					distanceColor = GetColorFromTexture(_FogColorTexture0, fogAmount);
+				else
+					distanceColor = GetColorFromPicker(_FogPickerColor0, fogAmount);
+			}
 
-		// Get the distance fog color
-#if defined(USE_DISTANCE)
-#if defined(DIST_COLOR_PICKER)
-		distanceColor = _FogPickerColor0;
-		distanceColor.a = saturate(distanceFogAmount * _FogPickerColor0.a);
-#endif // defined(DIST_COLOR_PICKER)
-#if defined(DIST_COLOR_TEXTURE)
-		distanceColor = tex2D(_FogColorTexture0, float2(distanceFogAmount, 0));
-#endif // defined(DIST_COLOR_PICKER)
-		distanceColor.a = saturate(distanceColor.a);
-#endif // defined(USE_DISTANCE)
+			if (_UseHeightFog)
+			{
+				if (_ColorSourceOneIsTexture)
+					heightColor = GetColorFromTexture(_FogColorTexture1, fogAmount);
+				else
+					heightColor = GetColorFromPicker(_FogPickerColor1, fogAmount);
+			}
+			finalFogColor = lerp(sceneColor, half4(distanceColor.xyz, 1.), distanceColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, distanceFogAmount));
+			finalFogColor = lerp(finalFogColor, half4(heightColor.xyz, 1.), heightColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, heightFogAmount));
+		}
 
-		// Get the distance fog color
-#if defined(USE_HEIGHT)
-#if defined(HEIGHT_COLOR_PICKER)
-		heightColor = _FogPickerColor1;
-		heightColor.a = heightFogAmount * _FogPickerColor1.a;
-#endif // defined(HEIGHT_COLOR_PICKER)
-#if defined(HEIGHT_COLOR_TEXTURE)
-		heightColor = tex2D(_FogColorTexture1, float2(heightFogAmount, 0));
-#endif // defined(HEIGHT_COLOR_PICKER)
-		heightColor.a = saturate(heightColor.a);
-#endif // defined(USE_HEIGHT)
-
-
-		finalFogColor = lerp(sceneColor, half4(distanceColor.xyz, 1.), distanceColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, distanceFogAmount));
-		finalFogColor = lerp(finalFogColor, half4(heightColor.xyz, 1.), heightColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, heightFogAmount));
-#endif //!defined(SHARED_COLOR_SETTINGS)
 
 		finalFogColor.a = 1.;
 		return finalFogColor;
@@ -222,6 +202,7 @@
 	ENDCG
 	SubShader
 	{
+		// 0: Height and distance fog with shared color
 		Pass
 		{
 			Cull Off ZWrite Off ZTest Always

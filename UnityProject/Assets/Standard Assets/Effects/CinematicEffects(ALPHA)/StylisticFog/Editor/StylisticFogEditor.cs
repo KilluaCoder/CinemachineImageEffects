@@ -62,19 +62,6 @@ namespace UnityStandardAssets.CinematicEffects
 		private ColorSourceDisplay distanceFogColorDisplay = new ColorSourceDisplay();
 		private ColorSourceDisplay heightFogColorDisplay = new ColorSourceDisplay();
 
-		/*
-		private void updateColorDisplay(SerializedObject so, ColorSourceDisplay colorDisplay, string path )
-		{
-			var selectionType = so.FindProperty(path + "");
-		}
-
-		private void updateColorDisplays(SerializedObject so)
-		{
-			updateColorDisplay(so, distanceFogColorDisplay, "distanceColorSource");
-			updateColorDisplay(so, heightFogColorDisplay, "heightColorSource");
-		}
-		*/
-
 		public void OnEnable()
 		{
 
@@ -126,19 +113,18 @@ namespace UnityStandardAssets.CinematicEffects
 				string title = ObjectNames.NicifyVariableName(group.name);
 
 				EditorGUILayout.Space();
-				EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-				EditorGUI.indentLevel++;
 
+				var groupProperty = serializedObject.FindProperty(group.name);
 				var enabledField = group.properties.FirstOrDefault(x => x.propertyPath == group.name + ".enabled");
-				if (enabledField != null && !enabledField.boolValue)
+				bool display = EditorGUIHelper.Header(groupProperty, enabledField);
+				if (!display)
 				{
-					EditorGUILayout.PropertyField(enabledField);
-					EditorGUI.indentLevel--;
 					serializedObject.ApplyModifiedProperties();
 					continue;
 				}
+				EditorGUI.indentLevel++;
 
-				foreach (var field in group.properties)
+				foreach (var field in group.properties.Where(x => x.propertyPath != group.name + ".enabled"))
 					EditorGUILayout.PropertyField(field);
 
 				if (group.distanceFog)

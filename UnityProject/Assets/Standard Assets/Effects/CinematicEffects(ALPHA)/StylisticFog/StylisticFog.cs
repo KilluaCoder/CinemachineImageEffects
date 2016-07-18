@@ -25,6 +25,7 @@ namespace UnityStandardAssets.CinematicEffects
 			CopyOther = 3,
 		}
 
+		#region settings
 		[Serializable]
 		public class FogColorSource
 		{
@@ -156,7 +157,9 @@ namespace UnityStandardAssets.CinematicEffects
 				}
 			}
 		}
+		#endregion
 
+		#region settingFields
 		[SettingsGroup, SerializeField]
 		public DistanceFogSettings distanceFog = DistanceFogSettings.defaultSettings;
 
@@ -168,7 +171,9 @@ namespace UnityStandardAssets.CinematicEffects
 
 		[SerializeField]
 		public FogColorSource heightColorSource = FogColorSource.defaultSettings;
+		#endregion
 
+		#region fields
 		[SerializeField]
 		private Texture2D m_DistanceColorTexture;
 		public Texture2D distanceColorTexture
@@ -259,6 +264,7 @@ namespace UnityStandardAssets.CinematicEffects
 				return m_Material;
 			}
 		}
+		#endregion 
 
 		public void UpdateProperties()
 		{
@@ -352,96 +358,48 @@ namespace UnityStandardAssets.CinematicEffects
 			Matrix4x4 inverseViewMatrix = GetComponent<Camera>().cameraToWorldMatrix;
 			material.SetMatrix("_InverseViewMatrix", inverseViewMatrix);
 
-			// Decide wheter the skybox is included in by the distance fog
-			if (distanceFog.fogSkybox)
-				material.DisableKeyword("OMMIT_SKYBOX_DIST");
-			else
-				material.EnableKeyword("OMMIT_SKYBOX_DIST");
+			// Decide to use distance- height fog or both
+			// Decide wheter the skybox should have fog applied
+			material.SetInt("_UseDistanceFog", distanceFog.enabled ? 1 : 0);
+			material.SetInt("_UseHeightFog", heightFog.enabled ? 1 : 0);
 
-			// Decide wheter the skybox is included in by the height fog
-			if (heightFog.fogSkybox)
-				material.DisableKeyword("OMMIT_SKYBOX_HEIGHT");
-			else
-				material.EnableKeyword("OMMIT_SKYBOX_HEIGHT");
+			// Decide wheter the skybox should have fog applied
+			material.SetInt("_ApplyDistToSkybox", distanceFog.fogSkybox ? 1 : 0);
+			material.SetInt("_ApplyHeightToSkybox", heightFog.fogSkybox ? 1 : 0);
 
-			// Check distance fog should be enabled.
-			if (distanceFog.enabled)
-			{
-				material.EnableKeyword("USE_DISTANCE");
-				material.SetTexture("_FogFactorIntensityTexture", distanceFogIntensityTexture);
-				material.SetFloat("_FogStartDist", distanceFog.startDist);
-				material.SetFloat("_FogEndDist", distanceFog.endDist);
-			}
-			else
-			{
-				material.DisableKeyword("USE_DISTANCE");
-			}
-
-			// check if height fog should be enabled.
-			if (heightFog.enabled)
-			{
-				material.EnableKeyword("USE_HEIGHT");
-				material.SetFloat("_Height", heightFog.baseHeight);
-				material.SetFloat("_BaseDensity", heightFog.baseDensity);
-				material.SetFloat("_DensityFalloff", heightFog.densityFalloff);
-			}
-			else
-			{
-				material.DisableKeyword("USE_HEIGHT");
-			}
 
 			// Share color settings if one of the sources are set to copy the other
-			bool sharedColorSettings = (distanceFog.colorSelectionType == ColorSelectionType.CopyOther) 
+			bool sharedColorSettings = (distanceFog.colorSelectionType == ColorSelectionType.CopyOther)
 										|| (heightFog.colorSelectionType == ColorSelectionType.CopyOther);
 
+			// Use shared or seperate color settings
+			material.SetInt("_SharedColorSettings", sharedColorSettings ? 1 : 0);
+
+			// Is the shared color sampled from a texture? Otherwise it's from a single color( picker)
 			if (sharedColorSettings)
 			{
 				bool selectingFromDistance = true;
-				material.EnableKeyword("SHARED_COLOR_SETTINGS");
 				ColorSelectionType activeSelectionType = distanceFog.colorSelectionType;
 				if (activeSelectionType == ColorSelectionType.CopyOther)
 				{
 					activeSelectionType = heightFog.colorSelectionType;
 					selectingFromDistance = false;
 				}
-
-				if (activeSelectionType == ColorSelectionType.ColorPicker)
-				{
-					material.SetColor("_FogPickerColor0", selectingFromDistance ? distanceColorSource.color : heightColorSource.color);
-					material.EnableKeyword("SHARED_COLOR_PICKER");
-					material.DisableKeyword("SHARED_COLOR_TEXTURE");
-				} 
-				else if (activeSelectionType == ColorSelectionType.Curves)
-				{
-					material.SetTexture("_FogColorTexture0", selectingFromDistance ? distanceColorTexture : heightColorTexture);
-					material.EnableKeyword("SHARED_COLOR_TEXTURE");
-					material.DisableKeyword("SHARED_COLOR_PICKER");
-				} 
-				else if (activeSelectionType == ColorSelectionType.TextureRamp)
-				{
-					material.SetTexture("_FogColorTexture0", selectingFromDistance ? distanceColorSource.colorRamp : heightColorSource.colorRamp);
-					material.EnableKeyword("SHARED_COLOR_TEXTURE");
-					material.DisableKeyword("SHARED_COLOR_PICKER");
-				}
-
+				material.SetInt("_ColorSourceOneIsTexture", activeSelectionType == ColorSelectionType.ColorPicker ? 0 : 1);
 			}
 			else
 			{
-				material.DisableKeyword("SHARED_COLOR_SETTINGS");
-
 				if (distanceFog.enabled)
 				{
-					if(distanceFog.colorSelectionType == ColorSelectionType.ColorPicker)
+					if (distanceFog.colorSelectionType == ColorSelectionType.ColorPicker)
 					{
-						material.EnableKeyword("DIST_COLOR_PICKER");
-						material.DisableKeyword("DIST_COLOR_TEXTURE");
 						material.SetColor("_FogPickerColor0", distanceColorSource.color);
+						material.SetInt("_ColorSourceOneIsTexture", 0);
 					}
 					else
 					{
-						material.EnableKeyword("DIST_COLOR_TEXTURE");
-						material.DisableKeyword("DIST_COLOR_PICKER");
 						material.SetTexture("_FogColorTexture0", distanceFog.colorSelectionType == ColorSelectionType.Curves ? distanceColorTexture : distanceColorSource.colorRamp);
+						material.SetInt("_ColorSourceOneIsTexture", 1);
 					}
 				}
 
@@ -449,18 +407,33 @@ namespace UnityStandardAssets.CinematicEffects
 				{
 					if (heightFog.colorSelectionType == ColorSelectionType.ColorPicker)
 					{
-						material.EnableKeyword("HEIGHT_COLOR_PICKER");
-						material.DisableKeyword("HEIGHT_COLOR_TEXTURE");
 						material.SetColor("_FogPickerColor1", heightColorSource.color);
+						material.SetInt("_ColorSourceTwoIsTexture", 0);
 					}
 					else
 					{
-						material.EnableKeyword("HEIGHT_COLOR_TEXTURE");
-						material.DisableKeyword("HEIGHT_COLOR_PICKER");
 						material.SetTexture("_FogColorTexture1", heightFog.colorSelectionType == ColorSelectionType.Curves ? heightColorTexture : heightColorSource.colorRamp);
+						material.SetInt("_ColorSourceTwoIsTexture", 0);
 					}
 				}
 			}
+
+			// Set distance fog properties
+			if (distanceFog.enabled)
+			{
+				material.SetTexture("_FogFactorIntensityTexture", distanceFogIntensityTexture);
+				material.SetFloat("_FogStartDist", distanceFog.startDist);
+				material.SetFloat("_FogEndDist", distanceFog.endDist);
+			}
+
+			// Set height fog properties
+			if (heightFog.enabled)
+			{
+				material.SetFloat("_Height", heightFog.baseHeight);
+				material.SetFloat("_BaseDensity", heightFog.baseDensity);
+				material.SetFloat("_DensityFalloff", heightFog.densityFalloff);
+			}
+
 
 		}
 

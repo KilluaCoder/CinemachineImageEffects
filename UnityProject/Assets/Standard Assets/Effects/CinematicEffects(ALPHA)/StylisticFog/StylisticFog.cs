@@ -498,6 +498,37 @@ namespace UnityStandardAssets.CinematicEffects
 			target.Apply();
 		}
 
+
+		public void BakeFogColor(Texture2D target, Texture2D source)
+		{
+			if (target == null || source == null)
+			{
+				return;
+			}
+
+			float fWidthSource = source.width;
+			float fWidthTarget = target.width;
+			Color[] pixels = new Color[target.width];
+
+			for (float i = 0f; i <= 1f; i += 1f / fWidthTarget)
+			{
+				float targetLookup = i * (fWidthSource / fWidthTarget);
+				float lowerIndex = Mathf.Floor(targetLookup);
+				float upperIndex = Mathf.Ceil(targetLookup);
+				float lerpFactor = targetLookup - lowerIndex;
+
+				Color lower = source.GetPixel((int)lowerIndex, 0);
+				Color upper = source.GetPixel((int)upperIndex, 0);
+				Color interpolated = Color.Lerp(lower, upper, lerpFactor);
+
+				pixels[(int)Mathf.Floor(i * (fWidthTarget - 1f))] = interpolated;
+			}
+
+			target.SetPixels(pixels);
+			target.Apply();
+		}
+
+
 		public void BakeFogIntensity()
 		{
 			if (distanceFogIntensityTexture == null)

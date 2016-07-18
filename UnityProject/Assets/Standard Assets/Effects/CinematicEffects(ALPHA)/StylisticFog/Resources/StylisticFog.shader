@@ -35,7 +35,8 @@
 
 	#include "UnityCG.cginc"
 
-	#define SKYBOX_THREASHOLD_VALUE 0.9999f
+	#define SKYBOX_THREASHOLD_VALUE 0.9999
+	#define FOG_AMOUNT_CONTRIBUTION_THREASHOLD 0.0001
 
 	half4 _MainTex_TexelSize;
 
@@ -77,6 +78,23 @@
 		return o;
 	}
 
+	half3 rgb_to_hsv(half3 c)
+	{
+		half4 K = half4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+		half4 p = lerp(half4(c.bg, K.wz), half4(c.gb, K.xy), step(c.b, c.g));
+		half4 q = lerp(half4(p.xyw, c.r), half4(c.r, p.yzx), step(p.x, c.r));
+		half d = q.x - min(q.w, q.y);
+		half e = 1.0e-4;
+		return half3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+	}
+
+	half3 hsv_to_rgb(half3 c)
+	{
+		half4 K = half4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+		half3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
+		return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
+	}
+
 	// from https://github.com/keijiro/DepthToWorldPos
 	inline float4 DepthToWorld(float depth, float2 uv, float4x4 inverseViewMatrix)
 	{
@@ -96,9 +114,10 @@
 		return saturate(f);
 	}
 
+	// Computes the amount of fog treversed based on a desnity function d(h)
+	// where d(h) = _BaseDensity * exp2(-DensityFalloff * h) <=> d(h) = a * exp2(b * h)
 	inline float ComputeHeightFogAmount(float viewDirY, float effectiveDistance)
 	{
-		// Density function d(y) = _BaseDensity * exp2(-DensityFalloff * y)
 		float relativeHeight = _WorldSpaceCameraPos.y - _Height;
 		return _BaseDensity * exp2(-relativeHeight * _DensityFalloff) * (1. - exp2(-effectiveDistance * viewDirY * _DensityFalloff)) / viewDirY;
 	}
@@ -157,7 +176,7 @@
 #if defined(SHARED_COLOR_TEXTURE)
 		fogCol = tex2D(_FogColorTexture0, float2(fogAmount, 0));
 #endif // defined(SHARED_COLOR_TEXTURE)
-		finalFogColor = lerp(sceneColor, half4(fogCol.xyz, 1.), fogCol.a);
+		finalFogColor = lerp(sceneColor, half4(fogCol.xyz, 1.), fogCol.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, max(distanceFogAmount, heightFogAmount) ));
 #endif // defined(SHARED_COLOR_SETTINGS)
 
 		// When not using shared color settings
@@ -190,8 +209,9 @@
 		heightColor.a = saturate(heightColor.a);
 #endif // defined(USE_HEIGHT)
 
-		finalFogColor = lerp(sceneColor, half4(distanceColor.xyz, 1.), distanceColor.a);
-		finalFogColor = lerp(finalFogColor, half4(heightColor.xyz, 1.), heightColor.a);
+
+		finalFogColor = lerp(sceneColor, half4(distanceColor.xyz, 1.), distanceColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, distanceFogAmount));
+		finalFogColor = lerp(finalFogColor, half4(heightColor.xyz, 1.), heightColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, heightFogAmount));
 #endif //!defined(SHARED_COLOR_SETTINGS)
 
 		finalFogColor.a = 1.;

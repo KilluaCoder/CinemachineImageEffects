@@ -352,7 +352,22 @@ namespace UnityStandardAssets.CinematicEffects
 			m_Material = null;
 		}
 
-		private void SetMaterialValues()
+
+		private void SetDistanceFogUniforms()
+		{
+			material.SetTexture("_FogFactorIntensityTexture", distanceFogIntensityTexture);
+			material.SetFloat("_FogStartDistance", distanceFog.startDistance);
+			material.SetFloat("_FogEndDistance", distanceFog.endDistance);
+		}
+
+		private void SetHeightFogUniforms()
+		{
+			material.SetFloat("_Height", heightFog.baseHeight);
+			material.SetFloat("_BaseDensity", heightFog.baseDensity);
+			material.SetFloat("_DensityFalloff", heightFog.densityFalloff);
+		}
+
+		private void SetMaterialUniforms()
 		{
 			// Get the inverse view matrix for converting depth to world position.
 			Matrix4x4 inverseViewMatrix = GetComponent<Camera>().cameraToWorldMatrix;
@@ -386,6 +401,18 @@ namespace UnityStandardAssets.CinematicEffects
 					selectingFromDistance = false;
 				}
 				material.SetInt("_ColorSourceOneIsTexture", activeSelectionType == ColorSelectionType.ColorPicker ? 0 : 1);
+				SetDistanceFogUniforms();
+				SetHeightFogUniforms();
+				if (activeSelectionType == ColorSelectionType.ColorPicker)
+				{
+					material.SetInt("_ColorSourceOneIsTexture", 0);
+					material.SetColor("_FogPickerColor0", selectingFromDistance ? distanceColorSource.color : heightColorSource.color);
+				}
+				else
+				{
+					material.SetInt("_ColorSourceOneIsTexture", 1);
+					material.SetTexture("_FogColorTexture0", selectingFromDistance ? distanceColorTexture : heightColorTexture);
+				}
 			}
 			else
 			{
@@ -421,28 +448,21 @@ namespace UnityStandardAssets.CinematicEffects
 			// Set distance fog properties
 			if (distanceFog.enabled)
 			{
-				material.SetTexture("_FogFactorIntensityTexture", distanceFogIntensityTexture);
-				material.SetFloat("_FogStartDistance", distanceFog.startDistance);
-				material.SetFloat("_FogEndDistance", distanceFog.endDistance);
+				SetDistanceFogUniforms();
 			}
 
 			// Set height fog properties
 			if (heightFog.enabled)
 			{
-				material.SetFloat("_Height", heightFog.baseHeight);
-				material.SetFloat("_BaseDensity", heightFog.baseDensity);
-				material.SetFloat("_DensityFalloff", heightFog.densityFalloff);
+				SetHeightFogUniforms();
 			}
-
-
 		}
 
 		private void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
-			SetMaterialValues();
-			Graphics.Blit(source, destination, material);
+			SetMaterialUniforms();
+			Graphics.Blit(source, destination, material, 0);
 		}
-
 
 		public void BakeFogColor( Texture2D target,
 									 AnimationCurve colorCurveR, 

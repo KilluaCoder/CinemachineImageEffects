@@ -102,6 +102,15 @@
 		return tex2D(source, float2(fogAmount, 0));
 	}
 
+	// Not used yet, but might be useful for pass seperation.
+	inline half4 AddFogToScene(float2 uv, half4 fogColor, float fogAmount)
+	{
+		half4 sceneColor = tex2D(_MainTex, uv);
+		half4 blended = lerp(sceneColor, half4(fogColor.xyz, 1.), fogColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, fogAmount));
+		blended.a = 1.;
+		return blended;
+	}
+
 	half4 fragment(v2f_img i) : SV_Target
 	{
 		half4 sceneColor = tex2D(_MainTex, i.uv);
@@ -135,7 +144,6 @@
 		// and pick the color from the shared color source.
 		if (_SharedColorSettings)
 		{
-		return 0.;
 			fogAmount = heightFogAmount + distanceFogAmount;
 			if (_ColorSourceOneIsTexture)
 			{
@@ -143,7 +151,6 @@
 			}
 			else
 			{
-				return 1.;
 				fogCol = GetColorFromPicker(_FogPickerColor0, fogAmount);
 			}
 			finalFogColor = lerp(sceneColor, half4(fogCol.xyz, 1.), fogCol.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, max(distanceFogAmount, heightFogAmount)));
@@ -177,7 +184,6 @@
 
 		finalFogColor.a = 1.;
 		return finalFogColor;
-
 	}
 
 	ENDCG

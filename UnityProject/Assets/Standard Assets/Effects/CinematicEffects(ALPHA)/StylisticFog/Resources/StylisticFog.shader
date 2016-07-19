@@ -6,27 +6,6 @@
 	}
 
 	CGINCLUDE
-	// If enabled: Distance fog is applied
-	#pragma shader_feature USE_DISTANCE
-
-	// If enabled: Height fog is applied
-	#pragma shader_feature USE_HEIGHT
-
-	// If enabled: Distance and heght fog contributes with the same color
-	#pragma shader_feature SHARED_COLOR_SETTINGS
-
-	// SHARED_COLOR_PICKER:  The shared color is a single 4-component color
-	// SHARED_COLOR_TEXTURE: The shared color is a sample from a (1D) texture
-	#pragma multi_compile SHARED_COLOR_PICKER SHARED_COLOR_TEXTURE
-
-	// DIST_COLOR_PICKER:  The distance color is a single 4-component color
-	// DIST_COLOR_TEXTURE: The distance color is a sample from a (1D) texture
-	#pragma multi_compile DIST_COLOR_PICKER DIST_COLOR_TEXTURE
-
-	// HEIGHT_COLOR_PICKER:  The height color is a single 4-component color
-	// HEIGHT_COLOR_TEXTURE: The height color is a sample from a (1D) texture
-	#pragma multi_compile HEIGHT_COLOR_PICKER HEIGHT_COLOR_TEXTURE
-
 	#include "UnityCG.cginc"
 
 	#define SKYBOX_THREASHOLD_VALUE 0.9999
@@ -57,8 +36,9 @@
 
 	float4x4 _InverseViewMatrix;
 
-	uniform float _FogStartDist;
-	uniform float _FogEndDist;
+	uniform float _FogStartDistance;
+	uniform float _FogEndDistance;
+
 
 	uniform float _Height;
 	uniform float _BaseDensity;
@@ -97,7 +77,7 @@
 	// and the fog intensity curve.
 	inline float ComputeDistanceFogAmount(float distance)
 	{
-		float f = (distance - _FogStartDist) / (_FogEndDist - _FogStartDist);
+		float f = (distance - _FogStartDistance) / (_FogEndDistance - _FogStartDistance);
 		f =  DecodeFloatRGBA(tex2D(_FogFactorIntensityTexture, float2(f, 0.)));
 		return saturate(f);
 	}
@@ -112,9 +92,9 @@
 
 	inline half4 GetColorFromPicker(half4 pickerColor, float fogAmount)
 	{
-		half4 fogCol = pickerColor;
-		fogCol.a = saturate(fogAmount * pickerColor.a);
-		return fogCol;
+		half4 fogColor = pickerColor;
+		fogColor.a = saturate(fogAmount * pickerColor.a);
+		return fogColor;
 	}
 
 	inline half4 GetColorFromTexture(sampler2D source, float fogAmount)
@@ -133,7 +113,7 @@
 		float3 viewDir = normalize(cameraToFragment);
 		float totalDistance = length(cameraToFragment);
 
-		float effectiveDistance = max(totalDistance - _FogStartDist, 0.0);
+		float effectiveDistance = max(totalDistance - _FogStartDistance, 0.0);
 
 		float fogFactor = 0.;
 		float fogAmount = 0.;
@@ -155,6 +135,7 @@
 		// and pick the color from the shared color source.
 		if (_SharedColorSettings)
 		{
+		return 0.;
 			fogAmount = heightFogAmount + distanceFogAmount;
 			if (_ColorSourceOneIsTexture)
 			{

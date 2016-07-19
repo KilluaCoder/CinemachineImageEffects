@@ -91,10 +91,10 @@ namespace UnityStandardAssets.CinematicEffects
 			public bool fogSkybox;
 
 			[Tooltip("Fog is excluded from distances closer than this.")]
-			public float startDist;
+			public float startDistance;
 
 			[Tooltip("Fog is fully saturated beyond this distance.")]
-			public float endDist;
+			public float endDistance;
 
 			[Tooltip("How the intensity of the fog develops with the distance.")]
 			public AnimationCurve intensityDevelopment;
@@ -110,8 +110,8 @@ namespace UnityStandardAssets.CinematicEffects
 					{
 						enabled = true,
 						fogSkybox = false,
-						startDist = 0f,
-						endDist = 100f,
+						startDistance = 0f,
+						endDistance = 100f,
 						intensityDevelopment = AnimationCurve.Linear(0f, 0f, 1f, 1f),
 						colorSelectionType = ColorSelectionType.ColorPicker,
 					};
@@ -422,8 +422,8 @@ namespace UnityStandardAssets.CinematicEffects
 			if (distanceFog.enabled)
 			{
 				material.SetTexture("_FogFactorIntensityTexture", distanceFogIntensityTexture);
-				material.SetFloat("_FogStartDist", distanceFog.startDist);
-				material.SetFloat("_FogEndDist", distanceFog.endDist);
+				material.SetFloat("_FogStartDistance", distanceFog.startDistance);
+				material.SetFloat("_FogEndDistance", distanceFog.endDistance);
 			}
 
 			// Set height fog properties

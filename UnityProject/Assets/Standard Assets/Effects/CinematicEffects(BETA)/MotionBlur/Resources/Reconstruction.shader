@@ -1,15 +1,11 @@
-// Prefilter passes for the motion blur effect
-Shader "Hidden/Image Effects/Cinematic/MotionBlur"
+// Reconstruction filter shader
+Shader "Hidden/Image Effects/Cinematic/MotionBlur/Reconstruction"
 {
     Properties
     {
         _MainTex        ("", 2D) = ""{}
         _VelocityTex    ("", 2D) = ""{}
         _NeighborMaxTex ("", 2D) = ""{}
-        _History1Tex    ("", 2D) = ""{}
-        _History2Tex    ("", 2D) = ""{}
-        _History3Tex    ("", 2D) = ""{}
-        _History4Tex    ("", 2D) = ""{}
     }
     Subshader
     {
@@ -77,47 +73,6 @@ Shader "Hidden/Image Effects/Cinematic/MotionBlur"
             #pragma vertex vert_Multitex
             #pragma fragment frag_Reconstruction
             #pragma target 3.0
-            ENDCG
-        }
-        // Pass 6: Frame blending
-        Pass
-        {
-            ZTest Always Cull Off ZWrite Off
-            CGPROGRAM
-            #include "Misc.cginc"
-            #pragma vertex vert_Multitex
-            #pragma fragment frag_FrameBlending
-            #pragma target 3.0
-            ENDCG
-        }
-        // Pass 7: Debug mode (velocity)
-        Pass
-        {
-            ZTest Always Cull Off ZWrite Off
-            CGPROGRAM
-            #include "Misc.cginc"
-            #pragma vertex vert_Multitex
-            #pragma fragment frag_Velocity
-            ENDCG
-        }
-        // Pass 8: Debug mode (NeighborMax)
-        Pass
-        {
-            ZTest Always Cull Off ZWrite Off
-            CGPROGRAM
-            #include "Misc.cginc"
-            #pragma vertex vert_Multitex
-            #pragma fragment frag_NeighborMax
-            ENDCG
-        }
-        // Pass 9: Debug mode (Depth)
-        Pass
-        {
-            ZTest Always Cull Off ZWrite Off
-            CGPROGRAM
-            #include "Misc.cginc"
-            #pragma vertex vert_Multitex
-            #pragma fragment frag_Depth
             ENDCG
         }
     }

@@ -17,6 +17,7 @@ namespace UnityStandardAssets.CinematicEffects
 		public class SettingsGroup : Attribute
 		{ }
 
+		[Serializable]
 		public enum ColorSelectionType
 		{
 			ColorPicker = 0,
@@ -25,9 +26,17 @@ namespace UnityStandardAssets.CinematicEffects
 			CopyOther = 3,
 		}
 
+		private enum Pass
+		{
+			DistanceOnly              = 1,
+			HeightOnly                = 2,
+			BothSharedColorSettings   = 3,
+			BothSeperateColorSettinsg = 4,
+		}
+
 		#region settings
 		[Serializable]
-		public class FogColorSource
+		public struct FogColorSource
 		{
 			[AttributeUsage(AttributeTargets.Field)]
 			public class DisplayOnSelectionType : Attribute

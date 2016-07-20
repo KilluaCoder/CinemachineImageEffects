@@ -103,7 +103,7 @@
 	}
 
 	// Not used yet, but might be useful for pass seperation.
-	inline half4 AddFogToScene(float2 uv, half4 fogColor, float fogAmount)
+	inline half4 BlendFogToScene(float2 uv, half4 fogColor, float fogAmount)
 	{
 		half4 sceneColor = tex2D(_MainTex, uv);
 		half4 blended = lerp(sceneColor, half4(fogColor.xyz, 1.), fogColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, fogAmount));
@@ -186,16 +186,31 @@
 		return finalFogColor;
 	}
 
+
+	half4 fregment_both_sharedColor(v2f_img i) : SV_Target
+	{
+
+	}
+
 	ENDCG
 	SubShader
 	{
-		// 0: Height and distance fog with shared color
+		// 0: Default for now not working pass
 		Pass
 		{
 			Cull Off ZWrite Off ZTest Always
 			CGPROGRAM
 			#pragma vertex vert_img_fog
 			#pragma fragment fragment
+			ENDCG
+		}
+		// 1: Distance + height, shared color source
+		Pass
+		{
+			Cull Off ZWrite Off ZTest Always
+			CGPROGRAM
+			#pragma vertex vert_img_fog
+			#pragma fragment fregment_both_sharedColor
 			ENDCG
 		}
 	}

@@ -64,10 +64,9 @@ namespace UnityStandardAssets.CinematicEffects
 
 		public void OnEnable()
 		{
-
 			distanceFogColorDisplay.PopulateMap(serializedObject, "distanceColorSource");
 			heightFogColorDisplay.PopulateMap(serializedObject, "heightColorSource");
-			
+
 			var settingsGroups = typeof(StylisticFog).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.GetCustomAttributes(typeof(StylisticFog.SettingsGroup), false).Any());
 
 			foreach (var group in settingsGroups)
@@ -86,6 +85,7 @@ namespace UnityStandardAssets.CinematicEffects
 						infoGroup.heightFog = group.FieldType == typeof(StylisticFog.HeightFogSettings);
 						m_GroupFields.Add(infoGroup);
 					}
+
 
 					var property = serializedObject.FindProperty(searchPath + setting.Name);
 					if (property != null)

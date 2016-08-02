@@ -11,7 +11,7 @@ namespace UnityStandardAssets.CinematicEffects
         private SerializedProperty m_FilteringQuality;
         private SerializedProperty m_ApertureShape;
         private SerializedProperty m_ApertureOrientation;
-        
+
         private SerializedProperty m_Transform;
         private SerializedProperty m_FocusPlane;
         private SerializedProperty m_Range;
@@ -31,13 +31,13 @@ namespace UnityStandardAssets.CinematicEffects
         private void OnEnable()
         {
             var o = serializedObject;
-            
+
             m_VisualizeFocus = o.FindProperty("settings.visualizeFocus");
             m_TweakMode = o.FindProperty("settings.tweakMode");
             m_FilteringQuality = o.FindProperty("settings.filteringQuality");
             m_ApertureShape = o.FindProperty("settings.apertureShape");
             m_ApertureOrientation = o.FindProperty("settings.apertureOrientation");
-            
+
             m_Transform = o.FindProperty("focus.transform");
             m_FocusPlane = o.FindProperty("focus.focusPlane");
             m_Range = o.FindProperty("focus.range");
@@ -47,7 +47,7 @@ namespace UnityStandardAssets.CinematicEffects
             m_FarFalloff = o.FindProperty("focus.farFalloff");
             m_NearBlurRadius = o.FindProperty("focus.nearBlurRadius");
             m_FarBlurRadius = o.FindProperty("focus.farBlurRadius");
-            
+
             m_Texture = o.FindProperty("bokehTexture.texture");
             m_Scale = o.FindProperty("bokehTexture.scale");
             m_Intensity = o.FindProperty("bokehTexture.intensity");
@@ -58,7 +58,7 @@ namespace UnityStandardAssets.CinematicEffects
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            
+
             EditorGUILayout.PropertyField(m_VisualizeFocus);
             EditorGUILayout.PropertyField(m_TweakMode);
             EditorGUILayout.PropertyField(m_FilteringQuality);
@@ -73,7 +73,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Focus", EditorStyles.boldLabel);
-            
+
             var falloff = new GUIContent("Falloff");
             var blurRadius = new GUIContent("Blur Radius");
 
@@ -89,13 +89,13 @@ namespace UnityStandardAssets.CinematicEffects
                 }
 
                 EditorGUILayout.PropertyField(m_Range);
-                
+
                 EditorGUILayout.LabelField(m_NearPlane.displayName);
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(m_NearFalloff, falloff);
                 EditorGUILayout.PropertyField(m_NearBlurRadius, blurRadius);
                 EditorGUI.indentLevel--;
-                
+
                 EditorGUILayout.LabelField(m_FarPlane.displayName);
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(m_FarFalloff, falloff);
@@ -109,7 +109,7 @@ namespace UnityStandardAssets.CinematicEffects
                 EditorGUILayout.PropertyField(m_NearFalloff, falloff);
                 EditorGUILayout.PropertyField(m_NearBlurRadius, blurRadius);
                 EditorGUI.indentLevel--;
-                
+
                 EditorGUILayout.PropertyField(m_FarPlane);
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(m_FarFalloff, falloff);

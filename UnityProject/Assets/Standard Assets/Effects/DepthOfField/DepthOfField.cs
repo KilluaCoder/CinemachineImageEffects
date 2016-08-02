@@ -194,7 +194,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             [Min(0f), Tooltip("Far blur falloff (in world units).")]
             public float farFalloff;
-            
+
             [Range(0f, kMaxBlur), Tooltip("Maximum blur radius for the near plane.")]
             public float nearBlurRadius;
 
@@ -255,7 +255,7 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
         #endregion
-        
+
         public GlobalSettings settings = GlobalSettings.defaultSettings;
         public FocusSettings focus = FocusSettings.defaultSettings;
         public BokehTextureSettings bokehTexture = BokehTextureSettings.defaultSettings;
@@ -617,7 +617,7 @@ namespace UnityStandardAssets.CinematicEffects
             GetDirectionalBlurPassesFromRadius(blurredFgCoc, maxRadius, out blurPass, out blurPassMerge);
             filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurredFgCoc);
             var tmp = m_RTU.GetTemporaryRenderTexture(src.width, src.height, 0, src.format);
-            
+
             filmicDepthOfFieldMaterial.SetVector("_Offsets", m_HexagonalBokehDirection1);
             Graphics.Blit(src, tmp, filmicDepthOfFieldMaterial, blurPass);
 
@@ -686,7 +686,7 @@ namespace UnityStandardAssets.CinematicEffects
             float farFalloff = focus.farFalloff * 2f;
             float nearPlane = focus.nearPlane;
             float farPlane = focus.farPlane;
-            
+
             if (settings.tweakMode == TweakMode.Range)
             {
                 if (focus.transform != null)
@@ -702,7 +702,7 @@ namespace UnityStandardAssets.CinematicEffects
             nearPlane -= (nearFalloff * 0.5f);
             farPlane += (farFalloff * 0.5f);
             focusDistance = (nearPlane + farPlane) * 0.5f;
-            
+
             float focusDistance01 = focusDistance / sceneCamera.farClipPlane;
             float nearDistance01 = nearPlane / sceneCamera.farClipPlane;
             float farDistance01 = farPlane / sceneCamera.farClipPlane;
@@ -713,12 +713,12 @@ namespace UnityStandardAssets.CinematicEffects
             var farFalloff01 = farFalloff / dof;
             float nearFocusRange01 = (1f - nearFalloff01) * (dof01 * 0.5f);
             float farFocusRange01 = (1f - farFalloff01) * (dof01 * 0.5f);
-            
+
             if (focusDistance01 <= nearDistance01)
                 focusDistance01 = nearDistance01 + 1e-6f;
             if (focusDistance01 >= farDistance01)
                 focusDistance01 = farDistance01 - 1e-6f;
-            
+
             if ((focusDistance01 - nearFocusRange01) <= nearDistance01)
                 nearFocusRange01 = focusDistance01 - nearDistance01 - 1e-6f;
             if ((focusDistance01 + farFocusRange01) >= farDistance01)
@@ -732,7 +732,7 @@ namespace UnityStandardAssets.CinematicEffects
             const float c2 = 1f;
             blurParams = new Vector4(c1 * a1, c1 * b1, c2 * a2, c2 * b2);
             blurCoe = new Vector4(0f, 0f, (b2 - b1) / (a1 - a2), 0f);
-            
+
             // Save values so we can switch from one tweak mode to the other on the fly
             focus.nearPlane = nearPlane + (nearFalloff * 0.5f);
             focus.farPlane = farPlane - (farFalloff * 0.5f);

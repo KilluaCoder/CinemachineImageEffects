@@ -15,6 +15,8 @@ namespace UnityStandardAssets.CinematicEffects
     [CustomEditor(typeof(MotionBlur))]
     public class MotionBlurEditor : Editor
     {
+        #if UNITY_5_4_OR_NEWER
+
         MotionBlurGraphDrawer _graph;
 
         SerializedProperty _shutterAngle;
@@ -59,5 +61,14 @@ namespace UnityStandardAssets.CinematicEffects
 
             serializedObject.ApplyModifiedProperties();
         }
+
+        #else
+
+        public override void OnInspectorGUI()
+        {
+            EditorGUILayout.HelpBox("This effect requires Unity 5.4 or later.", MessageType.Error);
+        }
+
+        #endif
     }
 }

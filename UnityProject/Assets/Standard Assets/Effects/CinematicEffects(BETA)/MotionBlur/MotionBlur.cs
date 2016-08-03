@@ -34,6 +34,8 @@ namespace UnityStandardAssets.CinematicEffects
 
         #region MonoBehaviour functions
 
+        #if UNITY_5_4_OR_NEWER
+
         void OnEnable()
         {
             _reconstructionFilter = new ReconstructionFilter();
@@ -85,6 +87,8 @@ namespace UnityStandardAssets.CinematicEffects
                 Graphics.Blit(source, destination);
             }
         }
+
+        #endif
 
         #endregion
     }

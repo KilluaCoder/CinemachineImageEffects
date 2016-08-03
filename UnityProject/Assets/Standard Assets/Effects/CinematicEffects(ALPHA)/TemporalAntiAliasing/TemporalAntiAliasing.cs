@@ -8,8 +8,26 @@ namespace UnitySampleAssets.ImageEffects
     [AddComponentMenu("Image Effects/Temporal Anti-aliasing")]
     public class TemporalAntiAliasing : MonoBehaviour
     {
-        [Range(0, 5)]
-        public float jitterScale = 1;
+        [Range(0f, 3f)]
+        public float jitterScale = 0.3f;
+
+        [Range(4, 128)]
+        public int haltonSequenceLength = 16;
+
+        [Range(0f, 1f)]
+        public float sharpeningAmount = 0.25f;
+
+        [Range(0f, 2f)]
+        public float sharpenFilterWidth = 1f;
+
+        [Range(0.9f, 1f)]
+        public float staticBlurAmount = 0.9f;
+
+        [Range(0.6f, 0.9f)]
+        public float motionBlurAmount = 0.75f;
+
+        [Range(3000f, 10000f)]
+        public float motionAmplificationAmount = 6000f;
 
         private Shader m_Shader;
         public Shader shader
@@ -112,7 +130,7 @@ namespace UnitySampleAssets.ImageEffects
                     GetHaltonValue(m_SampleIndex & 1023, 2),
                     GetHaltonValue(m_SampleIndex & 1023, 3));
 
-            if (++m_SampleIndex >= 16)
+            if (++m_SampleIndex >= haltonSequenceLength)
                 m_SampleIndex = 0;
 
             return offset;
@@ -231,6 +249,8 @@ namespace UnitySampleAssets.ImageEffects
                 Graphics.Blit(source, m_History);
             }
 
+            material.SetVector("_SharpenParameters", new Vector4(sharpeningAmount, sharpenFilterWidth, 1f / source.width, 1f / source.height));
+            material.SetVector("_FinalBlendParameters", new Vector4(staticBlurAmount, motionBlurAmount, motionAmplificationAmount));
             material.SetTexture("_HistoryTex", m_History);
             material.SetTexture("_MainTex", source);
 

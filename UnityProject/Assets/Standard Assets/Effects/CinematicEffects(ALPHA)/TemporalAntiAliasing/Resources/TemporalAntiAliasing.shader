@@ -21,7 +21,6 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         #define TAA_DILATE_MOTION_VECTOR_SAMPLE 1
 
-        #define TAA_HISTORY_SAMPLE_FILTER 0
         #define TAA_CLIP_HISTORY_SAMPLE 1
 
         #define TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD 0.5
@@ -30,10 +29,14 @@ Shader "Hidden/Temporal Anti-aliasing"
         #define TAA_DEPTH_SAMPLE_SPREAD 1.
 
         #define TAA_SHARPEN_OUTPUT 1
-        #define TAA_FINAL_BLEND_METHOD 1
+        #define TAA_FINAL_BLEND_METHOD 2
 
         #if TAA_FINAL_BLEND_METHOD == 0
             #define TAA_FINAL_BLEND_FACTOR .97
+        #elif TAA_FINAL_BLEND_METHOD == 2
+            #define TAA_FINAL_BLEND_STATIC_FACTOR _FinalBlendParameters.x
+            #define TAA_FINAL_BLEND_DYNAMIC_FACTOR _FinalBlendParameters.y
+            #define TAA_MOTION_AMPLIFICATION _FinalBlendParameters.z
         #endif
 
         struct Input
@@ -70,6 +73,14 @@ Shader "Hidden/Temporal Anti-aliasing"
         float4 _CameraDepthTexture_TexelSize;
 
         float2 _Jitter;
+
+        #if TAA_SHARPEN_OUTPUT
+            float4 _SharpenParameters;
+        #endif
+
+        #if TAA_FINAL_BLEND_METHOD == 2
+            float4 _FinalBlendParameters;
+        #endif
 
         Varyings vertex(Input input)
         {
@@ -215,6 +226,7 @@ Shader "Hidden/Temporal Anti-aliasing"
             float2 motion = tex2D(_CameraMotionVectorsTexture, input.defaultUV).xy;
         #endif
 
+            float2 k = TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD * _MainTex_TexelSize.xy;
             float2 mainUV = input.mainTexUV;
         #if TAA_REMOVE_COLOR_SAMPLE_JITTER && UNITY_UV_STARTS_AT_TOP
             mainUV -= _MainTex_TexelSize.y < 0 ? _Jitter * float2(1, -1) : _Jitter;
@@ -222,17 +234,26 @@ Shader "Hidden/Temporal Anti-aliasing"
             mainUV -= _Jitter;
         #endif
 
-            float2 mainTexK = TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD * _MainTex_TexelSize.xy;
-
             float4 color = tex2D(_MainTex, mainUV);
+
+        #if TAA_SHARPEN_OUTPUT
+            float4 corners = tex2D(_MainTex, input.defaultUV + float2(-k.x, -k.y) * _SharpenParameters.y) +
+                tex2D(_MainTex, input.defaultUV + float2(k.x, -k.y) * _SharpenParameters.y) +
+                tex2D(_MainTex, input.defaultUV + float2(-k.x,  k.y) * _SharpenParameters.y) +
+                tex2D(_MainTex, input.defaultUV + float2(k.x,  k.y) * _SharpenParameters.y);
+
+            corners *= .25;
+
+            color += (color - corners) * _SharpenParameters.x;
+        #endif
 
         #if TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN == 0
             // Karris 13: a box filter is not stable under motion, use raw color instead of an averaged one
             float4x4 neighborhood = float4x4(
-                tex2D(_MainTex, mainUV + float2(0., -mainTexK.y)),
-                tex2D(_MainTex, mainUV + float2(-mainTexK.x, 0.)),
-                tex2D(_MainTex, mainUV + float2(mainTexK.x, 0.)),
-                tex2D(_MainTex, mainUV + float2(0., mainTexK.y)));
+                tex2D(_MainTex, mainUV + float2(0., -k.y)),
+                tex2D(_MainTex, mainUV + float2(-k.x, 0.)),
+                tex2D(_MainTex, mainUV + float2(k.x, 0.)),
+                tex2D(_MainTex, mainUV + float2(0., k.y)));
 
             #if TAA_CLIP_HISTORY_SAMPLE
                 #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
@@ -255,27 +276,29 @@ Shader "Hidden/Temporal Anti-aliasing"
             float4 minimum = min(min(min(min(neighborhood[0], neighborhood[1]), neighborhood[2]), neighborhood[3]), color);
             float4 maximum = max(max(max(max(neighborhood[0], neighborhood[1]), neighborhood[2]), neighborhood[3]), color);
         #else
-            float3x4 top = float3x4(
-                tex2D(_MainTex, mainUV + float2(-mainTexK.x, -mainTexK.y)),
-                tex2D(_MainTex, mainUV + float2(0., -mainTexK.y)),
-                tex2D(_MainTex, mainUV + float2(mainTexK.x, -mainTexK.y)));
+            // 0 1 2
+            // 3
+            float4x4 top = float4x4(
+                tex2D(_MainTex, mainUV + float2(-k.x, -k.y)),
+                tex2D(_MainTex, mainUV + float2(0., -k.y)),
+                tex2D(_MainTex, mainUV + float2(k.x, -k.y)),
+                tex2D(_MainTex, mainUV + float2(-k.x, 0.)));
 
-            float2x4 middle = float2x4(
-                tex2D(_MainTex, mainUV + float2(-mainTexK.x, 0.)),
-                tex2D(_MainTex, mainUV + float2(mainTexK.x, 0.)));
-
-            float3x4 bottom = float3x4(
-                tex2D(_MainTex, mainUV + float2(-mainTexK.x, mainTexK.y)),
-                tex2D(_MainTex, mainUV + float2(0., mainTexK.y)),
-                tex2D(_MainTex, mainUV + float2(mainTexK.x, mainTexK.y)));
+            //     0
+            // 1 2 3
+            float4x4 bottom = float4x4(
+                tex2D(_MainTex, mainUV + float2(k.x, 0.)),
+                tex2D(_MainTex, mainUV + float2(-k.x, k.y)),
+                tex2D(_MainTex, mainUV + float2(0., k.y)),
+                tex2D(_MainTex, mainUV + float2(k.x, k.y)));
 
             #if TAA_CLIP_HISTORY_SAMPLE
                 #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
                     float4 average = map(top[0], .111111) + map(top[1], .111111) + map(top[2], .111111) +
-                        map(middle[0], .111111) + map(color, .111111) + map(middle[1], .111111) +
-                        map(bottom[0], .111111) + map(bottom[1], .111111) + map(bottom[2], .111111);
+                        map(top[3], .111111) + map(color, .111111) + map(bottom[0], .111111) +
+                        map(bottom[1], .111111) + map(bottom[2], .111111) + map(bottom[3], .111111);
                 #else
-                    float4 average = (top[0] + top[1] + top[2] + middle[0] + middle[1] + bottom[0] + bottom[1] + bottom[2] + color) * .111111;
+                    float4 average = (top[0] + top[1] + top[2] + top[3] + bottom[0] + bottom[1] + bottom[2] + bottom[3] + color) * .111111;
                 #endif
             #endif
 
@@ -283,65 +306,27 @@ Shader "Hidden/Temporal Anti-aliasing"
                 top[0] = map(top[0]);
                 top[1] = map(top[1]);
                 top[2] = map(top[2]);
+                top[3] = map(top[3]);
 
-                middle[0] = map(middle[0]);
                 color = map(color);
-                middle[1] = map(middle[1]);
 
                 bottom[0] = map(bottom[0]);
                 bottom[1] = map(bottom[1]);
                 bottom[2] = map(bottom[2]);
+                bottom[3] = map(bottom[3]);
             #endif
 
-            float4 minimum = min(min(min(min(min(min(min(min(top[0], top[1]), top[2]), middle[0]), middle[1]), bottom[0]), bottom[1]), bottom[2]), color);
-            float4 maximum = max(max(max(max(max(max(max(max(top[0], top[1]), top[2]), middle[0]), middle[1]), bottom[0]), bottom[1]), bottom[2]), color);
+            float4 minimum = min(min(min(min(min(min(min(min(top[0], top[1]), top[2]), top[3]), bottom[0]), bottom[1]), bottom[2]), bottom[3]), color);
+            float4 maximum = max(max(max(max(max(max(max(max(top[0], top[1]), top[2]), top[3]), bottom[0]), bottom[1]), bottom[2]), bottom[3]), color);
         #endif
 
-            float2 historyK = TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD * _HistoryTex_TexelSize.xy;
+            k = TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD * _HistoryTex_TexelSize.xy;
             float2 historyUV = input.defaultUV - motion;
 
-        #if TAA_HISTORY_SAMPLE_FILTER == 0
             float4 history = tex2D(_HistoryTex, historyUV);
 
-            #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
-                history = map(history);
-            #endif
-        #elif TAA_HISTORY_SAMPLE_FILTER == 1
-            #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
-                float4 history = map(tex2D(_HistoryTex, input.historyUV + float2(0., -historyK.y)), .2) +
-                    map(tex2D(_HistoryTex, historyUV + float2(-historyK.x, 0.)), .2) +
-                    map(tex2D(_HistoryTex, historyUV + float2(historyK.x, 0.)), .2) +
-                    map(tex2D(_HistoryTex, historyUV + float2(0., historyK.y)), .2) +
-                    map(tex2D(_HistoryTex, historyUV), .2);
-            #else
-                float4 history = (tex2D(_HistoryTex, input.historyUV + float2(0., -historyK.y)) +
-                    tex2D(_HistoryTex, historyUV + float2(-historyK.x, 0.)) +
-                    tex2D(_HistoryTex, historyUV + float2(historyK.x, 0.)) +
-                    tex2D(_HistoryTex, historyUV + float2(0., historyK.y)) +
-                    tex2D(_HistoryTex, historyUV)) * .2;
-            #endif
-        #else
-            #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
-                float4 history = map(tex2D(_HistoryTex, historyUV + float2(0., 0.) * _HistoryTex_TexelSize.xy), .111111) +
-                    map(tex2D(_HistoryTex, historyUV + float2(historyK.x, 0.) * _HistoryTex_TexelSize.xy), .111111) +
-                    map(tex2D(_HistoryTex, historyUV + historyK * _HistoryTex_TexelSize.xy), .111111) +
-                    map(tex2D(_HistoryTex, historyUV + float2(0., historyK.y) * _HistoryTex_TexelSize.xy), .111111) +
-                    map(tex2D(_HistoryTex, historyUV + float2(-historyK.x, historyK.y) * _HistoryTex_TexelSize.xy), .111111) +
-                    map(tex2D(_HistoryTex, historyUV + float2(-historyK.x, 0.) * _HistoryTex_TexelSize.xy), .111111) +
-                    map(tex2D(_HistoryTex, historyUV - historyK * _HistoryTex_TexelSize.xy), .111111) +
-                    map(tex2D(_HistoryTex, historyUV + float2(0., -historyK.y) * _HistoryTex_TexelSize.xy), .111111) +
-                    map(tex2D(_HistoryTex, historyUV + float2(historyK.x, -historyK.y) * _HistoryTex_TexelSize.xy), .111111);
-            #else
-                float4 history = (tex2D(_HistoryTex, historyUV + float2(0., 0.) * _HistoryTex_TexelSize.xy) +
-                    tex2D(_HistoryTex, historyUV + float2(historyK.x, 0.) * _HistoryTex_TexelSize.xy) +
-                    tex2D(_HistoryTex, historyUV + historyK * _HistoryTex_TexelSize.xy) +
-                    tex2D(_HistoryTex, historyUV + float2(0., historyK.y) * _HistoryTex_TexelSize.xy) +
-                    tex2D(_HistoryTex, historyUV + float2(-historyK.x, historyK.y) * _HistoryTex_TexelSize.xy) +
-                    tex2D(_HistoryTex, historyUV + float2(-historyK.x, 0.) * _HistoryTex_TexelSize.xy) +
-                    tex2D(_HistoryTex, historyUV - historyK * _HistoryTex_TexelSize.xy) +
-                    tex2D(_HistoryTex, historyUV + float2(0., -historyK.y) * _HistoryTex_TexelSize.xy) +
-                    tex2D(_HistoryTex, historyUV + float2(historyK.x, -historyK.y) * _HistoryTex_TexelSize.xy)) * .111111;
-            #endif
+        #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
+            history = map(history);
         #endif
 
         #if TAA_CLIP_HISTORY_SAMPLE
@@ -349,11 +334,6 @@ Shader "Hidden/Temporal Anti-aliasing"
             history = clipToAABB(history, average.w, minimum.xyz, maximum.xyz);
         #else
             history = clamp(history, minimum, maximum);
-        #endif
-
-        #if TAA_SHARPEN_OUTPUT
-            float smudge = saturate(2. * (abs(_Jitter.x) + abs(_Jitter.y) + abs(motion.x) + abs(motion.y)));
-            float sharpening = saturate(smudge * .5 + rcp(1. + 32. * (Luminance(maximum.rgb) - Luminance(minimum.rgb))));
         #endif
 
             float2 luma = float2(Luminance(color.rgb), Luminance(history.rgb));
@@ -365,6 +345,11 @@ Shader "Hidden/Temporal Anti-aliasing"
             // Implements the final blend method from Playdead's TAA implementation
             float weight = 1. - abs(luma.x - luma.y) / max(luma.x, max(luma.y, .2));
             color = lerp(color, history, lerp(.88, .97, weight * weight));
+        #elif TAA_FINAL_BLEND_METHOD == 2
+            float weight = clamp(lerp(TAA_FINAL_BLEND_STATIC_FACTOR, TAA_FINAL_BLEND_DYNAMIC_FACTOR,
+                    length(motion * TAA_MOTION_AMPLIFICATION)), TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR);
+
+            color = lerp(color, history, weight);
         #endif
 
         #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES

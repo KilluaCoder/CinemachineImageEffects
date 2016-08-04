@@ -243,8 +243,7 @@ Shader "Hidden/Temporal Anti-aliasing"
                 tex2D(_MainTex, input.defaultUV + float2(k.x,  k.y) * _SharpenParameters.y);
 
             corners *= .25;
-
-            color += (color - corners) * _SharpenParameters.x;
+            color = max(0, color + (color - corners) * _SharpenParameters.x);
         #endif
 
         #if TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN == 0

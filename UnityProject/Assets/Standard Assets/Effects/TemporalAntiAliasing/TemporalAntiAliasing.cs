@@ -1,11 +1,10 @@
-using System;
 using UnityEngine;
 
-namespace UnitySampleAssets.ImageEffects
+namespace UnityStandardAssets.CinematicEffects
 {
     [ExecuteInEditMode]
     [RequireComponent(typeof(Camera))]
-    [AddComponentMenu("Image Effects/Temporal Anti-aliasing")]
+    [AddComponentMenu("Image Effects/Cinematic/Temporal Anti-aliasing")]
     public class TemporalAntiAliasing : MonoBehaviour
     {
         [Range(0f, 3f)]

@@ -186,15 +186,93 @@
 		return finalFogColor;
 	}
 
+	half4 fragment_distance(v2f_img i) : SV_Target
+	{
+		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
+
+		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
+
+		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
+		float totalDistance = length(cameraToFragment);
+
+		float effectiveDistance = max(totalDistance - _FogStartDistance, 0.0);
+
+		float linDepth = Linear01Depth(depth);
+
+		float distanceFogAmount = 0.;
+		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+			distanceFogAmount = ComputeDistanceFogAmount(effectiveDistance);
+
+		half4 fogColor = 0.;
+		if (_ColorSourceOneIsTexture)
+		{
+			fogColor = GetColorFromTexture(_FogColorTexture0, distanceFogAmount);
+		}
+		else
+		{
+			fogColor = GetColorFromPicker(_FogPickerColor0, distanceFogAmount);
+		}
+
+		return BlendFogToScene(i.uv, fogColor, fogColor.a);
+	}
+
+	half4 fragment_height(v2f_img i) : SV_Target
+	{
+		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
+
+		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
+
+		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
+		float viewDirY = normalize(cameraToFragment).y;
+		float totalDistance = length(cameraToFragment);
+
+		float heightFogAmount = 0.;
+
+		float linDepth = Linear01Depth(depth);
+
+		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+			heightFogAmount = ComputeHeightFogAmount(viewDirY, totalDistance);
+
+		half4 fogColor = 0.;
+		if (_ColorSourceOneIsTexture)
+		{
+			fogColor = GetColorFromTexture(_FogColorTexture0, heightFogAmount);
+		}
+		else
+		{
+			fogColor = GetColorFromPicker(_FogPickerColor0, heightFogAmount);
+		}
+
+		return BlendFogToScene(i.uv, fogColor, fogColor.a);
+	}
+
 
 	half4 fregment_both_sharedColor(v2f_img i) : SV_Target
 	{
-
+		return 0.;
 	}
 
 	ENDCG
 	SubShader
 	{
+		// 0: Distance fog only
+		Pass
+		{
+			Cull Off ZWrite Off ZTest Always
+			CGPROGRAM
+			#pragma vertex vert_img_fog
+			#pragma fragment fragment_distance
+			ENDCG
+		}
+		// 1: Height fog only
+		Pass
+		{
+			Cull Off ZWrite Off ZTest Always
+			CGPROGRAM
+			#pragma vertex vert_img_fog
+			#pragma fragment fragment_height
+			ENDCG
+		}
 		// 0: Default for now not working pass
 		Pass
 		{

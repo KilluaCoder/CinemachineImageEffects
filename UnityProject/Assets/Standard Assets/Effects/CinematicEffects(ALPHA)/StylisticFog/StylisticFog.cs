@@ -26,12 +26,13 @@ namespace UnityStandardAssets.CinematicEffects
 			CopyOther = 3,
 		}
 
-		private enum Pass
+		private enum FogTypePass
 		{
-			DistanceOnly              = 1,
-			HeightOnly                = 2,
-			BothSharedColorSettings   = 3,
-			BothSeperateColorSettinsg = 4,
+			DistanceOnly              = 0,
+			HeightOnly                = 1,
+			BothSharedColorSettings   = 2,
+			BothSeperateColorSettinsg = 3,
+			None,
 		}
 
 		#region settings
@@ -376,28 +377,41 @@ namespace UnityStandardAssets.CinematicEffects
 			material.SetFloat("_DensityFalloff", heightFog.densityFalloff);
 		}
 
-		private void SetMaterialUniforms()
+		private FogTypePass SetMaterialUniforms()
 		{
-			// Get the inverse view matrix for converting depth to world position.
-			Matrix4x4 inverseViewMatrix = GetComponent<Camera>().cameraToWorldMatrix;
-			material.SetMatrix("_InverseViewMatrix", inverseViewMatrix);
 
-			// Decide to use distance- height fog or both
-			// Decide wheter the skybox should have fog applied
-			material.SetInt("_UseDistanceFog", distanceFog.enabled ? 1 : 0);
-			material.SetInt("_UseHeightFog", heightFog.enabled ? 1 : 0);
+			// Determine the fog type pass
+			FogTypePass fogType = FogTypePass.DistanceOnly;
 
-			// Decide wheter the skybox should have fog applied
-			material.SetInt("_ApplyDistToSkybox", distanceFog.fogSkybox ? 1 : 0);
-			material.SetInt("_ApplyHeightToSkybox", heightFog.fogSkybox ? 1 : 0);
-
+			if(!distanceFog.enabled && heightFog.enabled)
+				fogType = FogTypePass.HeightOnly;
 
 			// Share color settings if one of the sources are set to copy the other
 			bool sharedColorSettings = (distanceFog.colorSelectionType == ColorSelectionType.CopyOther)
 										|| (heightFog.colorSelectionType == ColorSelectionType.CopyOther);
 
-			// Use shared or seperate color settings
-			material.SetInt("_SharedColorSettings", sharedColorSettings ? 1 : 0);
+			if(distanceFog.enabled && heightFog.enabled)
+			{
+				if(sharedColorSettings)
+				{
+					fogType = FogTypePass.BothSharedColorSettings;
+				}
+				else
+				{
+					fogType = FogTypePass.BothSeperateColorSettinsg;
+				}
+			}
+
+			if (!distanceFog.enabled && !heightFog.enabled)
+				return FogTypePass.None;
+
+			// Get the inverse view matrix for converting depth to world position.
+			Matrix4x4 inverseViewMatrix = GetComponent<Camera>().cameraToWorldMatrix;
+			material.SetMatrix("_InverseViewMatrix", inverseViewMatrix);
+
+			// Decide wheter the skybox should have fog applied
+			material.SetInt("_ApplyDistToSkybox", distanceFog.fogSkybox ? 1 : 0);
+			material.SetInt("_ApplyHeightToSkybox", heightFog.fogSkybox ? 1 : 0);
 
 			// Is the shared color sampled from a texture? Otherwise it's from a single color( picker)
 			if (sharedColorSettings)
@@ -441,15 +455,19 @@ namespace UnityStandardAssets.CinematicEffects
 
 				if (heightFog.enabled)
 				{
+					string textureSourceIdentifier = fogType == FogTypePass.HeightOnly ? "_ColorSourceOneIsTexture" : "_ColorSourceTwoIsTexture";
+
 					if (heightFog.colorSelectionType == ColorSelectionType.ColorPicker)
 					{
-						material.SetColor("_FogPickerColor1", heightColorSource.color);
-						material.SetInt("_ColorSourceTwoIsTexture", 0);
+						string colorPickerIdentifier = fogType == FogTypePass.HeightOnly ? "_FogPickerColor0" : "_FogPickerColor1";
+						material.SetColor(colorPickerIdentifier, heightColorSource.color);
+						material.SetInt(textureSourceIdentifier, 0);
 					}
 					else
 					{
-						material.SetTexture("_FogColorTexture1", heightFog.colorSelectionType == ColorSelectionType.Curves ? heightColorTexture : heightColorSource.colorRamp);
-						material.SetInt("_ColorSourceTwoIsTexture", 0);
+						string colorTextureIdentifier = fogType == FogTypePass.HeightOnly ? "_FogColorTexture0" : "_FogColorTexture1";
+						material.SetTexture(colorTextureIdentifier, heightFog.colorSelectionType == ColorSelectionType.Curves ? heightColorTexture : heightColorSource.colorRamp);
+						material.SetInt(textureSourceIdentifier, 1);
 					}
 				}
 			}
@@ -465,12 +483,18 @@ namespace UnityStandardAssets.CinematicEffects
 			{
 				SetHeightFogUniforms();
 			}
+
+			return fogType;
 		}
 
 		private void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
-			SetMaterialUniforms();
-			Graphics.Blit(source, destination, material, 0);
+			FogTypePass fogType = SetMaterialUniforms();
+			Debug.Log("fog type being rendered: " + fogType);
+			if (fogType == FogTypePass.None)
+				Graphics.Blit(source, destination);
+			else
+				Graphics.Blit(source, destination, material, (int)fogType);
 		}
 
 		public void BakeFogColor( Texture2D target,

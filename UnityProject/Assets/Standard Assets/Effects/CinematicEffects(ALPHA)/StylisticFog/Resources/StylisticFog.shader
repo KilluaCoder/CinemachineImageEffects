@@ -14,11 +14,6 @@
 	bool _ApplyDistToSkybox;
 	bool _ApplyHeightToSkybox;
 
-	bool _UseDistanceFog;
-	bool _UseHeightFog;
-
-	bool _SharedColorSettings;
-
 	bool _ColorSourceOneIsTexture;
 	bool _ColorSourceTwoIsTexture;
 
@@ -38,7 +33,6 @@
 
 	uniform float _FogStartDistance;
 	uniform float _FogEndDistance;
-
 
 	uniform float _Height;
 	uniform float _BaseDensity;
@@ -111,81 +105,6 @@
 		return blended;
 	}
 
-	half4 fragment(v2f_img i) : SV_Target
-	{
-		half4 sceneColor = tex2D(_MainTex, i.uv);
-		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
-		
-		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
-
-		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
-		float3 viewDir = normalize(cameraToFragment);
-		float totalDistance = length(cameraToFragment);
-
-		float effectiveDistance = max(totalDistance - _FogStartDistance, 0.0);
-
-		float fogFactor = 0.;
-		float fogAmount = 0.;
-		float distanceFogAmount = 0.;
-		float heightFogAmount = 0.;
-
-		float linDepth = Linear01Depth(depth);
-
-		if (_UseDistanceFog && (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE))
-			distanceFogAmount = ComputeDistanceFogAmount(effectiveDistance);
-
-		if (_UseHeightFog && (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE))
-			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
-
-		half4 finalFogColor = half4(0., 0., 0., 0.);
-		half4 fogCol = 0.;
-
-		// If shared settings are applied, add the two fog contributions
-		// and pick the color from the shared color source.
-		if (_SharedColorSettings)
-		{
-			fogAmount = heightFogAmount + distanceFogAmount;
-			if (_ColorSourceOneIsTexture)
-			{
-				fogCol = GetColorFromTexture(_FogColorTexture0, fogAmount);
-			}
-			else
-			{
-				fogCol = GetColorFromPicker(_FogPickerColor0, fogAmount);
-			}
-			finalFogColor = lerp(sceneColor, half4(fogCol.xyz, 1.), fogCol.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, max(distanceFogAmount, heightFogAmount)));
-		}
-		// seperate color settings
-		// Pick each of the colors and combine
-		else 
-		{
-			half4 distanceColor = 0.;
-			half4 heightColor = 0.;
-
-			if (_UseDistanceFog)
-			{
-				if (_ColorSourceOneIsTexture)
-					distanceColor = GetColorFromTexture(_FogColorTexture0, fogAmount);
-				else
-					distanceColor = GetColorFromPicker(_FogPickerColor0, fogAmount);
-			}
-
-			if (_UseHeightFog)
-			{
-				if (_ColorSourceOneIsTexture)
-					heightColor = GetColorFromTexture(_FogColorTexture1, fogAmount);
-				else
-					heightColor = GetColorFromPicker(_FogPickerColor1, fogAmount);
-			}
-			finalFogColor = lerp(sceneColor, half4(distanceColor.xyz, 1.), distanceColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, distanceFogAmount));
-			finalFogColor = lerp(finalFogColor, half4(heightColor.xyz, 1.), heightColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, heightFogAmount));
-		}
-
-
-		finalFogColor.a = 1.;
-		return finalFogColor;
-	}
-
 	half4 fragment_distance(v2f_img i) : SV_Target
 	{
 		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
@@ -247,9 +166,91 @@
 	}
 
 
-	half4 fregment_both_sharedColor(v2f_img i) : SV_Target
+	half4 fragment_distance_height_shared_color(v2f_img i) : SV_Target
 	{
-		return 0.;
+		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
+
+		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
+
+		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
+		float3 viewDir = normalize(cameraToFragment);
+		float totalDistance = length(cameraToFragment);
+
+		float effectiveDistance = max(totalDistance - _FogStartDistance, 0.0);
+
+		float distanceFogAmount = 0.;
+		float heightFogAmount = 0.;
+
+		float linDepth = Linear01Depth(depth);
+
+		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+			distanceFogAmount = ComputeDistanceFogAmount(effectiveDistance);
+
+		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
+
+		float totalFogAmount = distanceFogAmount +heightFogAmount;
+
+		half4 fogColor = 0.;
+		if (_ColorSourceOneIsTexture)
+		{
+			fogColor = GetColorFromTexture(_FogColorTexture0, totalFogAmount);
+		}
+		else
+		{
+			fogColor = GetColorFromPicker(_FogPickerColor0, totalFogAmount);
+		}
+
+		return BlendFogToScene(i.uv, fogColor, fogColor.a);
+	}
+
+	half4 fragment_distance_height_seperate_color(v2f_img i) : SV_Target
+	{
+		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
+
+		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
+
+		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
+		float3 viewDir = normalize(cameraToFragment);
+		float totalDistance = length(cameraToFragment);
+
+		float effectiveDistance = max(totalDistance - _FogStartDistance, 0.0);
+
+		float distanceFogAmount = 0.;
+		float heightFogAmount = 0.;
+
+		float linDepth = Linear01Depth(depth);
+
+		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+			distanceFogAmount = ComputeDistanceFogAmount(effectiveDistance);
+
+		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
+
+		half4 distanceFogColor = 0.;
+		half4 heightFogColor = 0.;
+
+		if (_ColorSourceOneIsTexture)
+		{
+			distanceFogColor = GetColorFromTexture(_FogColorTexture0, distanceFogAmount);
+		}
+		else
+		{
+			distanceFogColor = GetColorFromPicker(_FogPickerColor0, distanceFogAmount);
+		}
+
+		if (_ColorSourceTwoIsTexture)
+		{
+			heightFogColor = GetColorFromTexture(_FogColorTexture1, heightFogAmount);
+		}
+		else
+		{
+			heightFogColor = GetColorFromPicker(_FogPickerColor1, heightFogAmount);
+		}
+
+		half4 fogColor = distanceFogColor + heightFogColor;
+
+		return BlendFogToScene(i.uv, fogColor, fogColor.a);
 	}
 
 	ENDCG
@@ -273,22 +274,22 @@
 			#pragma fragment fragment_height
 			ENDCG
 		}
-		// 0: Default for now not working pass
+		// 2: Distance and height fog using same color source
 		Pass
 		{
 			Cull Off ZWrite Off ZTest Always
 			CGPROGRAM
 			#pragma vertex vert_img_fog
-			#pragma fragment fragment
+			#pragma fragment fragment_distance_height_shared_color
 			ENDCG
 		}
-		// 1: Distance + height, shared color source
+		// 3: Distance and height fog each using their
 		Pass
 		{
 			Cull Off ZWrite Off ZTest Always
 			CGPROGRAM
 			#pragma vertex vert_img_fog
-			#pragma fragment fregment_both_sharedColor
+			#pragma fragment fragment_distance_height_seperate_color
 			ENDCG
 		}
 	}

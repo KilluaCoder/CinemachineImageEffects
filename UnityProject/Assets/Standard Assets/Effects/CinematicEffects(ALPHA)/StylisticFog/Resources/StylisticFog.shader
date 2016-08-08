@@ -26,8 +26,8 @@
 	sampler2D _FogColorTexture0;
 	sampler2D _FogColorTexture1;
 
-	half4 _FogPickerColor0;
-	half4 _FogPickerColor1;
+	half4 _FogColor0;
+	half4 _FogColor1;
 
 	float4x4 _InverseViewMatrix;
 
@@ -129,7 +129,7 @@
 		}
 		else
 		{
-			fogColor = GetColorFromPicker(_FogPickerColor0, distanceFogAmount);
+			fogColor = GetColorFromPicker(_FogColor0, distanceFogAmount);
 		}
 
 		return BlendFogToScene(i.uv, fogColor, fogColor.a);
@@ -159,7 +159,7 @@
 		}
 		else
 		{
-			fogColor = GetColorFromPicker(_FogPickerColor0, heightFogAmount);
+			fogColor = GetColorFromPicker(_FogColor0, heightFogAmount);
 		}
 
 		return BlendFogToScene(i.uv, fogColor, fogColor.a);
@@ -198,7 +198,7 @@
 		}
 		else
 		{
-			fogColor = GetColorFromPicker(_FogPickerColor0, totalFogAmount);
+			fogColor = GetColorFromPicker(_FogColor0, totalFogAmount);
 		}
 
 		return BlendFogToScene(i.uv, fogColor, fogColor.a);
@@ -236,8 +236,9 @@
 		}
 		else
 		{
-			distanceFogColor = GetColorFromPicker(_FogPickerColor0, distanceFogAmount);
+			distanceFogColor = GetColorFromPicker(_FogColor0, distanceFogAmount);
 		}
+		distanceFogColor *= step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, distanceFogAmount);
 
 		if (_ColorSourceTwoIsTexture)
 		{
@@ -245,8 +246,9 @@
 		}
 		else
 		{
-			heightFogColor = GetColorFromPicker(_FogPickerColor1, heightFogAmount);
+			heightFogColor = GetColorFromPicker(_FogColor1, heightFogAmount);
 		}
+		heightFogColor *= step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, heightFogAmount);
 
 		half4 fogColor = distanceFogColor + heightFogColor;
 

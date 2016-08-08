@@ -20,8 +20,7 @@ namespace UnityStandardAssets.CinematicEffects
 		[Serializable]
 		public enum ColorSelectionType
 		{
-			ColorPicker = 0,
-			Curves = 1,
+			Gradient = 1,
 			TextureRamp = 2,
 			CopyOther = 3,
 		}
@@ -49,26 +48,9 @@ namespace UnityStandardAssets.CinematicEffects
 				}
 			}
 
-			[Tooltip("Uniform fog color")]
-			[DisplayOnSelectionType(ColorSelectionType.ColorPicker)]
-			public Color color;
-
-			// Cureves for the color texture
-			[Tooltip("Determines the opacity based on fog intensity.")]
-			[DisplayOnSelectionType(ColorSelectionType.Curves)]
-			public AnimationCurve fogOpacityCurve;
-
-			[Tooltip("Red component of fog color, based on fog intensity.")]
-			[DisplayOnSelectionType(ColorSelectionType.Curves)]
-			public AnimationCurve fogColorR;
-
-			[Tooltip("Green component of fog color, based on fog intensity.")]
-			[DisplayOnSelectionType(ColorSelectionType.Curves)]
-			public AnimationCurve fogColorG;
-
-			[Tooltip("Blue component of fog color, based on fog intensity.")]
-			[DisplayOnSelectionType(ColorSelectionType.Curves)]
-			public AnimationCurve fogColorB;
+			[Tooltip("Color gradient.")]
+			[DisplayOnSelectionType(ColorSelectionType.Gradient)]
+			public Gradient gradient;
 
 			[Tooltip("Custom fog color ramp")]
 			[DisplayOnSelectionType(ColorSelectionType.TextureRamp)]
@@ -76,17 +58,18 @@ namespace UnityStandardAssets.CinematicEffects
 
 			public static FogColorSource defaultSettings
 			{
-				get 
+				get
 				{
-					return new FogColorSource()
+					GradientAlphaKey firstAlpha = new GradientAlphaKey(0f, 0f);
+					GradientAlphaKey lastAlpha = new GradientAlphaKey(1f, 1f);
+					GradientAlphaKey[] initialAlphaKeys = { firstAlpha, lastAlpha };
+					FogColorSource source =  new FogColorSource()
 					{
-						color = Color.white,
-						fogOpacityCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f),
-						fogColorR = AnimationCurve.Linear(0f, 0f, 1f, 1f),
-						fogColorG = AnimationCurve.Linear(0f, 0f, 1f, 1f),
-						fogColorB = AnimationCurve.Linear(0f, 0f, 1f, 1f),
+						gradient = new Gradient(),
 						colorRamp = null,
 					};
+					source.gradient.alphaKeys = initialAlphaKeys;
+					return source;
 				}
 			}
 		}
@@ -123,7 +106,7 @@ namespace UnityStandardAssets.CinematicEffects
 						startDistance = 0f,
 						endDistance = 100f,
 						intensityDevelopment = AnimationCurve.Linear(0f, 0f, 1f, 1f),
-						colorSelectionType = ColorSelectionType.ColorPicker,
+						colorSelectionType = ColorSelectionType.Gradient,
 					};
 				}
 			}
@@ -199,7 +182,7 @@ namespace UnityStandardAssets.CinematicEffects
 						filterMode = FilterMode.Bilinear,
 						anisoLevel = 0,
 					};
-					BakeFogColor(m_DistanceColorTexture, distanceColorSource.fogColorR, distanceColorSource.fogColorG, distanceColorSource.fogColorB, distanceColorSource.fogOpacityCurve);
+					BakeFogColor(m_DistanceColorTexture, distanceColorSource.gradient);
 				}
 				return m_DistanceColorTexture;
 			}
@@ -220,7 +203,7 @@ namespace UnityStandardAssets.CinematicEffects
 						filterMode = FilterMode.Bilinear,
 						anisoLevel = 0,
 					};
-					BakeFogColor(m_HeightColorTexture, heightColorSource.fogColorR, heightColorSource.fogColorG, heightColorSource.fogColorB, heightColorSource.fogOpacityCurve);
+					BakeFogColor(m_HeightColorTexture, heightColorSource.gradient);
 				}
 				return m_HeightColorTexture;
 			}
@@ -287,7 +270,7 @@ namespace UnityStandardAssets.CinematicEffects
 			bool distanceSelectedCopy = distanceFog.colorSelectionType == ColorSelectionType.CopyOther;
 			if (selectionTypeSame && distanceSelectedCopy)
 			{
-				distanceFog.colorSelectionType = ColorSelectionType.ColorPicker;
+				distanceFog.colorSelectionType = ColorSelectionType.Gradient;
 				distanceSelectedCopy = false;
 			}
 
@@ -297,43 +280,74 @@ namespace UnityStandardAssets.CinematicEffects
 
 		private void UpdateDistanceFogTextures(ColorSelectionType selectionType)
 		{
-			if (selectionType != ColorSelectionType.Curves)
+			// If the gradient texture is not used, delete it.
+			if (selectionType != ColorSelectionType.Gradient || GradientIsSingleColor(distanceColorSource.gradient))
 			{
 				if (m_DistanceColorTexture != null)
 					DestroyImmediate(m_DistanceColorTexture);
 				m_DistanceColorTexture = null;
 			}
 
-			if (selectionType == ColorSelectionType.Curves)
+			if (selectionType == ColorSelectionType.Gradient)
 			{
-				BakeFogColor(distanceColorTexture,
-									distanceColorSource.fogColorR,
-									distanceColorSource.fogColorG,
-									distanceColorSource.fogColorB,
-									distanceColorSource.fogOpacityCurve);
+				BakeFogColor(distanceColorTexture, distanceColorSource.gradient);
 			}
 		}
 
 		private void UpdateHeightFogTextures(ColorSelectionType selectionType)
 		{
-			if (selectionType != ColorSelectionType.Curves)
+			// If the gradient texture is not used, delete it.
+			if (selectionType != ColorSelectionType.Gradient || GradientIsSingleColor(heightColorSource.gradient))
 			{
 				if (m_HeightColorTexture != null)
 					DestroyImmediate(m_HeightColorTexture);
 				m_HeightColorTexture = null;
 			}
 
-			if (selectionType == ColorSelectionType.Curves)
+			if (selectionType == ColorSelectionType.Gradient)
 			{
-				BakeFogColor(heightColorTexture,
-									heightColorSource.fogColorR,
-									heightColorSource.fogColorG,
-									heightColorSource.fogColorB,
-									heightColorSource.fogOpacityCurve);
+				BakeFogColor(heightColorTexture, heightColorSource.gradient);
 			}
 		}
 
 		#region Private Members
+		
+		// If all keys in a gradient are the same
+		// the gradient can be represented as just a single color
+		private bool GradientIsSingleColor(Gradient gradient)
+		{
+			GradientAlphaKey[] alphaKeys = gradient.alphaKeys;
+			GradientColorKey[] colorKeys = gradient.colorKeys;
+			bool allKeysAreTheSame = true;
+			float referenceAlpha = alphaKeys[0].alpha;
+			Color referenceColor = colorKeys[0].color;
+
+			foreach(GradientAlphaKey alphaKey in alphaKeys)
+			{
+				if (alphaKey.alpha != referenceAlpha)
+				{
+					allKeysAreTheSame = false;
+				}
+			}
+
+			foreach(GradientColorKey colorKey in colorKeys)
+			{
+				if (colorKey.color != referenceColor)
+				{
+					allKeysAreTheSame = false;
+				}
+			}
+
+			return allKeysAreTheSame;
+		}
+
+		private Color GradientGetSingleColor(Gradient gradient)
+		{
+			Color singleColor = gradient.colorKeys[0].color;
+			singleColor.a = gradient.alphaKeys[0].alpha;
+			return singleColor;
+		}
+
 		private void OnEnable()
 		{
 			if (!ImageEffectHelper.IsSupported(shader, true, false, this))
@@ -417,19 +431,25 @@ namespace UnityStandardAssets.CinematicEffects
 			if (sharedColorSettings)
 			{
 				bool selectingFromDistance = true;
+				FogColorSource activeSelectionSource = distanceColorSource;
 				ColorSelectionType activeSelectionType = distanceFog.colorSelectionType;
 				if (activeSelectionType == ColorSelectionType.CopyOther)
 				{
 					activeSelectionType = heightFog.colorSelectionType;
+					activeSelectionSource = heightColorSource;
 					selectingFromDistance = false;
 				}
-				material.SetInt("_ColorSourceOneIsTexture", activeSelectionType == ColorSelectionType.ColorPicker ? 0 : 1);
+
+				bool useSingleColor = (activeSelectionType == ColorSelectionType.Gradient) && GradientIsSingleColor(activeSelectionSource.gradient);
+
+				material.SetInt("_ColorSourceOneIsTexture", useSingleColor ? 0 : 1);
 				SetDistanceFogUniforms();
 				SetHeightFogUniforms();
-				if (activeSelectionType == ColorSelectionType.ColorPicker)
+				if (useSingleColor)
 				{
 					material.SetInt("_ColorSourceOneIsTexture", 0);
-					material.SetColor("_FogPickerColor0", selectingFromDistance ? distanceColorSource.color : heightColorSource.color);
+					Color appliedColor = GradientGetSingleColor(activeSelectionSource.gradient);
+					material.SetColor("_FogColor0", appliedColor);
 				}
 				else
 				{
@@ -441,14 +461,15 @@ namespace UnityStandardAssets.CinematicEffects
 			{
 				if (distanceFog.enabled)
 				{
-					if (distanceFog.colorSelectionType == ColorSelectionType.ColorPicker)
+					if (distanceFog.colorSelectionType == ColorSelectionType.Gradient && GradientIsSingleColor(distanceColorSource.gradient))
 					{
-						material.SetColor("_FogPickerColor0", distanceColorSource.color);
+						Color appliedColor = GradientGetSingleColor(distanceColorSource.gradient);
+						material.SetColor("_FogColor0", appliedColor);
 						material.SetInt("_ColorSourceOneIsTexture", 0);
 					}
 					else
 					{
-						material.SetTexture("_FogColorTexture0", distanceFog.colorSelectionType == ColorSelectionType.Curves ? distanceColorTexture : distanceColorSource.colorRamp);
+						material.SetTexture("_FogColorTexture0", distanceFog.colorSelectionType == ColorSelectionType.Gradient ? distanceColorTexture : distanceColorSource.colorRamp);
 						material.SetInt("_ColorSourceOneIsTexture", 1);
 					}
 				}
@@ -457,16 +478,17 @@ namespace UnityStandardAssets.CinematicEffects
 				{
 					string textureSourceIdentifier = fogType == FogTypePass.HeightOnly ? "_ColorSourceOneIsTexture" : "_ColorSourceTwoIsTexture";
 
-					if (heightFog.colorSelectionType == ColorSelectionType.ColorPicker)
+					if (heightFog.colorSelectionType == ColorSelectionType.Gradient && GradientIsSingleColor(heightColorSource.gradient))
 					{
-						string colorPickerIdentifier = fogType == FogTypePass.HeightOnly ? "_FogPickerColor0" : "_FogPickerColor1";
-						material.SetColor(colorPickerIdentifier, heightColorSource.color);
+						string colorPickerIdentifier = fogType == FogTypePass.HeightOnly ? "_FogColor0" : "_FogColor1";
+						Color appliedColor = GradientGetSingleColor(distanceColorSource.gradient);
+						material.SetColor(colorPickerIdentifier, appliedColor);
 						material.SetInt(textureSourceIdentifier, 0);
 					}
 					else
 					{
 						string colorTextureIdentifier = fogType == FogTypePass.HeightOnly ? "_FogColorTexture0" : "_FogColorTexture1";
-						material.SetTexture(colorTextureIdentifier, heightFog.colorSelectionType == ColorSelectionType.Curves ? heightColorTexture : heightColorSource.colorRamp);
+						material.SetTexture(colorTextureIdentifier, heightFog.colorSelectionType == ColorSelectionType.Gradient ? heightColorTexture : heightColorSource.colorRamp);
 						material.SetInt(textureSourceIdentifier, 1);
 					}
 				}
@@ -517,6 +539,26 @@ namespace UnityStandardAssets.CinematicEffects
 				float b = Mathf.Clamp(colorCurveB.Evaluate(i), 0f, 1f);
 				float a = Mathf.Clamp(opacityCurve.Evaluate(i), 0f, 1f);
 				pixels[(int)Mathf.Floor(i * (fWidth -1f))] = new Color(r, g, b, a);
+			}
+
+			target.SetPixels(pixels);
+			target.Apply();
+		}
+
+		public void BakeFogColor(Texture2D target, Gradient gradient)
+		{
+			if (target == null)
+			{
+				return;
+			}
+
+			float fWidth = target.width;
+			Color[] pixels = new Color[target.width];
+
+			for (float i = 0f; i <= 1f; i += 1f / fWidth)
+			{
+				Color color = gradient.Evaluate(i);
+				pixels[(int)Mathf.Floor(i * (fWidth - 1f))] = color;
 			}
 
 			target.SetPixels(pixels);

@@ -490,7 +490,6 @@ namespace UnityStandardAssets.CinematicEffects
 		private void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
 			FogTypePass fogType = SetMaterialUniforms();
-			Debug.Log("fog type being rendered: " + fogType);
 			if (fogType == FogTypePass.None)
 				Graphics.Blit(source, destination);
 			else

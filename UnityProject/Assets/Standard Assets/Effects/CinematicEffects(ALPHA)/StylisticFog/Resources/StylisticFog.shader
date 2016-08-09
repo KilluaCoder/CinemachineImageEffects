@@ -132,7 +132,7 @@
 			fogColor = GetColorFromPicker(_FogColor0, distanceFogAmount);
 		}
 
-		return BlendFogToScene(i.uv, fogColor, fogColor.a);
+		return BlendFogToScene(i.uv, fogColor, distanceFogAmount);
 	}
 
 	half4 fragment_height(v2f_img i) : SV_Target
@@ -162,7 +162,7 @@
 			fogColor = GetColorFromPicker(_FogColor0, heightFogAmount);
 		}
 
-		return BlendFogToScene(i.uv, fogColor, fogColor.a);
+		return BlendFogToScene(i.uv, fogColor, heightFogAmount);
 	}
 
 
@@ -201,7 +201,7 @@
 			fogColor = GetColorFromPicker(_FogColor0, totalFogAmount);
 		}
 
-		return BlendFogToScene(i.uv, fogColor, fogColor.a);
+		return BlendFogToScene(i.uv, fogColor, totalFogAmount);
 	}
 
 	half4 fragment_distance_height_seperate_color(v2f_img i) : SV_Target

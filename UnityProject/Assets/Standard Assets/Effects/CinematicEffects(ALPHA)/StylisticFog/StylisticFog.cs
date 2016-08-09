@@ -454,7 +454,10 @@ namespace UnityStandardAssets.CinematicEffects
 				else
 				{
 					material.SetInt("_ColorSourceOneIsTexture", 1);
-					material.SetTexture("_FogColorTexture0", selectingFromDistance ? distanceColorTexture : heightColorTexture);
+					if(activeSelectionType == ColorSelectionType.Gradient)
+						material.SetTexture("_FogColorTexture0", selectingFromDistance ? distanceColorTexture : heightColorTexture);
+					else
+						material.SetTexture("_FogColorTexture0", selectingFromDistance ? distanceColorSource.colorRamp : heightColorSource.colorRamp);
 				}
 			}
 			else

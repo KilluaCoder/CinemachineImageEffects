@@ -13,6 +13,8 @@ namespace UnityStandardAssets.CinematicEffects
 	public class StylisticFog : MonoBehaviour
 	{
 
+		public delegate string WarningDelegate();
+
 		[AttributeUsage(AttributeTargets.Field)]
 		public class SettingsGroup : Attribute
 		{ }

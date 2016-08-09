@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
-using UnityEditor.AnimatedValues;
 using System.Reflection;
 using System.Linq;
 
@@ -40,13 +37,43 @@ namespace UnityStandardAssets.CinematicEffects
 					
 			}
 
-			public void OnInspectorGUI(StylisticFog.ColorSelectionType currentSelection)
+			public void OnInspectorGUI(StylisticFog.ColorSelectionType currentSelection, StylisticFog.FogColorSource colorSource)
 			{
-				if (!properties.ContainsKey(currentSelection))
-					return;
+				if (properties.ContainsKey(currentSelection))
+				{
+					foreach (var prop in properties[currentSelection])
+						EditorGUILayout.PropertyField(prop);
+				}
 
-				foreach(var prop in properties[currentSelection])
-					EditorGUILayout.PropertyField(prop);
+				if(currentSelection == StylisticFog.ColorSelectionType.TextureRamp)
+				{
+					List<string> warnings = new List<string>();
+					if(colorSource.colorRamp.filterMode == UnityEngine.FilterMode.Point)
+					{
+						warnings.Add("Texture filter mode should be either Billinear or Trilinear.");
+					}
+
+					if (colorSource.colorRamp.wrapMode != UnityEngine.TextureWrapMode.Clamp)
+					{
+						warnings.Add("Texture wrap mode should be set to Clamp.");
+					}
+
+					if (colorSource.colorRamp.mipmapCount > 1)
+					{
+						warnings.Add("Texture should not have generated mipmaps.");
+					}
+
+					if (warnings.Count() > 0)
+					{
+						string warningMSG = "The following settings should be applied to the color ramp texture:";
+						foreach(string warn in warnings)
+						{
+							warningMSG += "\n - " + warn;
+						}
+
+						EditorGUILayout.HelpBox(warningMSG, MessageType.Warning);
+					}
+				}
 			}
 		}
 		
@@ -129,12 +156,12 @@ namespace UnityStandardAssets.CinematicEffects
 
 				if (group.distanceFog)
 				{
-					distanceFogColorDisplay.OnInspectorGUI(targetInstance.distanceFog.colorSelectionType);
+					distanceFogColorDisplay.OnInspectorGUI(targetInstance.distanceFog.colorSelectionType, targetInstance.distanceColorSource);
 				}
 
 				if (group.heightFog)
 				{
-					heightFogColorDisplay.OnInspectorGUI(targetInstance.heightFog.colorSelectionType);
+					heightFogColorDisplay.OnInspectorGUI(targetInstance.heightFog.colorSelectionType, targetInstance.heightColorSource);
 				}
 
 				EditorGUI.indentLevel--;

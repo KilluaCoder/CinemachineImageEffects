@@ -137,8 +137,6 @@ namespace UnityStandardAssets.CinematicEffects
 
 				EditorGUI.BeginChangeCheck();
 
-				string title = ObjectNames.NicifyVariableName(group.name);
-
 				EditorGUILayout.Space();
 
 				var groupProperty = serializedObject.FindProperty(group.name);

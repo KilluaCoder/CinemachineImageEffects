@@ -31,7 +31,6 @@
 
 	float4x4 _InverseViewMatrix;
 
-	uniform float _FogStartDistance;
 	uniform float _FogEndDistance;
 
 	uniform float _Height;
@@ -71,7 +70,7 @@
 	// and the fog intensity curve.
 	inline float ComputeDistanceFogAmount(float distance)
 	{
-		float f = (distance - _FogStartDistance) / (_FogEndDistance - _FogStartDistance);
+		float f = distance / _FogEndDistance;
 		f =  DecodeFloatRGBA(tex2D(_FogFactorIntensityTexture, float2(f, 0.)));
 		return saturate(f);
 	}
@@ -114,13 +113,11 @@
 		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
 		float totalDistance = length(cameraToFragment);
 
-		float effectiveDistance = max(totalDistance - _FogStartDistance, 0.0);
-
 		float linDepth = Linear01Depth(depth);
 
 		float distanceFogAmount = 0.;
 		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
-			distanceFogAmount = ComputeDistanceFogAmount(effectiveDistance);
+			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
 
 		half4 fogColor = 0.;
 		if (_ColorSourceOneIsTexture)
@@ -176,15 +173,13 @@
 		float3 viewDir = normalize(cameraToFragment);
 		float totalDistance = length(cameraToFragment);
 
-		float effectiveDistance = max(totalDistance - _FogStartDistance, 0.0);
-
 		float distanceFogAmount = 0.;
 		float heightFogAmount = 0.;
 
 		float linDepth = Linear01Depth(depth);
 
 		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
-			distanceFogAmount = ComputeDistanceFogAmount(effectiveDistance);
+			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
 
 		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
 			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
@@ -214,15 +209,13 @@
 		float3 viewDir = normalize(cameraToFragment);
 		float totalDistance = length(cameraToFragment);
 
-		float effectiveDistance = max(totalDistance - _FogStartDistance, 0.0);
-
 		float distanceFogAmount = 0.;
 		float heightFogAmount = 0.;
 
 		float linDepth = Linear01Depth(depth);
 
 		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
-			distanceFogAmount = ComputeDistanceFogAmount(effectiveDistance);
+			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
 
 		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
 			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);

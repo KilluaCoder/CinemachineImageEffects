@@ -85,9 +85,6 @@ namespace UnityStandardAssets.CinematicEffects
 			[Tooltip("Wheter or not to apply distance based fog to the skybox")]
 			public bool fogSkybox;
 
-			[Tooltip("Fog is excluded from distances closer than this.")]
-			public float startDistance;
-
 			[Tooltip("Fog is fully saturated beyond this distance.")]
 			public float endDistance;
 
@@ -105,7 +102,6 @@ namespace UnityStandardAssets.CinematicEffects
 					{
 						enabled = true,
 						fogSkybox = false,
-						startDistance = 0f,
 						endDistance = 100f,
 						intensityDevelopment = AnimationCurve.Linear(0f, 0f, 1f, 1f),
 						colorSelectionType = ColorSelectionType.Gradient,
@@ -382,7 +378,6 @@ namespace UnityStandardAssets.CinematicEffects
 		private void SetDistanceFogUniforms()
 		{
 			material.SetTexture("_FogFactorIntensityTexture", distanceFogIntensityTexture);
-			material.SetFloat("_FogStartDistance", distanceFog.startDistance);
 			material.SetFloat("_FogEndDistance", distanceFog.endDistance);
 		}
 

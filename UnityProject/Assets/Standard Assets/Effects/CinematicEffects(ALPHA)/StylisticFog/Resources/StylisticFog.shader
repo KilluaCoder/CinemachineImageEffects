@@ -71,7 +71,7 @@
 	inline float ComputeDistanceFogAmount(float distance)
 	{
 		float f = distance / _FogEndDistance;
-		f =  DecodeFloatRGBA(tex2D(_FogFactorIntensityTexture, float2(f, 0.)));
+		f = DecodeFloatRGBA(tex2D(_FogFactorIntensityTexture, float2(f, 0.)));
 		return saturate(f);
 	}
 
@@ -98,7 +98,8 @@
 	// Not used yet, but might be useful for pass seperation.
 	inline half4 BlendFogToScene(float2 uv, half4 fogColor, float fogAmount)
 	{
-		half4 sceneColor = tex2D(_MainTex, uv);
+		// clamp the scene color to at most 1. to avoid HDR rendering to change lumiance in final image.
+		half4 sceneColor = min(1., tex2D(_MainTex, uv));
 		half4 blended = lerp(sceneColor, half4(fogColor.xyz, 1.), fogColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, fogAmount));
 		blended.a = 1.;
 		return blended;

@@ -45,17 +45,17 @@ namespace UnityStandardAssets.CinematicEffects
 						EditorGUILayout.PropertyField(prop);
 				}
 
-				if(currentSelection == StylisticFog.ColorSelectionType.TextureRamp)
+				if(currentSelection == StylisticFog.ColorSelectionType.TextureRamp && colorSource.colorRamp != null)
 				{
 					List<string> warnings = new List<string>();
 					if(colorSource.colorRamp.filterMode == UnityEngine.FilterMode.Point)
 					{
-						warnings.Add("Texture filter mode should be either Billinear or Trilinear.");
+						warnings.Add("Texture filter mode should be either bilinear or trilinear.");
 					}
 
 					if (colorSource.colorRamp.wrapMode != UnityEngine.TextureWrapMode.Clamp)
 					{
-						warnings.Add("Texture wrap mode should be set to Clamp.");
+						warnings.Add("Texture wrap mode should be set to clamp.");
 					}
 
 					if (colorSource.colorRamp.mipmapCount > 1)

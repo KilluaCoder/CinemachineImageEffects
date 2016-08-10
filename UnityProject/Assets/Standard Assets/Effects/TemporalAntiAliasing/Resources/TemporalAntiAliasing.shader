@@ -6,13 +6,15 @@ Shader "Hidden/Temporal Anti-aliasing"
     }
 
     CGINCLUDE
+        #pragma target 5.0
         #pragma only_renderers ps4 xboxone d3d11 d3d9 xbox360 opengl glcore
         #pragma exclude_renderers gles
-        #pragma target 3.0
 
         #include "UnityCG.cginc"
 
         #define TAA_REMOVE_COLOR_SAMPLE_JITTER 1
+
+        #define TAA_USE_EXPERIMENTAL_OPTIMIZATIONS 1
 
         #define TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES 1
 
@@ -25,7 +27,7 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         #define TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD 0.5
 
-        #define TAA_DEPTH_SAMPLE_PATTERN 1
+        #define TAA_DEPTH_SAMPLE_PATTERN 0
         #define TAA_DEPTH_SAMPLE_SPREAD 1.
 
         #define TAA_SHARPEN_OUTPUT 1
@@ -86,12 +88,12 @@ Shader "Hidden/Temporal Anti-aliasing"
         {
             Varyings output;
 
-            float4 v = mul(UNITY_MATRIX_MVP, input.vertex);
+            float4 vertex = mul(UNITY_MATRIX_MVP, input.vertex);
 
-            output.vertex = v;
+            output.vertex = vertex;
             output.mainTexUV = input.uv;
             output.defaultUV = input.uv;
-            output.position = v;
+            output.position = vertex;
 
         #if UNITY_UV_STARTS_AT_TOP
             if (_MainTex_TexelSize.y < 0)
@@ -100,6 +102,13 @@ Shader "Hidden/Temporal Anti-aliasing"
 
             return output;
         }
+
+        #if (SHADER_TARGET < 50 && !defined (SHADER_API_PSSL))
+            float rcp(float value)
+            {
+                return 1. / value;
+            }
+        #endif
 
         // Tonemapper from http://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
         float getMaximumElement(in float3 value)
@@ -136,17 +145,30 @@ Shader "Hidden/Temporal Anti-aliasing"
 
                 float3 result = float3(0., 0., tex2D(_CameraDepthTexture, uv).r);
 
-                if (neighborhood.x < result.z)
-                    result = float3(-1., -1., neighborhood.x);
+                #if TAA_USE_EXPERIMENTAL_OPTIMIZATIONS
+                    result.z = min(min(min(neighborhood.x, neighborhood.y), neighborhood.z), neighborhood.w);
 
-                if (neighborhood.y < result.z)
-                    result = float3(1., -1., neighborhood.y);
+                    if (result.z == neighborhood.x)
+                        result.xy = float2(-1., -1.);
+                    else if (result.z == neighborhood.y)
+                        result.xy = float2(1., -1.);
+                    else if (result.z == neighborhood.z)
+                        result.xy = float2(-1., 1.);
+                    else
+                        result.xy = float2(1., 1.);
+                #else
+                    if (neighborhood.x < result.z)
+                        result = float3(-1., -1., neighborhood.x);
 
-                if (neighborhood.z < result.z)
-                    result = float3(-1., 1., neighborhood.z);
+                    if (neighborhood.y < result.z)
+                        result = float3(1., -1., neighborhood.y);
 
-                if (neighborhood.w < result.z)
-                    result = float3(1., 1., neighborhood.w);
+                    if (neighborhood.z < result.z)
+                        result = float3(-1., 1., neighborhood.z);
+
+                    if (neighborhood.w < result.z)
+                        result = float3(1., 1., neighborhood.w);
+                #endif
             #else
                 const float3x3 neighborhood = float3x3(
                     tex2D(_CameraDepthTexture, uv - k).r,
@@ -236,23 +258,24 @@ Shader "Hidden/Temporal Anti-aliasing"
 
             float4 color = tex2D(_MainTex, mainUV);
 
-        #if TAA_SHARPEN_OUTPUT
-            float4 corners = tex2D(_MainTex, input.defaultUV + float2(-k.x, -k.y) * _SharpenParameters.y) +
-                tex2D(_MainTex, input.defaultUV + float2(k.x, -k.y) * _SharpenParameters.y) +
-                tex2D(_MainTex, input.defaultUV + float2(-k.x,  k.y) * _SharpenParameters.y) +
-                tex2D(_MainTex, input.defaultUV + float2(k.x,  k.y) * _SharpenParameters.y);
-
-            corners *= .25;
-            color = max(0, color + (color - corners) * _SharpenParameters.x);
-        #endif
-
         #if TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN == 0
-            // Karris 13: a box filter is not stable under motion, use raw color instead of an averaged one
+            // Karis 13: a box filter is not stable under motion, use raw color instead of an averaged one
             float4x4 neighborhood = float4x4(
                 tex2D(_MainTex, mainUV + float2(0., -k.y)),
                 tex2D(_MainTex, mainUV + float2(-k.x, 0.)),
                 tex2D(_MainTex, mainUV + float2(k.x, 0.)),
                 tex2D(_MainTex, mainUV + float2(0., k.y)));
+
+            #if TAA_SHARPEN_OUTPUT
+                float4 corners = tex2D(_MainTex, input.defaultUV + float2(-k.x, -k.y) * _SharpenParameters.y) +
+                    tex2D(_MainTex, mainUV + float2(k.x, -k.y) * _SharpenParameters.y) +
+                    tex2D(_MainTex, mainUV + float2(-k.x,  k.y) * _SharpenParameters.y) +
+                    tex2D(_MainTex, mainUV + float2(k.x,  k.y) * _SharpenParameters.y);
+
+                corners *= .25;
+
+                color += (color - corners) * _SharpenParameters.x;
+            #endif
 
             #if TAA_CLIP_HISTORY_SAMPLE
                 #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
@@ -290,6 +313,11 @@ Shader "Hidden/Temporal Anti-aliasing"
                 tex2D(_MainTex, mainUV + float2(-k.x, k.y)),
                 tex2D(_MainTex, mainUV + float2(0., k.y)),
                 tex2D(_MainTex, mainUV + float2(k.x, k.y)));
+
+            #if TAA_SHARPEN_OUTPUT
+                float4 corners = (top[0] + top[2] + bottom[1] + bottom[3]) * .25;
+                color += (color - corners) * _SharpenParameters.x;
+            #endif
 
             #if TAA_CLIP_HISTORY_SAMPLE
                 #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
@@ -330,6 +358,8 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         #if TAA_CLIP_HISTORY_SAMPLE
             average = clamp(average, minimum, maximum);
+
+            //# History clipping causes artifacts
             history = clipToAABB(history, average.w, minimum.xyz, maximum.xyz);
         #else
             history = clamp(history, minimum, maximum);
@@ -365,7 +395,6 @@ Shader "Hidden/Temporal Anti-aliasing"
 
     SubShader
     {
-        // No culling or depth
         Cull Off ZWrite Off ZTest Always
 
         Pass
@@ -373,7 +402,34 @@ Shader "Hidden/Temporal Anti-aliasing"
             CGPROGRAM
             #pragma vertex vertex
             #pragma fragment fragment
+            ENDCG
+        }
+    }
 
+    SubShader
+    {
+        Cull Off ZWrite Off ZTest Always
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma target 4.1
+            #pragma vertex vertex
+            #pragma fragment fragment
+            ENDCG
+        }
+    }
+
+    SubShader
+    {
+        Cull Off ZWrite Off ZTest Always
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma target 3.0
+            #pragma vertex vertex
+            #pragma fragment fragment
             ENDCG
         }
     }

@@ -18,7 +18,7 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         #define TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES 1
 
-        #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN 0
+        #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN 1
         #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD 1.
 
         #define TAA_DILATE_MOTION_VECTOR_SAMPLE 1
@@ -269,6 +269,7 @@ Shader "Hidden/Temporal Anti-aliasing"
             #if TAA_SHARPEN_OUTPUT
                 float4 edges = (neighborhood[0] + neighborhood[1] + neighborhood[2] + neighborhood[3]) * .25;
                 color += (color - edges) * _SharpenParameters.x;
+                color = max(0, color);
             #endif
 
             #if TAA_CLIP_HISTORY_SAMPLE
@@ -311,6 +312,7 @@ Shader "Hidden/Temporal Anti-aliasing"
             #if TAA_SHARPEN_OUTPUT
                 float4 corners = (top[0] + top[2] + bottom[1] + bottom[3]) * .25;
                 color += (color - corners) * _SharpenParameters.x;
+                color = max(0, color);
             #endif
 
             #if TAA_CLIP_HISTORY_SAMPLE

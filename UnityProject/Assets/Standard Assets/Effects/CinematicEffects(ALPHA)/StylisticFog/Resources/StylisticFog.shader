@@ -105,11 +105,11 @@
 		return blended;
 	}
 
-	half4 fragment_distance(v2f_img i) : SV_Target
+	half4 fragment_distance(v2f_multitex i) : SV_Target
 	{
-		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
+		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv1);
 
-		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
+		float4 wpos = DepthToWorld(depth, i.uv1, _InverseViewMatrix);
 
 		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
 		float totalDistance = length(cameraToFragment);
@@ -130,14 +130,14 @@
 			fogColor = GetColorFromPicker(_FogColor0, distanceFogAmount);
 		}
 
-		return BlendFogToScene(i.uv, fogColor, distanceFogAmount);
+		return BlendFogToScene(i.uv0, fogColor, distanceFogAmount);
 	}
 
-	half4 fragment_height(v2f_img i) : SV_Target
+	half4 fragment_height(v2f_multitex i) : SV_Target
 	{
-		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
+		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv1);
 
-		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
+		float4 wpos = DepthToWorld(depth, i.uv1, _InverseViewMatrix);
 
 		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
 		float viewDirY = normalize(cameraToFragment).y;
@@ -160,15 +160,15 @@
 			fogColor = GetColorFromPicker(_FogColor0, heightFogAmount);
 		}
 
-		return BlendFogToScene(i.uv, fogColor, heightFogAmount);
+		return BlendFogToScene(i.uv0, fogColor, heightFogAmount);
 	}
 
 
-	half4 fragment_distance_height_shared_color(v2f_img i) : SV_Target
+	half4 fragment_distance_height_shared_color(v2f_multitex i) : SV_Target
 	{
-		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
+		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv1);
 
-		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
+		float4 wpos = DepthToWorld(depth, i.uv1, _InverseViewMatrix);
 
 		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
 		float3 viewDir = normalize(cameraToFragment);
@@ -197,14 +197,14 @@
 			fogColor = GetColorFromPicker(_FogColor0, totalFogAmount);
 		}
 
-		return BlendFogToScene(i.uv, fogColor, totalFogAmount);
+		return BlendFogToScene(i.uv0, fogColor, totalFogAmount);
 	}
 
-	half4 fragment_distance_height_seperate_color(v2f_img i) : SV_Target
+	half4 fragment_distance_height_seperate_color(v2f_multitex i) : SV_Target
 	{
-		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
+		float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv1);
 
-		float4 wpos = DepthToWorld(depth, i.uv, _InverseViewMatrix);
+		float4 wpos = DepthToWorld(depth, i.uv1, _InverseViewMatrix);
 
 		float4 cameraToFragment = wpos - float4(_WorldSpaceCameraPos, 1.);
 		float3 viewDir = normalize(cameraToFragment);
@@ -246,7 +246,7 @@
 
 		half4 fogColor = distanceFogColor + heightFogColor;
 
-		return BlendFogToScene(i.uv, fogColor, fogColor.a);
+		return BlendFogToScene(i.uv0, fogColor, fogColor.a);
 	}
 
 	ENDCG

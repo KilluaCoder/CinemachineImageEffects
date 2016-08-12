@@ -14,20 +14,13 @@
 	bool _ApplyDistToSkybox;
 	bool _ApplyHeightToSkybox;
 
-	bool _ColorSourceOneIsTexture;
-	bool _ColorSourceTwoIsTexture;
-
 	half4 _MainTex_TexelSize;
 
 	sampler2D _MainTex;
 	sampler2D _CameraDepthTexture;
 
-	sampler2D _FogFactorIntensityTexture;
 	sampler2D _FogColorTexture0;
 	sampler2D _FogColorTexture1;
-
-	half4 _FogColor0;
-	half4 _FogColor1;
 
 	float4x4 _InverseViewMatrix;
 
@@ -71,7 +64,6 @@
 	inline float ComputeDistanceFogAmount(float distance)
 	{
 		float f = distance / _FogEndDistance;
-		f = DecodeFloatRGBA(tex2D(_FogFactorIntensityTexture, float2(f, 0.)));
 		return saturate(f);
 	}
 
@@ -79,15 +71,8 @@
 	// where d(h) = _BaseDensity * exp2(-DensityFalloff * h) <=> d(h) = a * exp2(b * h)
 	inline float ComputeHeightFogAmount(float viewDirY, float effectiveDistance)
 	{
-		float relativeHeight = min(127., _WorldSpaceCameraPos.y - _Height);
+		float relativeHeight = _WorldSpaceCameraPos.y - _Height;
 		return _BaseDensity * exp2(-relativeHeight * _DensityFalloff) * (1. - exp2(-effectiveDistance * viewDirY * _DensityFalloff)) / viewDirY;
-	}
-
-	inline half4 GetColorFromPicker(half4 pickerColor, float fogAmount)
-	{
-		half4 fogColor = pickerColor;
-		fogColor.a = saturate(fogAmount * pickerColor.a);
-		return fogColor;
 	}
 
 	inline half4 GetColorFromTexture(sampler2D source, float fogAmount)
@@ -99,7 +84,7 @@
 	inline half4 BlendFogToScene(float2 uv, half4 fogColor, float fogAmount)
 	{
 		// clamp the scene color to at most 1. to avoid HDR rendering to change lumiance in final image.
-		half4 sceneColor = min(1., tex2D(_MainTex, uv));
+		half4 sceneColor = min(127., tex2D(_MainTex, uv));
 		half4 blended = lerp(sceneColor, half4(fogColor.xyz, 1.), fogColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, fogAmount));
 		blended.a = 1.;
 		return blended;
@@ -120,15 +105,7 @@
 		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
 			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
 
-		half4 fogColor = 0.;
-		if (_ColorSourceOneIsTexture)
-		{
-			fogColor = GetColorFromTexture(_FogColorTexture0, distanceFogAmount);
-		}
-		else
-		{
-			fogColor = GetColorFromPicker(_FogColor0, distanceFogAmount);
-		}
+		half4 fogColor = fogColor = GetColorFromTexture(_FogColorTexture0, distanceFogAmount);
 
 		return BlendFogToScene(i.uv0, fogColor, distanceFogAmount);
 	}
@@ -150,15 +127,8 @@
 		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
 			heightFogAmount = ComputeHeightFogAmount(viewDirY, totalDistance);
 
-		half4 fogColor = 0.;
-		if (_ColorSourceOneIsTexture)
-		{
-			fogColor = GetColorFromTexture(_FogColorTexture0, heightFogAmount);
-		}
-		else
-		{
-			fogColor = GetColorFromPicker(_FogColor0, heightFogAmount);
-		}
+		half4 fogColor = GetColorFromTexture(_FogColorTexture0, heightFogAmount);
+
 
 		return BlendFogToScene(i.uv0, fogColor, heightFogAmount);
 	}
@@ -187,15 +157,7 @@
 
 		float totalFogAmount = distanceFogAmount +heightFogAmount;
 
-		half4 fogColor = 0.;
-		if (_ColorSourceOneIsTexture)
-		{
-			fogColor = GetColorFromTexture(_FogColorTexture0, totalFogAmount);
-		}
-		else
-		{
-			fogColor = GetColorFromPicker(_FogColor0, totalFogAmount);
-		}
+		half4 fogColor = GetColorFromTexture(_FogColorTexture0, totalFogAmount);
 
 		return BlendFogToScene(i.uv0, fogColor, totalFogAmount);
 	}
@@ -221,27 +183,9 @@
 		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
 			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
 
-		half4 distanceFogColor = 0.;
-		half4 heightFogColor = 0.;
-
-		if (_ColorSourceOneIsTexture)
-		{
-			distanceFogColor = GetColorFromTexture(_FogColorTexture0, distanceFogAmount);
-		}
-		else
-		{
-			distanceFogColor = GetColorFromPicker(_FogColor0, distanceFogAmount);
-		}
+		half4 distanceFogColor  = GetColorFromTexture(_FogColorTexture0, distanceFogAmount);
+		half4 heightFogColor = GetColorFromTexture(_FogColorTexture1, heightFogAmount);
 		distanceFogColor *= step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, distanceFogAmount);
-
-		if (_ColorSourceTwoIsTexture)
-		{
-			heightFogColor = GetColorFromTexture(_FogColorTexture1, heightFogAmount);
-		}
-		else
-		{
-			heightFogColor = GetColorFromPicker(_FogColor1, heightFogAmount);
-		}
 		heightFogColor *= step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, heightFogAmount);
 
 		half4 fogColor = distanceFogColor + heightFogColor;

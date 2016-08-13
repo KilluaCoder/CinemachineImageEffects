@@ -8,10 +8,10 @@ namespace UnityStandardAssets.CinematicEffects
     public class TemporalAntiAliasing : MonoBehaviour
     {
         [Range(0f, 3f)]
-        public float jitterScale = 0.3f;
+        public float jitterScale = 1f;
 
         [Range(4, 128)]
-        public int haltonSequenceLength = 16;
+        public int haltonSequenceLength = 8;
 
         [Range(0f, 1f)]
         public float sharpeningAmount = 0.25f;
@@ -189,6 +189,7 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
             camera_.depthTextureMode &= ~(DepthTextureMode.MotionVectors);
+            m_SampleIndex = 0;
         }
 
         void OnPreCull()

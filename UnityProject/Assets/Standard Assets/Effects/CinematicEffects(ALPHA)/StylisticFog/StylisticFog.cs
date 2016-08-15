@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using System.IO;
 
@@ -99,7 +99,7 @@ namespace UnityStandardAssets.CinematicEffects
 					{
 						enabled = true,
 						fogSkybox = false,
-						endDistance = 500f,
+						endDistance = 100f,
 						colorSelectionType = ColorSelectionType.Gradient,
 					};
 				}
@@ -162,6 +162,16 @@ namespace UnityStandardAssets.CinematicEffects
 
 		#region fields
 		private Camera m_Camera;
+		public Camera camera_
+		{
+			get
+			{
+				if (m_Camera == null)
+					m_Camera = GetComponent<Camera>();
+
+				return m_Camera;
+			}
+		}
 
 		[SerializeField]
 		private Texture2D m_DistanceColorTexture;
@@ -192,7 +202,7 @@ namespace UnityStandardAssets.CinematicEffects
 			{
 				if (m_HeightColorTexture == null)
 				{
-					m_HeightColorTexture = new Texture2D(1024, 1, TextureFormat.ARGB32, false, false)
+					m_HeightColorTexture = new Texture2D(256, 1, TextureFormat.ARGB32, false, false)
 					{
 						name = "Fog property",
 						wrapMode = TextureWrapMode.Clamp,
@@ -202,6 +212,26 @@ namespace UnityStandardAssets.CinematicEffects
 					BakeFogColor(m_HeightColorTexture, heightColorSource.gradient);
 				}
 				return m_HeightColorTexture;
+			}
+		}
+
+		[SerializeField]
+		private Texture2D m_distanceFogIntensityTexture;
+		public Texture2D distanceFogIntensityTexture
+		{
+			get
+			{
+				if (m_distanceFogIntensityTexture == null)
+				{
+					m_distanceFogIntensityTexture = new Texture2D(256, 1, TextureFormat.ARGB32, false, false)
+					{
+						name = "Fog Height density",
+						wrapMode = TextureWrapMode.Clamp,
+						filterMode = FilterMode.Bilinear,
+						anisoLevel = 0,
+					};
+				}
+				return m_distanceFogIntensityTexture;
 			}
 		}
 
@@ -252,6 +282,14 @@ namespace UnityStandardAssets.CinematicEffects
 
 		private void UpdateDistanceFogTextures(ColorSelectionType selectionType)
 		{
+			// If the gradient texture is not used, delete it.
+			if (selectionType != ColorSelectionType.Gradient)
+			{
+				if (m_DistanceColorTexture != null)
+					DestroyImmediate(m_DistanceColorTexture);
+				m_DistanceColorTexture = null;
+			}
+
 			if (selectionType == ColorSelectionType.Gradient)
 			{
 				BakeFogColor(distanceColorTexture, distanceColorSource.gradient);
@@ -260,6 +298,14 @@ namespace UnityStandardAssets.CinematicEffects
 
 		private void UpdateHeightFogTextures(ColorSelectionType selectionType)
 		{
+			// If the gradient texture is not used, delete it.
+			if (selectionType != ColorSelectionType.Gradient)
+			{
+				if (m_HeightColorTexture != null)
+					DestroyImmediate(m_HeightColorTexture);
+				m_HeightColorTexture = null;
+			}
+
 			if (selectionType == ColorSelectionType.Gradient)
 			{
 				BakeFogColor(heightColorTexture, heightColorSource.gradient);
@@ -267,6 +313,16 @@ namespace UnityStandardAssets.CinematicEffects
 		}
 
 		#region Private Members
+		private void OnEnable()
+		{
+			if (!ImageEffectHelper.IsSupported(shader, true, false, this))
+				enabled = false;
+
+			camera_.depthTextureMode |= DepthTextureMode.Depth;
+
+			UpdateProperties();
+		}
+
 		private void OnDisable()
 		{
 			if (m_Material != null)
@@ -323,7 +379,7 @@ namespace UnityStandardAssets.CinematicEffects
 				return FogTypePass.None;
 
 			// Get the inverse view matrix for converting depth to world position.
-			Matrix4x4 inverseViewMatrix = m_Camera.cameraToWorldMatrix;
+			Matrix4x4 inverseViewMatrix = camera_.cameraToWorldMatrix;
 			material.SetMatrix("_InverseViewMatrix", inverseViewMatrix);
 
 			// Decide wheter the skybox should have fog applied
@@ -345,7 +401,7 @@ namespace UnityStandardAssets.CinematicEffects
 
 				SetDistanceFogUniforms();
 				SetHeightFogUniforms();
-				
+
 				if(activeSelectionType == ColorSelectionType.Gradient)
 					material.SetTexture("_FogColorTexture0", selectingFromDistance ? distanceColorTexture : heightColorTexture);
 				else

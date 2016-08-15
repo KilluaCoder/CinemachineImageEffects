@@ -56,8 +56,22 @@ Shader "Hidden/Temporal Anti-aliasing"
         float4 position : TEXCOORD2;
     };
 
+    struct BlitOptimizedVaryings
+    {
+        float4 vertex : SV_POSITION;
+        float2 uv : TEXCOORD0;
+    };
+
+    struct Output
+    {
+        float4 first : SV_Target0;
+        float4 second : SV_Target1;
+    };
+
     sampler2D _MainTex;
     sampler2D _HistoryTex;
+
+    sampler2D _BlitSourceTex;
 
     sampler2D _CameraMotionVectorsTexture;
     sampler2D _CameraDepthTexture;
@@ -69,7 +83,7 @@ Shader "Hidden/Temporal Anti-aliasing"
     float2 _Jitter;
 
     #if TAA_SHARPEN_OUTPUT
-        float _SharpenParameters;
+        float4 _SharpenParameters;
     #endif
 
     #if TAA_FINAL_BLEND_METHOD == 2
@@ -375,6 +389,28 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         return color;
     }
+
+    BlitOptimizedVaryings passThrough(in Input input)
+    {
+        BlitOptimizedVaryings output;
+
+        output.vertex = input.vertex;
+        output.uv = .5 * input.vertex + .5;
+
+        return output;
+    }
+
+    Output blit(in BlitOptimizedVaryings input)
+    {
+        Output output;
+
+        float4 color = tex2D(_BlitSourceTex, input.uv);
+
+        output.first = color;
+        output.second = color;
+
+        return output;
+    }
     ENDCG
 
     SubShader
@@ -389,6 +425,15 @@ Shader "Hidden/Temporal Anti-aliasing"
             #pragma fragment fragment
             ENDCG
         }
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma target 5.0
+            #pragma vertex passThrough
+            #pragma fragment blit
+            ENDCG
+        }
     }
 
     SubShader
@@ -398,9 +443,18 @@ Shader "Hidden/Temporal Anti-aliasing"
         Pass
         {
             CGPROGRAM
-            #pragma target 4.1
+            #pragma target 4.0
             #pragma vertex vertex
             #pragma fragment fragment
+            ENDCG
+        }
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma target 4.0
+            #pragma vertex passThrough
+            #pragma fragment blit
             ENDCG
         }
     }
@@ -415,6 +469,15 @@ Shader "Hidden/Temporal Anti-aliasing"
             #pragma target 3.0
             #pragma vertex vertex
             #pragma fragment fragment
+            ENDCG
+        }
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma target 3.0
+            #pragma vertex passThrough
+            #pragma fragment blit
             ENDCG
         }
     }

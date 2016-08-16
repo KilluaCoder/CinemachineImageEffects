@@ -17,16 +17,13 @@ Shader "Hidden/Temporal Anti-aliasing"
 
     #define TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES 1
 
-    #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN 1
+    #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN 2
     #define TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD 1.
 
     #define TAA_DILATE_MOTION_VECTOR_SAMPLE 1
 
     #define TAA_CLIP_HISTORY_SAMPLE 1
 
-    #define TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD 0.5
-
-    #define TAA_DEPTH_SAMPLE_PATTERN 0
     #define TAA_DEPTH_SAMPLE_SPREAD 1.
 
     #define TAA_SHARPEN_OUTPUT 1
@@ -49,11 +46,7 @@ Shader "Hidden/Temporal Anti-aliasing"
     struct Varyings
     {
         float4 vertex : SV_POSITION;
-
-        float2 mainTexUV : TEXCOORD0;
-        float2 defaultUV  : TEXCOORD1;
-
-        float4 position : TEXCOORD2;
+        float4 uv : TEXCOORD0; // [xy: _MainTex.uv, zw: _HistoryTex.uv]
     };
 
     struct BlitOptimizedVaryings
@@ -97,13 +90,11 @@ Shader "Hidden/Temporal Anti-aliasing"
         float4 vertex = mul(UNITY_MATRIX_MVP, input.vertex);
 
         output.vertex = vertex;
-        output.mainTexUV = input.uv;
-        output.defaultUV = input.uv;
-        output.position = vertex;
+        output.uv = input.uv.xyxy;
 
     #if UNITY_UV_STARTS_AT_TOP
         if (_MainTex_TexelSize.y < 0)
-            output.mainTexUV.y = 1. - input.uv.y;
+            output.uv.y = 1. - input.uv.y;
     #endif
 
         return output;
@@ -142,76 +133,31 @@ Shader "Hidden/Temporal Anti-aliasing"
     {
         const float2 k = TAA_DEPTH_SAMPLE_SPREAD * _CameraDepthTexture_TexelSize.xy;
 
-        #if TAA_DEPTH_SAMPLE_PATTERN == 0
-            const float4 neighborhood = float4(
-                tex2D(_CameraDepthTexture, uv - k).r,
-                tex2D(_CameraDepthTexture, uv + float2(k.x, -k.y)).r,
-                tex2D(_CameraDepthTexture, uv + float2(-k.x, k.y)).r,
-                tex2D(_CameraDepthTexture, uv + k).r);
+        const float4 neighborhood = float4(
+            tex2D(_CameraDepthTexture, uv - k).r,
+            tex2D(_CameraDepthTexture, uv + float2(k.x, -k.y)).r,
+            tex2D(_CameraDepthTexture, uv + float2(-k.x, k.y)).r,
+            tex2D(_CameraDepthTexture, uv + k).r);
 
-            float3 result = float3(0., 0., tex2D(_CameraDepthTexture, uv).r);
+        float3 result = float3(0., 0., tex2D(_CameraDepthTexture, uv).r);
 
-            #if TAA_USE_EXPERIMENTAL_OPTIMIZATIONS
-                result.z = min(min(min(neighborhood.x, neighborhood.y), neighborhood.z), neighborhood.w);
-
-                if (result.z == neighborhood.x)
-                    result.xy = float2(-1., -1.);
-                else if (result.z == neighborhood.y)
-                    result.xy = float2(1., -1.);
-                else if (result.z == neighborhood.z)
-                    result.xy = float2(-1., 1.);
-                else
-                    result.xy = float2(1., 1.);
-            #else
-                if (neighborhood.x < result.z)
-                    result = float3(-1., -1., neighborhood.x);
-
-                if (neighborhood.y < result.z)
-                    result = float3(1., -1., neighborhood.y);
-
-                if (neighborhood.z < result.z)
-                    result = float3(-1., 1., neighborhood.z);
-
-                if (neighborhood.w < result.z)
-                    result = float3(1., 1., neighborhood.w);
-            #endif
+        #if TAA_USE_EXPERIMENTAL_OPTIMIZATIONS
+            result = lerp(result, float3(-1., -1., neighborhood.x), step(neighborhood.x, result.z));
+            result = lerp(result, float3(1., -1., neighborhood.y), step(neighborhood.y, result.z));
+            result = lerp(result, float3(-1., 1., neighborhood.z), step(neighborhood.z, result.z));
+            result = lerp(result, float3(1., 1., neighborhood.w), step(neighborhood.w, result.z));
         #else
-            const float3x3 neighborhood = float3x3(
-                tex2D(_CameraDepthTexture, uv - k).r,
-                tex2D(_CameraDepthTexture, uv - float2(0., k.y)).r,
-                tex2D(_CameraDepthTexture, uv + float2(k.x, -k.y)).r,
-                tex2D(_CameraDepthTexture, uv - float2(k.x, 0.)).r,
-                tex2D(_CameraDepthTexture, uv).r,
-                tex2D(_CameraDepthTexture, uv + float2(k.x, 0.)).r,
-                tex2D(_CameraDepthTexture, uv + float2(-k.x, k.y)).r,
-                tex2D(_CameraDepthTexture, uv + float2(0., k.y)).r,
-                tex2D(_CameraDepthTexture, uv + k).r);
+            if (neighborhood.x < result.z)
+                result = float3(-1., -1., neighborhood.x);
 
-            float3 result = float3(-1., -1., neighborhood._m00);
+            if (neighborhood.y < result.z)
+                result = float3(1., -1., neighborhood.y);
 
-            if (neighborhood._m01 < result.z)
-                result = float3(0., -1., neighborhood._m01);
+            if (neighborhood.z < result.z)
+                result = float3(-1., 1., neighborhood.z);
 
-            if (neighborhood._m02 < result.z)
-                result = float3(1., -1., neighborhood._m02);
-
-            if (neighborhood._m10 < result.z)
-                result = float3(-1., 0., neighborhood._m10);
-
-            if (neighborhood._m11 < result.z)
-                result = float3(0., 0., neighborhood._m11);
-
-            if (neighborhood._m12 < result.z)
-                result = float3(1., 0., neighborhood._m12);
-
-            if (neighborhood._m20 < result.z)
-                result = float3(-1., 1., neighborhood._m20);
-
-            if (neighborhood._m21 < result.z)
-                result = float3(0., 1., neighborhood._m21);
-
-            if (neighborhood._m22 < result.z)
-                result = float3(1., 1., neighborhood._m22);
+            if (neighborhood.w < result.z)
+                result = float3(1., 1., neighborhood.w);
         #endif
 
         return (uv + result.xy * k);
@@ -249,28 +195,28 @@ Shader "Hidden/Temporal Anti-aliasing"
     float4 fragment(Varyings input) : SV_Target
     {
     #if TAA_DILATE_MOTION_VECTOR_SAMPLE
-        float2 motion = tex2D(_CameraMotionVectorsTexture, getClosestFragment(input.defaultUV)).xy;
+        float2 motion = tex2D(_CameraMotionVectorsTexture, getClosestFragment(input.uv.zw)).xy;
     #else
-        float2 motion = tex2D(_CameraMotionVectorsTexture, input.defaultUV).xy;
+        float2 motion = tex2D(_CameraMotionVectorsTexture, input.uv.zw).xy;
     #endif
 
-        float2 k = TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD * _MainTex_TexelSize.xy;
-        float2 mainUV = input.mainTexUV;
+        const float2 k = TAA_COLOR_NEIGHBORHOOD_SAMPLE_SPREAD * _MainTex_TexelSize.xy;
+        float2 uv = input.uv.xy;
     #if TAA_REMOVE_COLOR_SAMPLE_JITTER && UNITY_UV_STARTS_AT_TOP
-        mainUV -= _MainTex_TexelSize.y < 0 ? _Jitter * float2(1, -1) : _Jitter;
+        uv -= _MainTex_TexelSize.y < 0 ? _Jitter * float2(1, -1) : _Jitter;
     #elif TAA_REMOVE_COLOR_SAMPLE_JITTER
-        mainUV -= _Jitter;
+        uv -= _Jitter;
     #endif
 
-        float4 color = tex2D(_MainTex, mainUV);
+        float4 color = tex2D(_MainTex, uv);
 
     #if TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN == 0
         // Karis 13: a box filter is not stable under motion, use raw color instead of an averaged one
         float4x4 neighborhood = float4x4(
-            tex2D(_MainTex, mainUV + float2(0., -k.y)),
-            tex2D(_MainTex, mainUV + float2(-k.x, 0.)),
-            tex2D(_MainTex, mainUV + float2(k.x, 0.)),
-            tex2D(_MainTex, mainUV + float2(0., k.y)));
+            tex2D(_MainTex, uv + float2(0., -k.y)),
+            tex2D(_MainTex, uv + float2(-k.x, 0.)),
+            tex2D(_MainTex, uv + float2(k.x, 0.)),
+            tex2D(_MainTex, uv + float2(0., k.y)));
 
         #if TAA_SHARPEN_OUTPUT
             float4 edges = (neighborhood[0] + neighborhood[1] + neighborhood[2] + neighborhood[3]) * .25;
@@ -298,22 +244,22 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         float4 minimum = min(min(min(min(neighborhood[0], neighborhood[1]), neighborhood[2]), neighborhood[3]), color);
         float4 maximum = max(max(max(max(neighborhood[0], neighborhood[1]), neighborhood[2]), neighborhood[3]), color);
-    #else
+    #elif TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN == 1
         // 0 1 2
         // 3
         float4x4 top = float4x4(
-            tex2D(_MainTex, mainUV + float2(-k.x, -k.y)),
-            tex2D(_MainTex, mainUV + float2(0., -k.y)),
-            tex2D(_MainTex, mainUV + float2(k.x, -k.y)),
-            tex2D(_MainTex, mainUV + float2(-k.x, 0.)));
+            tex2D(_MainTex, uv + float2(-k.x, -k.y)),
+            tex2D(_MainTex, uv + float2(0., -k.y)),
+            tex2D(_MainTex, uv + float2(k.x, -k.y)),
+            tex2D(_MainTex, uv + float2(-k.x, 0.)));
 
         //     0
         // 1 2 3
         float4x4 bottom = float4x4(
-            tex2D(_MainTex, mainUV + float2(k.x, 0.)),
-            tex2D(_MainTex, mainUV + float2(-k.x, k.y)),
-            tex2D(_MainTex, mainUV + float2(0., k.y)),
-            tex2D(_MainTex, mainUV + float2(k.x, k.y)));
+            tex2D(_MainTex, uv + float2(k.x, 0.)),
+            tex2D(_MainTex, uv + float2(-k.x, k.y)),
+            tex2D(_MainTex, uv + float2(0., k.y)),
+            tex2D(_MainTex, uv + float2(k.x, k.y)));
 
         #if TAA_SHARPEN_OUTPUT
             float4 corners = (top[0] + top[2] + bottom[1] + bottom[3]) * .25;
@@ -347,33 +293,59 @@ Shader "Hidden/Temporal Anti-aliasing"
 
         float4 minimum = min(min(min(min(min(min(min(min(top[0], top[1]), top[2]), top[3]), bottom[0]), bottom[1]), bottom[2]), bottom[3]), color);
         float4 maximum = max(max(max(max(max(max(max(max(top[0], top[1]), top[2]), top[3]), bottom[0]), bottom[1]), bottom[2]), bottom[3]), color);
+    #else
+        float4 topLeft = tex2D(_MainTex, uv - k * .5);
+        float4 bottomRight = tex2D(_MainTex, uv + k * .5);
+
+        float4 corners = 4. * (topLeft + bottomRight) - 2. * color;
+
+        #if TAA_SHARPEN_OUTPUT
+            color += (color - (corners * .166667)) * 2.718282 * _SharpenParameters.x;
+            color = max(0, color);
+        #endif
+
+        float4 average = (corners + color) * .142857;
+
+        #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
+            average = map(average);
+
+            topLeft = map(topLeft);
+            bottomRight = map(bottomRight);
+
+            color = map(color);
+        #endif
+
+        float nudge = length(average - color);
+        float2 luma = float2(Luminance(topLeft.rgb), Luminance(bottomRight.rgb));
+
+        float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y)) - nudge;
+        float4 maximum = lerp(topLeft, bottomRight, step(luma.x, luma.y)) + nudge;
     #endif
 
-        k = TAA_HISTORY_NEIGHBORHOOD_SAMPLE_SPREAD * _HistoryTex_TexelSize.xy;
-        float2 historyUV = input.defaultUV - motion;
-
-        float4 history = tex2D(_HistoryTex, historyUV);
+        float4 history = tex2D(_HistoryTex, input.uv.zw - motion);
 
     #if TAA_TONEMAP_COLOR_AND_HISTORY_SAMPLES
         history = map(history);
     #endif
 
     #if TAA_CLIP_HISTORY_SAMPLE
-        average = clamp(average, minimum, maximum);
-
-        //# History clipping causes artifacts
+        // History clipping causes artifacts
         history = clipToAABB(history, average.w, minimum.xyz, maximum.xyz);
     #else
         history = clamp(history, minimum, maximum);
     #endif
-
-        float2 luma = float2(Luminance(color.rgb), Luminance(history.rgb));
 
     #if TAA_FINAL_BLEND_METHOD == 0
         // Constant blend factor, works most of the time & cheap; but isn't as nice as a derivative of Sousa 13
         color = lerp(color, history, TAA_FINAL_BLEND_FACTOR);
     #elif TAA_FINAL_BLEND_METHOD == 1
         // Implements the final blend method from Playdead's TAA implementation
+        #if TAA_COLOR_NEIGHBORHOOD_SAMPLE_PATTERN < 2
+            float2
+        #endif
+
+        luma = float2(Luminance(color.rgb), Luminance(history.rgb));
+
         float weight = 1. - abs(luma.x - luma.y) / max(luma.x, max(luma.y, .2));
         color = lerp(color, history, lerp(.88, .97, weight * weight));
     #elif TAA_FINAL_BLEND_METHOD == 2
@@ -390,12 +362,22 @@ Shader "Hidden/Temporal Anti-aliasing"
         return color;
     }
 
+    float4 _BlitSourceTex_ST;
+
     BlitOptimizedVaryings passThrough(in Input input)
     {
         BlitOptimizedVaryings output;
 
         output.vertex = input.vertex;
-        output.uv = .5 * input.vertex + .5;
+
+        // output.uv = TRANSFORM_TEX((.5 * input.vertex.xy + .5), _BlitSourceTex);
+
+        output.uv = input.vertex.xy * .5 + .5;
+
+    #if UNITY_UV_STARTS_AT_TOP
+        if (_BlitSourceTex_ST.y < 0)
+            output.uv.y = 1. - output.uv.y;
+    #endif
 
         return output;
     }
@@ -449,7 +431,7 @@ Shader "Hidden/Temporal Anti-aliasing"
             ENDCG
         }
 
-        Pass
+         Pass
         {
             CGPROGRAM
             #pragma target 4.0

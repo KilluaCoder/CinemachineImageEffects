@@ -49,12 +49,6 @@ Shader "Hidden/Temporal Anti-aliasing"
         float4 uv : TEXCOORD0; // [xy: _MainTex.uv, zw: _HistoryTex.uv]
     };
 
-    struct BlitOptimizedVaryings
-    {
-        float4 vertex : SV_POSITION;
-        float2 uv : TEXCOORD0;
-    };
-
     struct Output
     {
         float4 first : SV_Target0;
@@ -63,8 +57,6 @@ Shader "Hidden/Temporal Anti-aliasing"
 
     sampler2D _MainTex;
     sampler2D _HistoryTex;
-
-    sampler2D _BlitSourceTex;
 
     sampler2D _CameraMotionVectorsTexture;
     sampler2D _CameraDepthTexture;
@@ -192,7 +184,7 @@ Shader "Hidden/Temporal Anti-aliasing"
         }
     }
 
-    float4 fragment(Varyings input) : SV_Target
+    Output fragment(Varyings input)
     {
     #if TAA_DILATE_MOTION_VECTOR_SAMPLE
         float2 motion = tex2D(_CameraMotionVectorsTexture, getClosestFragment(input.uv.zw)).xy;
@@ -315,7 +307,7 @@ Shader "Hidden/Temporal Anti-aliasing"
             color = map(color);
         #endif
 
-        float nudge = length(average - color);
+        float nudge = 2. * length(average - color);
         float2 luma = float2(Luminance(topLeft.rgb), Luminance(bottomRight.rgb));
 
         float4 minimum = lerp(bottomRight, topLeft, step(luma.x, luma.y)) - nudge;
@@ -347,7 +339,9 @@ Shader "Hidden/Temporal Anti-aliasing"
         luma = float2(Luminance(color.rgb), Luminance(history.rgb));
 
         float weight = 1. - abs(luma.x - luma.y) / max(luma.x, max(luma.y, .2));
-        color = lerp(color, history, lerp(.88, .97, weight * weight));
+        weight = lerp(TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR, weight * weight);
+
+        color = lerp(color, history, weight);
     #elif TAA_FINAL_BLEND_METHOD == 2
         float weight = clamp(lerp(TAA_FINAL_BLEND_STATIC_FACTOR, TAA_FINAL_BLEND_DYNAMIC_FACTOR,
                 length(motion * TAA_MOTION_AMPLIFICATION)), TAA_FINAL_BLEND_DYNAMIC_FACTOR, TAA_FINAL_BLEND_STATIC_FACTOR);
@@ -359,34 +353,7 @@ Shader "Hidden/Temporal Anti-aliasing"
         color = unmap(color);
     #endif
 
-        return color;
-    }
-
-    float4 _BlitSourceTex_ST;
-
-    BlitOptimizedVaryings passThrough(in Input input)
-    {
-        BlitOptimizedVaryings output;
-
-        output.vertex = input.vertex;
-
-        // output.uv = TRANSFORM_TEX((.5 * input.vertex.xy + .5), _BlitSourceTex);
-
-        output.uv = input.vertex.xy * .5 + .5;
-
-    #if UNITY_UV_STARTS_AT_TOP
-        if (_BlitSourceTex_ST.y < 0)
-            output.uv.y = 1. - output.uv.y;
-    #endif
-
-        return output;
-    }
-
-    Output blit(in BlitOptimizedVaryings input)
-    {
         Output output;
-
-        float4 color = tex2D(_BlitSourceTex, input.uv);
 
         output.first = color;
         output.second = color;
@@ -407,15 +374,6 @@ Shader "Hidden/Temporal Anti-aliasing"
             #pragma fragment fragment
             ENDCG
         }
-
-        Pass
-        {
-            CGPROGRAM
-            #pragma target 5.0
-            #pragma vertex passThrough
-            #pragma fragment blit
-            ENDCG
-        }
     }
 
     SubShader
@@ -430,15 +388,6 @@ Shader "Hidden/Temporal Anti-aliasing"
             #pragma fragment fragment
             ENDCG
         }
-
-         Pass
-        {
-            CGPROGRAM
-            #pragma target 4.0
-            #pragma vertex passThrough
-            #pragma fragment blit
-            ENDCG
-        }
     }
 
     SubShader
@@ -451,15 +400,6 @@ Shader "Hidden/Temporal Anti-aliasing"
             #pragma target 3.0
             #pragma vertex vertex
             #pragma fragment fragment
-            ENDCG
-        }
-
-        Pass
-        {
-            CGPROGRAM
-            #pragma target 3.0
-            #pragma vertex passThrough
-            #pragma fragment blit
             ENDCG
         }
     }

@@ -72,7 +72,8 @@ Shader "Hidden/Image Effects/StylisticFog"
 	inline float ComputeHeightFogAmount(float viewDirY, float effectiveDistance)
 	{
 		float relativeHeight = _WorldSpaceCameraPos.y - _Height;
-		return _BaseDensity * exp2(-relativeHeight * _DensityFalloff) * (1. - exp2(-effectiveDistance * viewDirY * _DensityFalloff)) / viewDirY;
+		return _BaseDensity * (exp2(-relativeHeight * _DensityFalloff) - exp2((-effectiveDistance * viewDirY - relativeHeight) * _DensityFalloff)) / viewDirY;
+		//return _BaseDensity * exp2(-relativeHeight * _DensityFalloff) * (1. - exp2(-effectiveDistance * viewDirY * _DensityFalloff)) * 1./viewDirY;
 	}
 
 	inline half4 GetColorFromTexture(sampler2D source, float fogAmount)
@@ -84,7 +85,7 @@ Shader "Hidden/Image Effects/StylisticFog"
 	inline half4 BlendFogToScene(float2 uv, half4 fogColor, float fogAmount)
 	{
 		// clamp the scene color to at most 1. to avoid HDR rendering to change lumiance in final image.
-		half4 sceneColor = min(127., tex2D(_MainTex, uv));
+		half4 sceneColor = min(1., tex2D(_MainTex, uv));
 		half4 blended = lerp(sceneColor, half4(fogColor.xyz, 1.), fogColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, fogAmount));
 		blended.a = 1.;
 		return blended;
@@ -102,12 +103,14 @@ Shader "Hidden/Image Effects/StylisticFog"
 		float linDepth = Linear01Depth(depth);
 
 		float distanceFogAmount = 0.;
-		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+		if (_ApplyDistToSkybox)
+			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
+		else if (linDepth < SKYBOX_THREASHOLD_VALUE)
 			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
 
-		half4 fogColor = fogColor = GetColorFromTexture(_FogColorTexture0, distanceFogAmount);
+		half4 fogColor = GetColorFromTexture(_FogColorTexture0, distanceFogAmount);
 
-		return BlendFogToScene(i.uv0, fogColor, distanceFogAmount);
+		return BlendFogToScene(i.uv0, fogColor, fogColor.a);
 	}
 
 	half4 fragment_height(v2f_multitex i) : SV_Target
@@ -120,17 +123,17 @@ Shader "Hidden/Image Effects/StylisticFog"
 		float viewDirY = normalize(cameraToFragment).y;
 		float totalDistance = length(cameraToFragment);
 
-		float heightFogAmount = 0.;
-
 		float linDepth = Linear01Depth(depth);
 
-		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+		float heightFogAmount = 0.;
+		if (_ApplyHeightToSkybox)
+			heightFogAmount = ComputeHeightFogAmount(viewDirY, totalDistance);
+		else if (linDepth < SKYBOX_THREASHOLD_VALUE)
 			heightFogAmount = ComputeHeightFogAmount(viewDirY, totalDistance);
 
 		half4 fogColor = GetColorFromTexture(_FogColorTexture0, heightFogAmount);
 
-
-		return BlendFogToScene(i.uv0, fogColor, heightFogAmount);
+		return BlendFogToScene(i.uv0, fogColor, fogColor.a);
 	}
 
 
@@ -144,22 +147,25 @@ Shader "Hidden/Image Effects/StylisticFog"
 		float3 viewDir = normalize(cameraToFragment);
 		float totalDistance = length(cameraToFragment);
 
-		float distanceFogAmount = 0.;
-		float heightFogAmount = 0.;
-
 		float linDepth = Linear01Depth(depth);
 
-		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+		float distanceFogAmount = 0.;
+		float heightFogAmount = 0.;
+		if (_ApplyDistToSkybox)
+			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
+		else if (linDepth < SKYBOX_THREASHOLD_VALUE)
 			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
 
-		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+		if (_ApplyHeightToSkybox)
+			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
+		else if (linDepth < SKYBOX_THREASHOLD_VALUE)
 			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
 
 		float totalFogAmount = distanceFogAmount +heightFogAmount;
 
 		half4 fogColor = GetColorFromTexture(_FogColorTexture0, totalFogAmount);
 
-		return BlendFogToScene(i.uv0, fogColor, totalFogAmount);
+		return BlendFogToScene(i.uv0, fogColor, fogColor.a);
 	}
 
 	half4 fragment_distance_height_seperate_color(v2f_multitex i) : SV_Target
@@ -172,15 +178,18 @@ Shader "Hidden/Image Effects/StylisticFog"
 		float3 viewDir = normalize(cameraToFragment);
 		float totalDistance = length(cameraToFragment);
 
-		float distanceFogAmount = 0.;
-		float heightFogAmount = 0.;
-
 		float linDepth = Linear01Depth(depth);
 
-		if (_ApplyDistToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+		float distanceFogAmount = 0.;
+		float heightFogAmount = 0.;
+		if (_ApplyDistToSkybox)
+			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
+		else if (linDepth < SKYBOX_THREASHOLD_VALUE)
 			distanceFogAmount = ComputeDistanceFogAmount(totalDistance);
 
-		if (_ApplyHeightToSkybox || linDepth < SKYBOX_THREASHOLD_VALUE)
+		if (_ApplyHeightToSkybox)
+			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
+		else if (linDepth < SKYBOX_THREASHOLD_VALUE)
 			heightFogAmount = ComputeHeightFogAmount(viewDir.y, totalDistance);
 
 		half4 distanceFogColor  = GetColorFromTexture(_FogColorTexture0, distanceFogAmount);
@@ -188,7 +197,8 @@ Shader "Hidden/Image Effects/StylisticFog"
 		distanceFogColor *= step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, distanceFogAmount);
 		heightFogColor *= step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, heightFogAmount);
 
-		half4 fogColor = distanceFogColor + heightFogColor;
+		half combinedAlpha = distanceFogColor.a + heightFogColor.a;
+		half4 fogColor = sqrt(lerp(distanceFogColor * distanceFogColor, heightFogColor * heightFogColor, saturate(heightFogColor.a / distanceFogColor.a) ));
 
 		return BlendFogToScene(i.uv0, fogColor, fogColor.a);
 	}

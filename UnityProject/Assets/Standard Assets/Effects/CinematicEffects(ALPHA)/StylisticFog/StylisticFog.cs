@@ -54,7 +54,7 @@ namespace UnityStandardAssets.CinematicEffects
 			[DisplayOnSelectionType(ColorSelectionType.Gradient)]
 			public Gradient gradient;
 
-			[Tooltip("Custom fog color ramp")]
+			[Tooltip("Custom fog color ramp.")]
 			[DisplayOnSelectionType(ColorSelectionType.TextureRamp)]
 			public Texture2D colorRamp;
 
@@ -82,7 +82,7 @@ namespace UnityStandardAssets.CinematicEffects
 			[Tooltip("Wheter or not to apply distance based fog.")]
 			public bool enabled;
 
-			[Tooltip("Wheter or not to apply distance based fog to the skybox")]
+			[Tooltip("Wheter or not to apply distance based fog to the skybox.")]
 			public bool fogSkybox;
 
 			[Tooltip("Fog is fully saturated beyond this distance.")]
@@ -112,20 +112,20 @@ namespace UnityStandardAssets.CinematicEffects
 			[Tooltip("Wheter or not to apply height based fog.")]
 			public bool enabled;
 
-			[Tooltip("Wheter or not to apply height based fog to the skybox")]
+			[Tooltip("Wheter or not to apply height based fog to the skybox.")]
 			public bool fogSkybox;
 
-			[Tooltip("Height where the fog starts")]
+			[Tooltip("Height where the fog starts.")]
 			public float baseHeight;
 
 			[Tooltip("Fog density at fog altitude given by height.")]
 			public float baseDensity;
 
-			[Tooltip("The rate at which the thickness of the fog decays with altitude")]
-			[Range(-1f, 1f)]
+			[Tooltip("The rate at which the thickness of the fog decays with altitude.")]
+			[Range(0.001f, 1f)]
 			public float densityFalloff;
 
-			[Tooltip("Color selection for height fog")]
+			[Tooltip("Color selection for height fog.")]
 			public ColorSelectionType colorSelectionType;
 
 			public static HeightFogSettings defaultSettings

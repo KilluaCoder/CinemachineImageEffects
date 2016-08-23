@@ -8,6 +8,8 @@ Shader "Hidden/Image Effects/StylisticFog"
 	CGINCLUDE
 	#include "UnityCG.cginc"
 
+	#define FOG_HANDLE_GAMMA_CORRECTION
+
 	#define SKYBOX_THREASHOLD_VALUE 0.9999
 	#define FOG_AMOUNT_CONTRIBUTION_THREASHOLD 0.0001
 
@@ -78,7 +80,11 @@ Shader "Hidden/Image Effects/StylisticFog"
 
 	inline half4 GetColorFromTexture(sampler2D source, float fogAmount)
 	{
-		return tex2D(source, float2(fogAmount, 0));
+		half4 textureColor = tex2D(source, float2(fogAmount, 0));
+		#if defined(UNITY_COLORSPACE_GAMMA) && defined(FOG_HANDLE_GAMMA_CORRECTION)
+			textureColor.rgb = GammaToLinearSpace(textureColor.rgb);
+		#endif
+		return textureColor;
 	}
 
 	// Not used yet, but might be useful for pass seperation.
@@ -86,7 +92,15 @@ Shader "Hidden/Image Effects/StylisticFog"
 	{
 		// clamp the scene color to at most 1. to avoid HDR rendering to change lumiance in final image.
 		half4 sceneColor = min(1., tex2D(_MainTex, uv));
+		#if defined(UNITY_COLORSPACE_GAMMA) && defined(FOG_HANDLE_GAMMA_CORRECTION)
+			sceneColor.rgb = GammaToLinearSpace(sceneColor.rgb);
+		#endif
+
 		half4 blended = lerp(sceneColor, half4(fogColor.xyz, 1.), fogColor.a * step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, fogAmount));
+		#if defined(UNITY_COLORSPACE_GAMMA) && defined(FOG_HANDLE_GAMMA_CORRECTION)
+			blended.rgb = LinearToGammaSpace(blended.rgb);
+		#endif
+
 		blended.a = 1.;
 		return blended;
 	}
@@ -198,7 +212,7 @@ Shader "Hidden/Image Effects/StylisticFog"
 		heightFogColor *= step(FOG_AMOUNT_CONTRIBUTION_THREASHOLD, heightFogAmount);
 
 		half combinedAlpha = distanceFogColor.a + heightFogColor.a;
-		half4 fogColor = sqrt(lerp(distanceFogColor * distanceFogColor, heightFogColor * heightFogColor, saturate(heightFogColor.a / distanceFogColor.a) ));
+		half4 fogColor = lerp(distanceFogColor, heightFogColor, saturate(heightFogColor.a / distanceFogColor.a));
 
 		return BlendFogToScene(i.uv0, fogColor, fogColor.a);
 	}
@@ -211,6 +225,7 @@ Shader "Hidden/Image Effects/StylisticFog"
 		{
 			Cull Off ZWrite Off ZTest Always
 			CGPROGRAM
+			#pragma multi_compile __ UNITY_COLORSPACE_GAMMA
 			#pragma vertex vert_img_fog
 			#pragma fragment fragment_distance
 			ENDCG
@@ -220,6 +235,7 @@ Shader "Hidden/Image Effects/StylisticFog"
 		{
 			Cull Off ZWrite Off ZTest Always
 			CGPROGRAM
+			#pragma multi_compile __ UNITY_COLORSPACE_GAMMA
 			#pragma vertex vert_img_fog
 			#pragma fragment fragment_height
 			ENDCG
@@ -229,6 +245,7 @@ Shader "Hidden/Image Effects/StylisticFog"
 		{
 			Cull Off ZWrite Off ZTest Always
 			CGPROGRAM
+			#pragma multi_compile __ UNITY_COLORSPACE_GAMMA
 			#pragma vertex vert_img_fog
 			#pragma fragment fragment_distance_height_shared_color
 			ENDCG
@@ -238,6 +255,7 @@ Shader "Hidden/Image Effects/StylisticFog"
 		{
 			Cull Off ZWrite Off ZTest Always
 			CGPROGRAM
+			#pragma multi_compile __ UNITY_COLORSPACE_GAMMA
 			#pragma vertex vert_img_fog
 			#pragma fragment fragment_distance_height_seperate_color
 			ENDCG

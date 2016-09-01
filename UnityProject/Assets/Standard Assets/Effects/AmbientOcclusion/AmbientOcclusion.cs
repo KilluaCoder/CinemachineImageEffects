@@ -148,7 +148,11 @@ namespace UnityStandardAssets.CinematicEffects
         }
 
         // Property observer
-        PropertyObserver propertyObserver { get; set; }
+        PropertyObserver propertyObserver {
+            get { return _propertyObserver; }
+        }
+
+        PropertyObserver _propertyObserver = new PropertyObserver();
 
         // Reference to the quad mesh in the built-in assets
         // (used in MRT blitting)
@@ -307,16 +311,21 @@ namespace UnityStandardAssets.CinematicEffects
 
         void OnDisable()
         {
-            // Destroy all the temporary resources.
-            if (_aoMaterial != null) DestroyImmediate(_aoMaterial);
-            _aoMaterial = null;
-
+            // Remove the command buffer from the camera.
             if (_aoCommands != null)
                 targetCamera.RemoveCommandBuffer(CameraEvent.BeforeReflections, _aoCommands);
             _aoCommands = null;
         }
 
-        void Update()
+        void OnDestroy()
+        {
+            if (Application.isPlaying)
+                Destroy(_aoMaterial);
+            else
+                DestroyImmediate(_aoMaterial);
+        }
+
+        void OnPreRender()
         {
             if (propertyObserver.CheckNeedsReset(settings, targetCamera))
             {

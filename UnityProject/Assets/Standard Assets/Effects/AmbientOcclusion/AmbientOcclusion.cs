@@ -209,7 +209,7 @@ namespace UnityStandardAssets.CinematicEffects
             var ts = downsampling ? 2 : 1;
             var format = RenderTextureFormat.ARGB32;
             var rwMode = RenderTextureReadWrite.Linear;
-            var useGBuffer = settings.occlusionSource == OcclusionSource.GBuffer;
+            var useGBuffer = occlusionSource == OcclusionSource.GBuffer;
 
             // AO buffer
             var m = aoMaterial;

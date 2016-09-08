@@ -87,18 +87,6 @@ namespace UnityStandardAssets.CinematicEffects
             get { return settings.ambientOnly && !settings.debug && isAmbientOnlySupported; }
         }
 
-        // Texture format used for storing AO
-        RenderTextureFormat aoTextureFormat
-        {
-            get
-            {
-                if (SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8))
-                    return RenderTextureFormat.R8;
-                else
-                    return RenderTextureFormat.Default;
-            }
-        }
-
         // AO shader
         Shader aoShader
         {
@@ -175,41 +163,30 @@ namespace UnityStandardAssets.CinematicEffects
             var tw = targetCamera.pixelWidth;
             var th = targetCamera.pixelHeight;
             var ts = downsampling ? 2 : 1;
-            var format = aoTextureFormat;
+            var format = RenderTextureFormat.ARGB32;
             var rwMode = RenderTextureReadWrite.Linear;
             var filter = FilterMode.Bilinear;
 
             // AO buffer
             var m = aoMaterial;
-            var rtMask = Shader.PropertyToID("_OcclusionTexture");
+            var rtMask = Shader.PropertyToID("_OcclusionTexture1");
             cb.GetTemporaryRT(rtMask, tw / ts, th / ts, 0, filter, format, rwMode);
 
             // AO estimation
             cb.Blit((Texture)null, rtMask, m, 2);
 
             // Blur buffer
-            var rtBlur = Shader.PropertyToID("_OcclusionBlurTexture");
+            var rtBlur = Shader.PropertyToID("_OcclusionTexture2");
 
-            // Primary blur filter (large kernel)
+            // Separable blur (horizontal pass)
             cb.GetTemporaryRT(rtBlur, tw, th, 0, filter, format, rwMode);
-            cb.SetGlobalVector("_BlurVector", Vector2.right * 2);
             cb.Blit(rtMask, rtBlur, m, 4);
             cb.ReleaseTemporaryRT(rtMask);
 
+            // Separable blur (vertical pass)
+            rtMask = Shader.PropertyToID("_OcclusionTexture");
             cb.GetTemporaryRT(rtMask, tw, th, 0, filter, format, rwMode);
-            cb.SetGlobalVector("_BlurVector", Vector2.up * 2 * ts);
-            cb.Blit(rtBlur, rtMask, m, 4);
-            cb.ReleaseTemporaryRT(rtBlur);
-
-            // Secondary blur filter (small kernel)
-            cb.GetTemporaryRT(rtBlur, tw, th, 0, filter, format, rwMode);
-            cb.SetGlobalVector("_BlurVector", Vector2.right * ts);
-            cb.Blit(rtMask, rtBlur, m, 6);
-            cb.ReleaseTemporaryRT(rtMask);
-
-            cb.GetTemporaryRT(rtMask, tw, th, 0, filter, format, rwMode);
-            cb.SetGlobalVector("_BlurVector", Vector2.up * ts);
-            cb.Blit(rtBlur, rtMask, m, 6);
+            cb.Blit(rtBlur, rtMask, m, 5);
             cb.ReleaseTemporaryRT(rtBlur);
 
             // Combine AO to the G-buffer.
@@ -219,7 +196,7 @@ namespace UnityStandardAssets.CinematicEffects
             };
             cb.SetRenderTarget(mrt, BuiltinRenderTextureType.CameraTarget);
             cb.SetGlobalTexture("_OcclusionTexture", rtMask);
-            cb.DrawMesh(quadMesh, Matrix4x4.identity, m, 0, 8);
+            cb.DrawMesh(quadMesh, Matrix4x4.identity, m, 0, 7);
 
             cb.ReleaseTemporaryRT(rtMask);
         }
@@ -230,9 +207,9 @@ namespace UnityStandardAssets.CinematicEffects
             var tw = source.width;
             var th = source.height;
             var ts = downsampling ? 2 : 1;
-            var format = aoTextureFormat;
+            var format = RenderTextureFormat.ARGB32;
             var rwMode = RenderTextureReadWrite.Linear;
-            var useGBuffer = settings.occlusionSource == OcclusionSource.GBuffer;
+            var useGBuffer = occlusionSource == OcclusionSource.GBuffer;
 
             // AO buffer
             var m = aoMaterial;
@@ -241,37 +218,24 @@ namespace UnityStandardAssets.CinematicEffects
             // AO estimation
             Graphics.Blit(source, rtMask, m, (int)occlusionSource);
 
-            // Primary blur filter (large kernel)
+            // Separable blur (horizontal pass)
             var rtBlur = RenderTexture.GetTemporary(tw, th, 0, format, rwMode);
-            m.SetVector("_BlurVector", Vector2.right * 2);
             Graphics.Blit(rtMask, rtBlur, m, useGBuffer ? 4 : 3);
             RenderTexture.ReleaseTemporary(rtMask);
 
+            // Separable blur (vertical pass)
             rtMask = RenderTexture.GetTemporary(tw, th, 0, format, rwMode);
-            m.SetVector("_BlurVector", Vector2.up * 2 * ts);
-            Graphics.Blit(rtBlur, rtMask, m, useGBuffer ? 4 : 3);
+            Graphics.Blit(rtBlur, rtMask, m, 5);
             RenderTexture.ReleaseTemporary(rtBlur);
 
-            // Secondary blur filter (small kernel)
-            rtBlur = RenderTexture.GetTemporary(tw, th, 0, format, rwMode);
-            m.SetVector("_BlurVector", Vector2.right * ts);
-            Graphics.Blit(rtMask, rtBlur, m, useGBuffer ? 6 : 5);
-            RenderTexture.ReleaseTemporary(rtMask);
-
-            rtMask = RenderTexture.GetTemporary(tw, th, 0, format, rwMode);
-            m.SetVector("_BlurVector", Vector2.up * ts);
-            Graphics.Blit(rtBlur, rtMask, m, useGBuffer ? 6 : 5);
-            RenderTexture.ReleaseTemporary(rtBlur);
-
-            // Combine AO with the source.
+            // Composition
             m.SetTexture("_OcclusionTexture", rtMask);
-
-            if (!settings.debug)
-                Graphics.Blit(source, destination, m, 7);
-            else
-                Graphics.Blit(source, destination, m, 9);
-
+            Graphics.Blit(source, destination, m, settings.debug ? 8 : 6);
             RenderTexture.ReleaseTemporary(rtMask);
+
+            // Explicitly detach the temporary texture.
+            // (This is needed to avoid conflict with CommandBuffer)
+            m.SetTexture("_OcclusionTexture", null);
         }
 
         // Update the common material properties.
@@ -280,7 +244,7 @@ namespace UnityStandardAssets.CinematicEffects
             var m = aoMaterial;
             m.SetFloat("_Intensity", intensity);
             m.SetFloat("_Radius", radius);
-            m.SetFloat("_TargetScale", downsampling ? 0.5f : 1);
+            m.SetFloat("_Downsample", downsampling ? 0.5f : 1);
             m.SetInt("_SampleCount", sampleCountValue);
         }
 
@@ -314,7 +278,6 @@ namespace UnityStandardAssets.CinematicEffects
             // Remove the command buffer from the camera.
             if (_aoCommands != null)
                 targetCamera.RemoveCommandBuffer(CameraEvent.BeforeReflections, _aoCommands);
-            _aoCommands = null;
         }
 
         void OnDestroy()

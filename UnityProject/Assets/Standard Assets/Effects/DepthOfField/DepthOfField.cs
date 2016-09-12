@@ -427,6 +427,7 @@ namespace UnityStandardAssets.CinematicEffects
         //-------------------------------------------------------------------//
         // Main entry point                                                  //
         //-------------------------------------------------------------------//
+        [ImageEffectOpaque]
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
             if (medianFilterMaterial == null || filmicDepthOfFieldMaterial == null)

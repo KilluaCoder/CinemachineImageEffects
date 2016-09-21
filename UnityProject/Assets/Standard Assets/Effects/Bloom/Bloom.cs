@@ -50,6 +50,12 @@ namespace UnityStandardAssets.CinematicEffects
             [Tooltip("Reduces flashing noise with an additional filter.")]
             public bool antiFlicker;
 
+            [Tooltip("Dirtiness texture to add smudges or dust to the lens.")]
+            public Texture dirtTexture;
+
+            [Min(0f), Tooltip("Amount of lens dirtiness.")]
+            public float dirtIntensity;
+
             public static Settings defaultSettings
             {
                 get
@@ -61,7 +67,9 @@ namespace UnityStandardAssets.CinematicEffects
                         radius = 2.0f,
                         intensity = 0.7f,
                         highQuality = true,
-                        antiFlicker = false
+                        antiFlicker = false,
+                        dirtTexture = null,
+                        dirtIntensity = 2.5f
                     };
                     return settings;
                 }
@@ -161,6 +169,14 @@ namespace UnityStandardAssets.CinematicEffects
             material.SetFloat("_SampleScale", 0.5f + logh - logh_i);
             material.SetFloat("_Intensity", Mathf.Max(0.0f, settings.intensity));
 
+            bool useDirtTexture = false;
+            if (settings.dirtTexture != null)
+            {
+                material.SetTexture("_DirtTex", settings.dirtTexture);
+                material.SetFloat("_DirtIntensity", settings.dirtIntensity);
+                useDirtTexture = true;
+            }
+
             // prefilter pass
             var prefiltered = RenderTexture.GetTemporary(tw, th, 0, rtFormat);
             Graphics.Blit(source, prefiltered, material, settings.antiFlicker ? 1 : 0);
@@ -185,8 +201,11 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
             // finish process
+            int pass = useDirtTexture ? 9 : 7;
+            pass += settings.highQuality ? 1 : 0;
+
             material.SetTexture("_BaseTex", source);
-            Graphics.Blit(last, destination, material, settings.highQuality ? 8 : 7);
+            Graphics.Blit(last, destination, material, pass);
 
             // release the temporary buffers
             for (var i = 0; i < kMaxIterations; i++)

@@ -2,6 +2,11 @@
 
 #include "UnityCG.cginc"
 
+#if defined(SHADER_API_PSSL)
+// No support for sampler2D_half on PS4 in 5.4
+#define sampler2D_half sampler2D_float
+#endif
+
 // Main source texture
 sampler2D _MainTex;
 float4 _MainTex_TexelSize;
@@ -50,6 +55,15 @@ half _History1Weight;
 half _History2Weight;
 half _History3Weight;
 half _History4Weight;
+
+// Linearize depth value sampled from the camera depth texture.
+float LinearizeDepth(float z)
+{
+    float isOrtho = unity_OrthoParams.w;
+    float isPers = 1 - unity_OrthoParams.w;
+    z *= _ZBufferParams.x;
+    return (1 - isOrtho * z) / (isPers * z + _ZBufferParams.y);
+}
 
 // Vertex shader for multiple texture blitting
 struct v2f_multitex

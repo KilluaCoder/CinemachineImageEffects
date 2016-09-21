@@ -264,7 +264,7 @@ namespace UnityStandardAssets.CinematicEffects
             UnityEditor.EditorApplication.update += ForceRepaint;
 #endif
 
-            camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
+            camera_.depthTextureMode |= DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
         }
 
         void OnDisable()
@@ -275,6 +275,9 @@ namespace UnityStandardAssets.CinematicEffects
                 m_History = null;
             }
 
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.update -= ForceRepaint;
+#endif
             camera_.depthTextureMode &= ~(DepthTextureMode.MotionVectors);
             m_SampleIndex = 0;
         }

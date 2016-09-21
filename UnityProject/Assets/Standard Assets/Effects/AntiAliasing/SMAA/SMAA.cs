@@ -389,7 +389,6 @@ namespace UnityStandardAssets.CinematicEffects
                 Shader.EnableKeyword("USE_CORNER_DETECTION");
 
             // UV-based reprojection (up to Unity 5.x)
-            // TODO: use motion vectors when available!
             Shader.DisableKeyword("USE_UV_BASED_REPROJECTION");
 
             if (temporal.UseTemporal())
@@ -475,7 +474,6 @@ namespace UnityStandardAssets.CinematicEffects
         private RenderTexture TempRT(int width, int height, RenderTextureFormat format)
         {
             // Skip the depth & stencil buffer creation when DebugPass is set to avoid flickering
-            // TODO: Stencil buffer not working for some reason
             // int depthStencilBits = DebugPass == DebugPass.Off ? 24 : 0;
             int depthStencilBits = 0;
             return RenderTexture.GetTemporary(width, height, depthStencilBits, format, RenderTextureReadWrite.Linear);

@@ -26,7 +26,7 @@ half4 frag_VelocitySetup(v2f_img i) : SV_Target
 
     // Sample the depth of the pixel.
     float d = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv.xy);
-    half z01 = Linear01Depth(d);
+    half z01 = LinearizeDepth(d);
 
     // Pack into 10/10/10/2 format.
     return half4((v / _MaxBlurRadius + 1) / 2, z01, 0);
@@ -128,7 +128,7 @@ half4 frag_TileMaxV(v2f_img i) : SV_Target
 // Fragment shader: NeighborMax filter
 half4 frag_NeighborMax(v2f_img i) : SV_Target
 {
-    static const half cw = 1.01f; // center weight tweak
+    const half cw = 1.01f; // center weight tweak
 
     float4 d = _MainTex_TexelSize.xyxy * float4(1, 1, -1, 0);
 

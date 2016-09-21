@@ -293,7 +293,10 @@ Shader "Hidden/ScreenSpaceReflection"
                         UnityLight light;
                         light.color = 0;
                         light.dir = 0;
+
+                    #if UNITY_VERSION < 550
                         light.ndotl = 0;
+                    #endif
 
                         UnityIndirect ind;
                         ind.diffuse = 0;

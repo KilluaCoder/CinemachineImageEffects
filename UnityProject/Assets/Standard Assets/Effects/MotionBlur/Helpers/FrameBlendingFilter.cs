@@ -31,6 +31,8 @@ namespace UnityStandardAssets.CinematicEffects
                 _material.hideFlags = HideFlags.DontSave;
 
                 _frameList = new Frame[4];
+
+                FetchUniformLocations();
             }
 
             public void Release()
@@ -66,20 +68,20 @@ namespace UnityStandardAssets.CinematicEffects
                 var f3 = GetFrameRelative(-3);
                 var f4 = GetFrameRelative(-4);
 
-                _material.SetTexture("_History1LumaTex", f1.lumaTexture);
-                _material.SetTexture("_History2LumaTex", f2.lumaTexture);
-                _material.SetTexture("_History3LumaTex", f3.lumaTexture);
-                _material.SetTexture("_History4LumaTex", f4.lumaTexture);
+                _material.SetTexture(_History1LumaTex, f1.lumaTexture);
+                _material.SetTexture(_History2LumaTex, f2.lumaTexture);
+                _material.SetTexture(_History3LumaTex, f3.lumaTexture);
+                _material.SetTexture(_History4LumaTex, f4.lumaTexture);
 
-                _material.SetTexture("_History1ChromaTex", f1.chromaTexture);
-                _material.SetTexture("_History2ChromaTex", f2.chromaTexture);
-                _material.SetTexture("_History3ChromaTex", f3.chromaTexture);
-                _material.SetTexture("_History4ChromaTex", f4.chromaTexture);
+                _material.SetTexture(_History1ChromaTex, f1.chromaTexture);
+                _material.SetTexture(_History2ChromaTex, f2.chromaTexture);
+                _material.SetTexture(_History3ChromaTex, f3.chromaTexture);
+                _material.SetTexture(_History4ChromaTex, f4.chromaTexture);
 
-                _material.SetFloat("_History1Weight", f1.CalculateWeight(strength, t));
-                _material.SetFloat("_History2Weight", f2.CalculateWeight(strength, t));
-                _material.SetFloat("_History3Weight", f3.CalculateWeight(strength, t));
-                _material.SetFloat("_History4Weight", f4.CalculateWeight(strength, t));
+                _material.SetFloat(_History1Weight, f1.CalculateWeight(strength, t));
+                _material.SetFloat(_History2Weight, f2.CalculateWeight(strength, t));
+                _material.SetFloat(_History3Weight, f3.CalculateWeight(strength, t));
+                _material.SetFloat(_History4Weight, f4.CalculateWeight(strength, t));
 
                 Graphics.Blit(source, destination, _material, _useCompression ? 1 : 2);
             }
@@ -158,6 +160,21 @@ namespace UnityStandardAssets.CinematicEffects
             Frame[] _frameList;
             int _lastFrameCount;
 
+            int _History1LumaTex;
+            int _History2LumaTex;
+            int _History3LumaTex;
+            int _History4LumaTex;
+
+            int _History1ChromaTex;
+            int _History2ChromaTex;
+            int _History3ChromaTex;
+            int _History4ChromaTex;
+
+            int _History1Weight;
+            int _History2Weight;
+            int _History3Weight;
+            int _History4Weight;
+
             // Check if the platform has the capability of compression.
             static bool CheckSupportCompression()
             {
@@ -190,6 +207,24 @@ namespace UnityStandardAssets.CinematicEffects
             {
                 var index = (Time.frameCount + _frameList.Length + offset) % _frameList.Length;
                 return _frameList[index];
+            }
+
+            void FetchUniformLocations()
+            {
+                _History1LumaTex = Shader.PropertyToID("_History1LumaTex");
+                _History2LumaTex = Shader.PropertyToID("_History2LumaTex");
+                _History3LumaTex = Shader.PropertyToID("_History3LumaTex");
+                _History4LumaTex = Shader.PropertyToID("_History4LumaTex");
+
+                _History1ChromaTex = Shader.PropertyToID("_History1ChromaTex");
+                _History2ChromaTex = Shader.PropertyToID("_History2ChromaTex");
+                _History3ChromaTex = Shader.PropertyToID("_History3ChromaTex");
+                _History4ChromaTex = Shader.PropertyToID("_History4ChromaTex");
+
+                _History1Weight = Shader.PropertyToID("_History1Weight");
+                _History2Weight = Shader.PropertyToID("_History2Weight");
+                _History3Weight = Shader.PropertyToID("_History3Weight");
+                _History4Weight = Shader.PropertyToID("_History4Weight");
             }
 
             #endregion

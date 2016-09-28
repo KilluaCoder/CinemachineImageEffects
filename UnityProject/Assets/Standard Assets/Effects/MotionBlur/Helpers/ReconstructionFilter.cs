@@ -27,6 +27,8 @@ namespace UnityStandardAssets.CinematicEffects
 
                 // Use loop unrolling on Adreno GPUs to avoid shader issues.
                 _unroll = SystemInfo.graphicsDeviceName.Contains("Adreno");
+
+                FetchUniformLocations();
             }
 
             public void Release()
@@ -53,8 +55,8 @@ namespace UnityStandardAssets.CinematicEffects
                 // 1st pass - Velocity/depth packing
                 // Motion vectors are scaled by an empirical factor of 1.45.
                 var velocityScale = shutterAngle / 360 * 1.45f;
-                _material.SetFloat("_VelocityScale", velocityScale);
-                _material.SetFloat("_MaxBlurRadius", maxBlurPixels);
+                _material.SetFloat(_VelocityScale, velocityScale);
+                _material.SetFloat(_MaxBlurRadius, maxBlurPixels);
 
                 var vbuffer = GetTemporaryRT(source, 1, _packedRTFormat);
                 Graphics.Blit(null, vbuffer, _material, 0);
@@ -70,8 +72,8 @@ namespace UnityStandardAssets.CinematicEffects
 
                 // 4th pass - Last TileMax filter (reduce to tileSize)
                 var tileMaxOffs = Vector2.one * (tileSize / 8.0f - 1) * -0.5f;
-                _material.SetVector("_TileMaxOffs", tileMaxOffs);
-                _material.SetInt("_TileMaxLoop", tileSize / 8);
+                _material.SetVector(_TileMaxOffs, tileMaxOffs);
+                _material.SetInt(_TileMaxLoop, tileSize / 8);
 
                 var tile = GetTemporaryRT(source, tileSize, _vectorRTFormat);
                 Graphics.Blit(tile8, tile, _material, 3);
@@ -83,10 +85,10 @@ namespace UnityStandardAssets.CinematicEffects
                 ReleaseTemporaryRT(tile);
 
                 // 6th pass - Reconstruction pass
-                _material.SetInt("_LoopCount", Mathf.Clamp(sampleCount / 2, 1, 64));
-                _material.SetFloat("_MaxBlurRadius", maxBlurPixels);
-                _material.SetTexture("_NeighborMaxTex", neighborMax);
-                _material.SetTexture("_VelocityTex", vbuffer);
+                _material.SetInt(_LoopCount, Mathf.Clamp(sampleCount / 2, 1, 64));
+                _material.SetFloat(_MaxBlurRadius, maxBlurPixels);
+                _material.SetTexture(_NeighborMaxTex, neighborMax);
+                _material.SetTexture(_VelocityTex, vbuffer);
                 Graphics.Blit(source, destination, _material, _unroll ? 6 : 5);
 
                 // Cleaning up
@@ -106,6 +108,14 @@ namespace UnityStandardAssets.CinematicEffects
 
             // Texture format for storing packed velocity/depth.
             RenderTextureFormat _packedRTFormat = RenderTextureFormat.ARGB2101010;
+
+            int _VelocityScale;
+            int _MaxBlurRadius;
+            int _TileMaxOffs;
+            int _TileMaxLoop;
+            int _LoopCount;
+            int _NeighborMaxTex;
+            int _VelocityTex;
 
             bool CheckTextureFormatSupport()
             {
@@ -132,6 +142,17 @@ namespace UnityStandardAssets.CinematicEffects
             void ReleaseTemporaryRT(RenderTexture rt)
             {
                 RenderTexture.ReleaseTemporary(rt);
+            }
+
+            void FetchUniformLocations()
+            {
+                _VelocityScale = Shader.PropertyToID("_VelocityScale");
+                _MaxBlurRadius = Shader.PropertyToID("_MaxBlurRadius");
+                _TileMaxOffs = Shader.PropertyToID("_TileMaxOffs");
+                _TileMaxLoop = Shader.PropertyToID("_TileMaxLoop");
+                _LoopCount = Shader.PropertyToID("_LoopCount");
+                _NeighborMaxTex = Shader.PropertyToID("_NeighborMaxTex");
+                _VelocityTex = Shader.PropertyToID("_VelocityTex");
             }
 
             #endregion

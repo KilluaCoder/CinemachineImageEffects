@@ -182,6 +182,32 @@ namespace UnityStandardAssets.CinematicEffects
 
         private RenderTextureUtility m_RTU;
 
+        // Shader properties
+        private int m_DistCenterScale;
+        private int m_DistAmount;
+        private int m_ChromaticAberration;
+        private int m_VignetteColor;
+        private int m_BlurPass;
+        private int m_BlurTex;
+        private int m_VignetteBlur;
+        private int m_VignetteDesat;
+        private int m_VignetteCenter;
+        private int m_VignetteSettings;
+
+        private void Awake()
+        {
+            m_DistCenterScale = Shader.PropertyToID("_DistCenterScale");
+            m_DistAmount = Shader.PropertyToID("_DistAmount");
+            m_ChromaticAberration = Shader.PropertyToID("_ChromaticAberration");
+            m_VignetteColor = Shader.PropertyToID("_VignetteColor");
+            m_BlurPass = Shader.PropertyToID("_BlurPass");
+            m_BlurTex = Shader.PropertyToID("_BlurTex");
+            m_VignetteBlur = Shader.PropertyToID("_VignetteBlur");
+            m_VignetteDesat = Shader.PropertyToID("_VignetteDesat");
+            m_VignetteCenter = Shader.PropertyToID("_VignetteCenter");
+            m_VignetteSettings = Shader.PropertyToID("_VignetteSettings");
+        }
+
         private void OnEnable()
         {
             if (!ImageEffectHelper.IsSupported(shader, false, false, this))
@@ -217,20 +243,20 @@ namespace UnityStandardAssets.CinematicEffects
                 var p0 = new Vector4(distortion.centerX, distortion.centerY, Mathf.Max(distortion.amountX, 1e-4f), Mathf.Max(distortion.amountY, 1e-4f));
                 var p1 = new Vector3(distortion.amount >= 0f ? theta : 1f / theta, sigma, 1f / distortion.scale);
                 material.EnableKeyword(distortion.amount >= 0f ? "DISTORT" : "UNDISTORT");
-                material.SetVector("_DistCenterScale", p0);
-                material.SetVector("_DistAmount", p1);
+                material.SetVector(m_DistCenterScale, p0);
+                material.SetVector(m_DistAmount, p1);
             }
 
             if (chromaticAberration.enabled)
             {
                 material.EnableKeyword("CHROMATIC_ABERRATION");
                 var chromaParams = new Vector4(chromaticAberration.color.r, chromaticAberration.color.g, chromaticAberration.color.b, chromaticAberration.amount * 0.001f);
-                material.SetVector("_ChromaticAberration", chromaParams);
+                material.SetVector(m_ChromaticAberration, chromaParams);
             }
 
             if (vignette.enabled)
             {
-                material.SetColor("_VignetteColor", vignette.color);
+                material.SetColor(m_VignetteColor, vignette.color);
 
                 if (vignette.blur > 0f)
                 {
@@ -240,7 +266,7 @@ namespace UnityStandardAssets.CinematicEffects
                     var rt1 = m_RTU.GetTemporaryRenderTexture(w, h, 0, source.format);
                     var rt2 = m_RTU.GetTemporaryRenderTexture(w, h, 0, source.format);
 
-                    material.SetVector("_BlurPass", new Vector2(1f / w, 0f));
+                    material.SetVector(m_BlurPass, new Vector2(1f / w, 0f));
                     Graphics.Blit(source, rt1, material, (int)Pass.BlurPrePass);
 
                     if (distortion.enabled)
@@ -249,16 +275,16 @@ namespace UnityStandardAssets.CinematicEffects
                         material.DisableKeyword("UNDISTORT");
                     }
 
-                    material.SetVector("_BlurPass", new Vector2(0f, 1f / h));
+                    material.SetVector(m_BlurPass, new Vector2(0f, 1f / h));
                     Graphics.Blit(rt1, rt2, material, (int)Pass.BlurPrePass);
 
-                    material.SetVector("_BlurPass", new Vector2(1f / w, 0f));
+                    material.SetVector(m_BlurPass, new Vector2(1f / w, 0f));
                     Graphics.Blit(rt2, rt1, material, (int)Pass.BlurPrePass);
-                    material.SetVector("_BlurPass", new Vector2(0f, 1f / h));
+                    material.SetVector(m_BlurPass, new Vector2(0f, 1f / h));
                     Graphics.Blit(rt1, rt2, material, (int)Pass.BlurPrePass);
 
-                    material.SetTexture("_BlurTex", rt2);
-                    material.SetFloat("_VignetteBlur", vignette.blur * 3f);
+                    material.SetTexture(m_BlurTex, rt2);
+                    material.SetFloat(m_VignetteBlur, vignette.blur * 3f);
                     material.EnableKeyword("VIGNETTE_BLUR");
 
                     if (distortion.enabled)
@@ -268,21 +294,21 @@ namespace UnityStandardAssets.CinematicEffects
                 if (vignette.desaturate > 0f)
                 {
                     material.EnableKeyword("VIGNETTE_DESAT");
-                    material.SetFloat("_VignetteDesat", 1f - vignette.desaturate);
+                    material.SetFloat(m_VignetteDesat, 1f - vignette.desaturate);
                 }
 
-                material.SetVector("_VignetteCenter", vignette.center);
+                material.SetVector(m_VignetteCenter, vignette.center);
 
                 if (Mathf.Approximately(vignette.roundness, 1f))
                 {
                     material.EnableKeyword("VIGNETTE_CLASSIC");
-                    material.SetVector("_VignetteSettings", new Vector2(vignette.intensity, vignette.smoothness));
+                    material.SetVector(m_VignetteSettings, new Vector2(vignette.intensity, vignette.smoothness));
                 }
                 else
                 {
                     material.EnableKeyword("VIGNETTE_FILMIC");
                     float roundness = (1f - vignette.roundness) * 6f + vignette.roundness;
-                    material.SetVector("_VignetteSettings", new Vector3(vignette.intensity, vignette.smoothness, roundness));
+                    material.SetVector(m_VignetteSettings, new Vector3(vignette.intensity, vignette.smoothness, roundness));
                 }
             }
 

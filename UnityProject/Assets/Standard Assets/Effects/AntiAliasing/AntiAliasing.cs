@@ -60,6 +60,12 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
+        private void Awake()
+        {
+            m_SMAA.Awake();
+            m_FXAA.Awake();
+        }
+
         private void OnEnable()
         {
             m_SMAA.OnEnable(this);

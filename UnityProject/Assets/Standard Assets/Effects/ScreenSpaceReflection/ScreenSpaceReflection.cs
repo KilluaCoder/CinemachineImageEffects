@@ -211,6 +211,36 @@ namespace UnityStandardAssets.CinematicEffects
         private static int kFinalReflectionTexture;
         private static int kTempTexture;
 
+        private static int kRayStepSize;
+        private static int kAdditiveReflection;
+        private static int kBilateralUpsampling;
+        private static int kTreatBackfaceHitAsMiss;
+        private static int kAllowBackwardsRays;
+        private static int kTraceBehindObjects;
+        private static int kMaxSteps;
+        private static int kFullResolutionFiltering;
+        private static int kHalfResolution;
+        private static int kHighlightSuppression;
+        private static int kPixelsPerMeterAtOneMeter;
+        private static int kScreenEdgeFading;
+        private static int kReflectionBlur;
+        private static int kMaxRayTraceDistance;
+        private static int kFadeDistance;
+        private static int kLayerThickness;
+        private static int kSSRMultiplier;
+        private static int kFresnelFade;
+        private static int kFresnelFadePower;
+        private static int kReflectionBufferSize;
+        private static int kScreenSize;
+        private static int kInvScreenSize;
+        private static int kProjInfo;
+        private static int kCameraClipInfo;
+        private static int kProjectToPixelMatrix;
+        private static int kWorldToCameraMatrix;
+        private static int kCameraToWorldMatrix;
+        private static int kAxis;
+        private static int kCurrentMipLevel;
+
         // Shader pass indices used by the effect
         private enum PassIndex
         {
@@ -225,16 +255,8 @@ namespace UnityStandardAssets.CinematicEffects
             PoissonBlur = 8,
         }
 
-        private void OnEnable()
+        private void Awake()
         {
-            if (!ImageEffectHelper.IsSupported(shader, false, true, this))
-            {
-                enabled = false;
-                return;
-            }
-
-            camera_.depthTextureMode |= DepthTextureMode.Depth;
-
             kReflectionTextures = new int[5];
 
             kNormalAndRoughnessTexture = Shader.PropertyToID("_NormalAndRoughnessTexture");
@@ -248,6 +270,47 @@ namespace UnityStandardAssets.CinematicEffects
             kFilteredReflections = Shader.PropertyToID("_FilteredReflections");
             kFinalReflectionTexture = Shader.PropertyToID("_FinalReflectionTexture");
             kTempTexture = Shader.PropertyToID("_TempTexture");
+
+            kRayStepSize = Shader.PropertyToID("_RayStepSize");
+            kAdditiveReflection = Shader.PropertyToID("_AdditiveReflection");
+            kBilateralUpsampling = Shader.PropertyToID("_BilateralUpsampling");
+            kTreatBackfaceHitAsMiss = Shader.PropertyToID("_TreatBackfaceHitAsMiss");
+            kAllowBackwardsRays = Shader.PropertyToID("_AllowBackwardsRays");
+            kTraceBehindObjects = Shader.PropertyToID("_TraceBehindObjects");
+            kMaxSteps = Shader.PropertyToID("_MaxSteps");
+            kFullResolutionFiltering = Shader.PropertyToID("_FullResolutionFiltering");
+            kHalfResolution = Shader.PropertyToID("_HalfResolution");
+            kHighlightSuppression = Shader.PropertyToID("_HighlightSuppression");
+            kPixelsPerMeterAtOneMeter = Shader.PropertyToID("_PixelsPerMeterAtOneMeter");
+            kScreenEdgeFading = Shader.PropertyToID("_ScreenEdgeFading");
+            kReflectionBlur = Shader.PropertyToID("_ReflectionBlur");
+            kMaxRayTraceDistance = Shader.PropertyToID("_MaxRayTraceDistance");
+            kFadeDistance = Shader.PropertyToID("_FadeDistance");
+            kLayerThickness = Shader.PropertyToID("_LayerThickness");
+            kSSRMultiplier = Shader.PropertyToID("_SSRMultiplier");
+            kFresnelFade = Shader.PropertyToID("_FresnelFade");
+            kFresnelFadePower = Shader.PropertyToID("_FresnelFadePower");
+            kReflectionBufferSize = Shader.PropertyToID("_ReflectionBufferSize");
+            kScreenSize = Shader.PropertyToID("_ScreenSize");
+            kInvScreenSize = Shader.PropertyToID("_InvScreenSize");
+            kProjInfo = Shader.PropertyToID("_ProjInfo");
+            kCameraClipInfo = Shader.PropertyToID("_CameraClipInfo");
+            kProjectToPixelMatrix = Shader.PropertyToID("_ProjectToPixelMatrix");
+            kWorldToCameraMatrix = Shader.PropertyToID("_WorldToCameraMatrix");
+            kCameraToWorldMatrix = Shader.PropertyToID("_CameraToWorldMatrix");
+            kAxis = Shader.PropertyToID("_Axis");
+            kCurrentMipLevel = Shader.PropertyToID("_CurrentMipLevel");
+        }
+
+        private void OnEnable()
+        {
+            if (!ImageEffectHelper.IsSupported(shader, false, true, this))
+            {
+                enabled = false;
+                return;
+            }
+
+            camera_.depthTextureMode |= DepthTextureMode.Depth;
         }
 
         void OnDisable()
@@ -310,29 +373,29 @@ namespace UnityStandardAssets.CinematicEffects
 
             RenderTextureFormat intermediateFormat = camera_.hdr ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
 
-            material.SetInt("_RayStepSize", settings.reflectionSettings.stepSize);
-            material.SetInt("_AdditiveReflection", settings.reflectionSettings.blendType == SSRReflectionBlendType.Additive ? 1 : 0);
-            material.SetInt("_BilateralUpsampling", bilateralUpsample ? 1 : 0);
-            material.SetInt("_TreatBackfaceHitAsMiss", treatBackfaceHitAsMiss ? 1 : 0);
-            material.SetInt("_AllowBackwardsRays", settings.reflectionSettings.reflectBackfaces ? 1 : 0);
-            material.SetInt("_TraceBehindObjects", traceBehindObjects ? 1 : 0);
-            material.SetInt("_MaxSteps", settings.reflectionSettings.iterationCount);
-            material.SetInt("_FullResolutionFiltering", 0);
-            material.SetInt("_HalfResolution", (settings.reflectionSettings.reflectionQuality != SSRResolution.High) ? 1 : 0);
-            material.SetInt("_HighlightSuppression", highlightSuppression ? 1 : 0);
+            material.SetInt(kRayStepSize, settings.reflectionSettings.stepSize);
+            material.SetInt(kAdditiveReflection, settings.reflectionSettings.blendType == SSRReflectionBlendType.Additive ? 1 : 0);
+            material.SetInt(kBilateralUpsampling, bilateralUpsample ? 1 : 0);
+            material.SetInt(kTreatBackfaceHitAsMiss, treatBackfaceHitAsMiss ? 1 : 0);
+            material.SetInt(kAllowBackwardsRays, settings.reflectionSettings.reflectBackfaces ? 1 : 0);
+            material.SetInt(kTraceBehindObjects, traceBehindObjects ? 1 : 0);
+            material.SetInt(kMaxSteps, settings.reflectionSettings.iterationCount);
+            material.SetInt(kFullResolutionFiltering, 0);
+            material.SetInt(kHalfResolution, (settings.reflectionSettings.reflectionQuality != SSRResolution.High) ? 1 : 0);
+            material.SetInt(kHighlightSuppression, highlightSuppression ? 1 : 0);
 
             /** The height in pixels of a 1m object if viewed from 1m away. */
             float pixelsPerMeterAtOneMeter = sWidth / (-2.0f * (float)(Math.Tan(camera_.fieldOfView / 180.0 * Math.PI * 0.5)));
 
-            material.SetFloat("_PixelsPerMeterAtOneMeter", pixelsPerMeterAtOneMeter);
-            material.SetFloat("_ScreenEdgeFading", settings.screenEdgeMask.intensity);
-            material.SetFloat("_ReflectionBlur", settings.reflectionSettings.reflectionBlur);
-            material.SetFloat("_MaxRayTraceDistance", settings.reflectionSettings.maxDistance);
-            material.SetFloat("_FadeDistance", settings.intensitySettings.fadeDistance);
-            material.SetFloat("_LayerThickness", settings.reflectionSettings.widthModifier);
-            material.SetFloat("_SSRMultiplier", settings.intensitySettings.reflectionMultiplier);
-            material.SetFloat("_FresnelFade", settings.intensitySettings.fresnelFade);
-            material.SetFloat("_FresnelFadePower", settings.intensitySettings.fresnelFadePower);
+            material.SetFloat(kPixelsPerMeterAtOneMeter, pixelsPerMeterAtOneMeter);
+            material.SetFloat(kScreenEdgeFading, settings.screenEdgeMask.intensity);
+            material.SetFloat(kReflectionBlur, settings.reflectionSettings.reflectionBlur);
+            material.SetFloat(kMaxRayTraceDistance, settings.reflectionSettings.maxDistance);
+            material.SetFloat(kFadeDistance, settings.intensitySettings.fadeDistance);
+            material.SetFloat(kLayerThickness, settings.reflectionSettings.widthModifier);
+            material.SetFloat(kSSRMultiplier, settings.intensitySettings.reflectionMultiplier);
+            material.SetFloat(kFresnelFade, settings.intensitySettings.fresnelFade);
+            material.SetFloat(kFresnelFadePower, settings.intensitySettings.fresnelFadePower);
 
             Matrix4x4 P = camera_.projectionMatrix;
             Vector4 projInfo = new Vector4
@@ -345,12 +408,12 @@ namespace UnityStandardAssets.CinematicEffects
                 new Vector3(camera_.nearClipPlane, -1.0f, 1.0f) :
                 new Vector3(camera_.nearClipPlane * camera_.farClipPlane, camera_.nearClipPlane - camera_.farClipPlane, camera_.farClipPlane);
 
-            material.SetVector("_ReflectionBufferSize", new Vector2(rtW, rtH));
-            material.SetVector("_ScreenSize", new Vector2(sWidth, sHeight));
-            material.SetVector("_InvScreenSize", new Vector2((float)(1.0f / sWidth), (float)(1.0f / sHeight)));
-            material.SetVector("_ProjInfo", projInfo); // used for unprojection
+            material.SetVector(kReflectionBufferSize, new Vector2(rtW, rtH));
+            material.SetVector(kScreenSize, new Vector2(sWidth, sHeight));
+            material.SetVector(kInvScreenSize, new Vector2((float)(1.0f / sWidth), (float)(1.0f / sHeight)));
+            material.SetVector(kProjInfo, projInfo); // used for unprojection
 
-            material.SetVector("_CameraClipInfo", cameraClipInfo);
+            material.SetVector(kCameraClipInfo, cameraClipInfo);
 
             Matrix4x4 warpToScreenSpaceMatrix = new Matrix4x4();
             warpToScreenSpaceMatrix.SetRow(0, new Vector4(sx, 0.0f, 0.0f, sx));
@@ -360,9 +423,9 @@ namespace UnityStandardAssets.CinematicEffects
 
             Matrix4x4 projectToPixelMatrix = warpToScreenSpaceMatrix * P;
 
-            material.SetMatrix("_ProjectToPixelMatrix", projectToPixelMatrix);
-            material.SetMatrix("_WorldToCameraMatrix", camera_.worldToCameraMatrix);
-            material.SetMatrix("_CameraToWorldMatrix", camera_.worldToCameraMatrix.inverse);
+            material.SetMatrix(kProjectToPixelMatrix, projectToPixelMatrix);
+            material.SetMatrix(kWorldToCameraMatrix, camera_.worldToCameraMatrix);
+            material.SetMatrix(kCameraToWorldMatrix, camera_.worldToCameraMatrix.inverse);
 
             if (m_CommandBuffer == null)
             {
@@ -396,12 +459,12 @@ namespace UnityStandardAssets.CinematicEffects
                     int lowMip = i;
 
                     m_CommandBuffer.GetTemporaryRT(kBlurTexture, rtW >> lowMip, rtH >> lowMip, 0, FilterMode.Bilinear, intermediateFormat);
-                    m_CommandBuffer.SetGlobalVector("_Axis", new Vector4(1.0f, 0.0f, 0.0f, 0.0f));
-                    m_CommandBuffer.SetGlobalFloat("_CurrentMipLevel", i - 1.0f);
+                    m_CommandBuffer.SetGlobalVector(kAxis, new Vector4(1.0f, 0.0f, 0.0f, 0.0f));
+                    m_CommandBuffer.SetGlobalFloat(kCurrentMipLevel, i - 1.0f);
 
                     m_CommandBuffer.Blit(inputTex, kBlurTexture, material, (int)PassIndex.Blur);
 
-                    m_CommandBuffer.SetGlobalVector("_Axis", new Vector4(0.0f, 1.0f, 0.0f, 0.0f));
+                    m_CommandBuffer.SetGlobalVector(kAxis, new Vector4(0.0f, 1.0f, 0.0f, 0.0f));
 
                     inputTex = kReflectionTextures[i];
                     m_CommandBuffer.Blit(kBlurTexture, inputTex, material, (int)PassIndex.Blur);

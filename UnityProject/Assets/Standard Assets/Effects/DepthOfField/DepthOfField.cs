@@ -386,6 +386,33 @@ namespace UnityStandardAssets.CinematicEffects
         private Vector4 m_HexagonalBokehDirection2;
         private Vector4 m_HexagonalBokehDirection3;
 
+        private int m_BlurParams;
+        private int m_BlurCoe;
+        private int m_Offsets;
+        private int m_BlurredColor;
+        private int m_SpawnHeuristic;
+        private int m_BokehParams;
+        private int m_Convolved_TexelSize;
+        private int m_SecondTex;
+        private int m_ThirdTex;
+        private int m_MainTex;
+        private int m_Screen;
+
+        private void Awake()
+        {
+            m_BlurParams = Shader.PropertyToID("_BlurParams");
+            m_BlurCoe = Shader.PropertyToID("_BlurCoe");
+            m_Offsets = Shader.PropertyToID("_Offsets");
+            m_BlurredColor = Shader.PropertyToID("_BlurredColor");
+            m_SpawnHeuristic = Shader.PropertyToID("_SpawnHeuristic");
+            m_BokehParams = Shader.PropertyToID("_BokehParams");
+            m_Convolved_TexelSize = Shader.PropertyToID("_Convolved_TexelSize");
+            m_SecondTex = Shader.PropertyToID("_SecondTex");
+            m_ThirdTex = Shader.PropertyToID("_ThirdTex");
+            m_MainTex = Shader.PropertyToID("_MainTex");
+            m_Screen = Shader.PropertyToID("_Screen");
+        }
+
         private void OnEnable()
         {
             if (!ImageEffectHelper.IsSupported(filmicDepthOfFieldShader, true, true, this) || !ImageEffectHelper.IsSupported(medianFilterShader, true, true, this))
@@ -441,8 +468,8 @@ namespace UnityStandardAssets.CinematicEffects
                 Vector4 blurrinessParam;
                 Vector4 blurrinessCoe;
                 ComputeCocParameters(out blurrinessParam, out blurrinessCoe);
-                filmicDepthOfFieldMaterial.SetVector("_BlurParams", blurrinessParam);
-                filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
+                filmicDepthOfFieldMaterial.SetVector(m_BlurParams, blurrinessParam);
+                filmicDepthOfFieldMaterial.SetVector(m_BlurCoe, blurrinessCoe);
                 Graphics.Blit(null, destination, filmicDepthOfFieldMaterial, (int)Passes.VisualizeCocExplicit);
             }
             else
@@ -492,8 +519,8 @@ namespace UnityStandardAssets.CinematicEffects
             Vector4 cocParam;
             Vector4 cocCoe;
             ComputeCocParameters(out cocParam, out cocCoe);
-            filmicDepthOfFieldMaterial.SetVector("_BlurParams", cocParam);
-            filmicDepthOfFieldMaterial.SetVector("_BlurCoe", cocCoe);
+            filmicDepthOfFieldMaterial.SetVector(m_BlurParams, cocParam);
+            filmicDepthOfFieldMaterial.SetVector(m_BlurCoe, cocCoe);
             Graphics.Blit(source, colorAndCoc2, filmicDepthOfFieldMaterial, (int)Passes.CaptureCocExplicit);
             var src = colorAndCoc2;
             var dst = colorAndCoc;
@@ -504,15 +531,15 @@ namespace UnityStandardAssets.CinematicEffects
                 // Blur a bit so we can do a frequency check
                 var blurred = m_RTU.GetTemporaryRenderTexture(rtW, rtH);
                 Graphics.Blit(src, blurred, filmicDepthOfFieldMaterial, (int)Passes.BoxBlur);
-                filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(0f, 1.5f, 0f, 1.5f));
+                filmicDepthOfFieldMaterial.SetVector(m_Offsets, new Vector4(0f, 1.5f, 0f, 1.5f));
                 Graphics.Blit(blurred, dst, filmicDepthOfFieldMaterial, (int)Passes.BlurAlphaWeighted);
-                filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(1.5f, 0f, 0f, 1.5f));
+                filmicDepthOfFieldMaterial.SetVector(m_Offsets, new Vector4(1.5f, 0f, 0f, 1.5f));
                 Graphics.Blit(dst, blurred, filmicDepthOfFieldMaterial, (int)Passes.BlurAlphaWeighted);
 
                 // Collect texture bokeh candidates and replace with a darker pixel
-                textureBokehMaterial.SetTexture("_BlurredColor", blurred);
-                textureBokehMaterial.SetFloat("_SpawnHeuristic", bokehTexture.spawnHeuristic);
-                textureBokehMaterial.SetVector("_BokehParams", new Vector4(bokehTexture.scale * textureBokehScale, bokehTexture.intensity, bokehTexture.threshold, textureBokehMaxRadius));
+                textureBokehMaterial.SetTexture(m_BlurredColor, blurred);
+                textureBokehMaterial.SetFloat(m_SpawnHeuristic, bokehTexture.spawnHeuristic);
+                textureBokehMaterial.SetVector(m_BokehParams, new Vector4(bokehTexture.scale * textureBokehScale, bokehTexture.intensity, bokehTexture.threshold, textureBokehMaxRadius));
                 Graphics.SetRandomWriteTarget(1, computeBufferPoints);
                 Graphics.Blit(src, dst, textureBokehMaterial, (int)BokehTexturesPasses.Collect);
                 Graphics.ClearRandomWriteTargets();
@@ -520,8 +547,8 @@ namespace UnityStandardAssets.CinematicEffects
                 m_RTU.ReleaseTemporaryRenderTexture(blurred);
             }
 
-            filmicDepthOfFieldMaterial.SetVector("_BlurParams", cocParam);
-            filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
+            filmicDepthOfFieldMaterial.SetVector(m_BlurParams, cocParam);
+            filmicDepthOfFieldMaterial.SetVector(m_BlurCoe, blurrinessCoe);
 
             // Dilate near blur factor
             RenderTexture blurredFgCoc = null;
@@ -529,9 +556,9 @@ namespace UnityStandardAssets.CinematicEffects
             {
                 var blurredFgCoc2 = m_RTU.GetTemporaryRenderTexture(rtW, rtH, 0, RenderTextureFormat.RGHalf);
                 blurredFgCoc = m_RTU.GetTemporaryRenderTexture(rtW, rtH, 0, RenderTextureFormat.RGHalf);
-                filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(0f, nearBlurRadius * 0.75f, 0f, 0f));
+                filmicDepthOfFieldMaterial.SetVector(m_Offsets, new Vector4(0f, nearBlurRadius * 0.75f, 0f, 0f));
                 Graphics.Blit(src, blurredFgCoc2, filmicDepthOfFieldMaterial, (int)Passes.DilateFgCocFromColor);
-                filmicDepthOfFieldMaterial.SetVector("_Offsets", new Vector4(nearBlurRadius * 0.75f, 0f, 0f, 0f));
+                filmicDepthOfFieldMaterial.SetVector(m_Offsets, new Vector4(nearBlurRadius * 0.75f, 0f, 0f, 0f));
                 Graphics.Blit(blurredFgCoc2, blurredFgCoc, filmicDepthOfFieldMaterial, (int)Passes.DilateFgCoc);
                 m_RTU.ReleaseTemporaryRenderTexture(blurredFgCoc2);
                 blurredFgCoc.filterMode = FilterMode.Point;
@@ -563,10 +590,10 @@ namespace UnityStandardAssets.CinematicEffects
             {
                 case FilterQuality.Normal:
                 {
-                    medianFilterMaterial.SetVector("_Offsets", new Vector4(1f, 0f, 0f, 0f));
+                    medianFilterMaterial.SetVector(m_Offsets, new Vector4(1f, 0f, 0f, 0f));
                     Graphics.Blit(src, dst, medianFilterMaterial, (int)MedianPasses.Median3);
                     SwapRenderTexture(ref src, ref dst);
-                    medianFilterMaterial.SetVector("_Offsets", new Vector4(0f, 1f, 0f, 0f));
+                    medianFilterMaterial.SetVector(m_Offsets, new Vector4(0f, 1f, 0f, 0f));
                     Graphics.Blit(src, dst, medianFilterMaterial, (int)MedianPasses.Median3);
                     SwapRenderTexture(ref src, ref dst);
                     break;
@@ -580,9 +607,9 @@ namespace UnityStandardAssets.CinematicEffects
             }
 
             // Merge to full resolution (with boost) + upsampling (linear or bicubic)
-            filmicDepthOfFieldMaterial.SetVector("_BlurCoe", blurrinessCoe);
-            filmicDepthOfFieldMaterial.SetVector("_Convolved_TexelSize", new Vector4(src.width, src.height, 1f / src.width, 1f / src.height));
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", src);
+            filmicDepthOfFieldMaterial.SetVector(m_BlurCoe, blurrinessCoe);
+            filmicDepthOfFieldMaterial.SetVector(m_Convolved_TexelSize, new Vector4(src.width, src.height, 1f / src.width, 1f / src.height));
+            filmicDepthOfFieldMaterial.SetTexture(m_SecondTex, src);
             int mergePass = (int)Passes.MergeExplicit;
 
             // Apply texture bokeh
@@ -594,8 +621,8 @@ namespace UnityStandardAssets.CinematicEffects
                 Graphics.SetRenderTarget(tmp);
                 ComputeBuffer.CopyCount(computeBufferPoints, computeBufferDrawArgs, 0);
                 textureBokehMaterial.SetBuffer("pointBuffer", computeBufferPoints);
-                textureBokehMaterial.SetTexture("_MainTex", bokehTexture.texture);
-                textureBokehMaterial.SetVector("_Screen", new Vector3(1f / (1f * source.width), 1f / (1f * source.height), textureBokehMaxRadius));
+                textureBokehMaterial.SetTexture(m_MainTex, bokehTexture.texture);
+                textureBokehMaterial.SetVector(m_Screen, new Vector3(1f / (1f * source.width), 1f / (1f * source.height), textureBokehMaxRadius));
                 textureBokehMaterial.SetPass((int)BokehTexturesPasses.Apply);
                 Graphics.DrawProceduralIndirect(MeshTopology.Points, computeBufferDrawArgs, 0);
                 Graphics.Blit(tmp, destination); // Hackaround for DX11 flipfun (OPTIMIZEME)
@@ -616,17 +643,17 @@ namespace UnityStandardAssets.CinematicEffects
             int blurPass;
             int blurPassMerge;
             GetDirectionalBlurPassesFromRadius(blurredFgCoc, maxRadius, out blurPass, out blurPassMerge);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurredFgCoc);
+            filmicDepthOfFieldMaterial.SetTexture(m_SecondTex, blurredFgCoc);
             var tmp = m_RTU.GetTemporaryRenderTexture(src.width, src.height, 0, src.format);
 
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_HexagonalBokehDirection1);
+            filmicDepthOfFieldMaterial.SetVector(m_Offsets, m_HexagonalBokehDirection1);
             Graphics.Blit(src, tmp, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_HexagonalBokehDirection2);
+            filmicDepthOfFieldMaterial.SetVector(m_Offsets, m_HexagonalBokehDirection2);
             Graphics.Blit(tmp, src, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_HexagonalBokehDirection3);
-            filmicDepthOfFieldMaterial.SetTexture("_ThirdTex", src);
+            filmicDepthOfFieldMaterial.SetVector(m_Offsets, m_HexagonalBokehDirection3);
+            filmicDepthOfFieldMaterial.SetTexture(m_ThirdTex, src);
             Graphics.Blit(tmp, dst, filmicDepthOfFieldMaterial, blurPassMerge);
             m_RTU.ReleaseTemporaryRenderTexture(tmp);
             SwapRenderTexture(ref src, ref dst);
@@ -639,20 +666,20 @@ namespace UnityStandardAssets.CinematicEffects
             int blurPass;
             int blurPassMerge;
             GetDirectionalBlurPassesFromRadius(blurredFgCoc, maxRadius, out blurPass, out blurPassMerge);
-            filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurredFgCoc);
+            filmicDepthOfFieldMaterial.SetTexture(m_SecondTex, blurredFgCoc);
             var tmp = m_RTU.GetTemporaryRenderTexture(src.width, src.height, 0, src.format);
 
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_OctogonalBokehDirection1);
+            filmicDepthOfFieldMaterial.SetVector(m_Offsets, m_OctogonalBokehDirection1);
             Graphics.Blit(src, tmp, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_OctogonalBokehDirection2);
+            filmicDepthOfFieldMaterial.SetVector(m_Offsets, m_OctogonalBokehDirection2);
             Graphics.Blit(tmp, dst, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_OctogonalBokehDirection3);
+            filmicDepthOfFieldMaterial.SetVector(m_Offsets, m_OctogonalBokehDirection3);
             Graphics.Blit(src, tmp, filmicDepthOfFieldMaterial, blurPass);
 
-            filmicDepthOfFieldMaterial.SetVector("_Offsets", m_OctogonalBokehDirection4);
-            filmicDepthOfFieldMaterial.SetTexture("_ThirdTex", dst);
+            filmicDepthOfFieldMaterial.SetVector(m_Offsets, m_OctogonalBokehDirection4);
+            filmicDepthOfFieldMaterial.SetTexture(m_ThirdTex, dst);
             Graphics.Blit(tmp, src, filmicDepthOfFieldMaterial, blurPassMerge);
             m_RTU.ReleaseTemporaryRenderTexture(tmp);
         }
@@ -663,7 +690,7 @@ namespace UnityStandardAssets.CinematicEffects
 
             if (blurredFgCoc != null)
             {
-                filmicDepthOfFieldMaterial.SetTexture("_SecondTex", blurredFgCoc);
+                filmicDepthOfFieldMaterial.SetTexture(m_SecondTex, blurredFgCoc);
                 bokehPass = (maxRadius > 10f) ? (int)Passes.CircleBlurWithDilatedFg : (int)Passes.CircleBlowLowQualityWithDilatedFg;
             }
             else

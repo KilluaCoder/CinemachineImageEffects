@@ -151,6 +151,12 @@ namespace UnityStandardAssets.CinematicEffects
 
         [SerializeField] Mesh _quadMesh;
 
+        int _OcclusionTexture;
+        int _Intensity;
+        int _Radius;
+        int _Downsample;
+        int _SampleCount;
+
         #endregion
 
         #region Effect Passes
@@ -229,28 +235,37 @@ namespace UnityStandardAssets.CinematicEffects
             RenderTexture.ReleaseTemporary(rtBlur);
 
             // Composition
-            m.SetTexture("_OcclusionTexture", rtMask);
+            m.SetTexture(_OcclusionTexture, rtMask);
             Graphics.Blit(source, destination, m, settings.debug ? 8 : 6);
             RenderTexture.ReleaseTemporary(rtMask);
 
             // Explicitly detach the temporary texture.
             // (This is needed to avoid conflict with CommandBuffer)
-            m.SetTexture("_OcclusionTexture", null);
+            m.SetTexture(_OcclusionTexture, null);
         }
 
         // Update the common material properties.
         void UpdateMaterialProperties()
         {
             var m = aoMaterial;
-            m.SetFloat("_Intensity", intensity);
-            m.SetFloat("_Radius", radius);
-            m.SetFloat("_Downsample", downsampling ? 0.5f : 1);
-            m.SetInt("_SampleCount", sampleCountValue);
+            m.SetFloat(_Intensity, intensity);
+            m.SetFloat(_Radius, radius);
+            m.SetFloat(_Downsample, downsampling ? 0.5f : 1);
+            m.SetInt(_SampleCount, sampleCountValue);
         }
 
         #endregion
 
         #region MonoBehaviour Functions
+
+        void Awake()
+        {
+            _OcclusionTexture = Shader.PropertyToID("_OcclusionTexture");
+            _Intensity = Shader.PropertyToID("_Intensity");
+            _Radius = Shader.PropertyToID("_Radius");
+            _Downsample = Shader.PropertyToID("_Downsample");
+            _SampleCount = Shader.PropertyToID("_SampleCount");
+        }
 
         void OnEnable()
         {

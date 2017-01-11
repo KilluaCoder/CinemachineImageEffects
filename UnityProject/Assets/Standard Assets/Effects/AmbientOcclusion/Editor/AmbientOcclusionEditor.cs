@@ -86,7 +86,10 @@ namespace UnityStandardAssets.CinematicEffects
                 EditorGUILayout.HelpBox(_textNoAmbientOnly, MessageType.Warning);
             }
 
-            #if UNITY_5_4_OR_NEWER
+            #if UNITY_5_5_OR_NEWER
+            if (_ambientOnly.boolValue && PlayerSettings.stereoRenderingPath == StereoRenderingPath.SinglePass || PlayerSettings.stereoRenderingPath == StereoRenderingPath.Instancing)
+                EditorGUILayout.HelpBox(_textSinglePassStereo, MessageType.Warning);
+            #elif UNITY_5_4_OR_NEWER
             if (_ambientOnly.boolValue && PlayerSettings.singlePassStereoRendering)
                 EditorGUILayout.HelpBox(_textSinglePassStereo, MessageType.Warning);
             #endif

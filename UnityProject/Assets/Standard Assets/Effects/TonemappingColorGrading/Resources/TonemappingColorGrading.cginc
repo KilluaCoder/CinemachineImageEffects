@@ -247,10 +247,10 @@ half4 frag_tcg(v2f_img i) : SV_Target
 
 #if ENABLE_USER_LUT
     #if !UNITY_COLORSPACE_GAMMA
-        half3 lc = apply_lut(_UserLutTex, saturate(LinearToGammaSpace(color.rgb)), _UserLutParams.xyz);
-        lc = GammaToLinearSpace(lc);
-    #else
         half3 lc = apply_lut(_UserLutTex, saturate(color.rgb), _UserLutParams.xyz);
+    #else
+        half3 lc = apply_lut(_UserLutTex, saturate(GammaToLinearSpace(color.rgb)), _UserLutParams.xyz);
+        lc = LinearToGammaSpace(lc);
     #endif
 
     color.rgb = lerp(color.rgb, lc, _UserLutParams.w);

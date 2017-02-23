@@ -5,6 +5,9 @@ using UnityEngine.Rendering;
 namespace UnityStandardAssets.CinematicEffects
 {
     [ExecuteInEditMode]
+#if UNITY_5_4_OR_NEWER
+    [ImageEffectAllowedInSceneView]
+#endif
     [RequireComponent(typeof(Camera))]
     [AddComponentMenu("Image Effects/Cinematic/Temporal Anti-aliasing")]
     public class TemporalAntiAliasing : MonoBehaviour
@@ -41,11 +44,11 @@ namespace UnityStandardAssets.CinematicEffects
         public struct BlendSettings
         {
             [Tooltip("The blend coefficient for a stationary fragment. Controls the percentage of history sample blended into the final color.")]
-            [Range(0f, 1f)]
+            [Range(0f, 0.99f)]
             public float stationary;
 
             [Tooltip("The blend coefficient for a fragment with significant motion. Controls the percentage of history sample blended into the final color.")]
-            [Range(0f, 1f)]
+            [Range(0f, 0.99f)]
             public float moving;
 
             [Tooltip("Amount of motion amplification in percentage. A higher value will make the final blend more sensitive to smaller motion, but might result in more aliased output; while a smaller value might desensitivize the algorithm resulting in a blurry output.")]
@@ -80,39 +83,37 @@ namespace UnityStandardAssets.CinematicEffects
             [Layout]
             public DebugSettings debugSettings;
 
-            private static readonly Settings m_Default = new Settings
-            {
-                jitterSettings = new JitterSettings
-                {
-                    sequence = Sequence.Halton,
-                    spread = 1f,
-                    sampleCount = 8
-                },
-
-                sharpenFilterSettings = new SharpenFilterSettings
-                {
-                    amount = 0.25f
-                },
-
-                blendSettings = new BlendSettings
-                {
-                    stationary = 0.98f,
-                    moving = 0.8f,
-
-                    motionAmplification = 60f
-                },
-
-                debugSettings = new DebugSettings
-                {
-                    forceRepaint = false
-                }
-            };
-
             public static Settings defaultSettings
             {
                 get
                 {
-                    return m_Default;
+                    return new Settings
+                    {
+                        jitterSettings = new JitterSettings
+                        {
+                            sequence = Sequence.Halton,
+                            spread = 1f,
+                            sampleCount = 8
+                        },
+
+                        sharpenFilterSettings = new SharpenFilterSettings
+                        {
+                            amount = 0.25f
+                        },
+
+                        blendSettings = new BlendSettings
+                        {
+                            stationary = 0.98f,
+                            moving = 0.8f,
+
+                            motionAmplification = 60f
+                        },
+
+                        debugSettings = new DebugSettings
+                        {
+                            forceRepaint = false
+                        }
+                    };
                 }
             }
         }
@@ -161,11 +162,11 @@ namespace UnityStandardAssets.CinematicEffects
             }
         }
 
-        private void RenderFullScreenQuad()
+        private void RenderFullScreenQuad(int pass)
         {
             GL.PushMatrix();
             GL.LoadOrtho();
-            material.SetPass(0);
+            material.SetPass(pass);
 
             //Render the full screen quad manually.
             GL.Begin(GL.QUADS);
@@ -254,6 +255,22 @@ namespace UnityStandardAssets.CinematicEffects
             return matrix;
         }
 
+        private Matrix4x4 GetOrthographicProjectionMatrix(Vector2 offset)
+        {
+            float vertical = camera_.orthographicSize;
+            float horizontal = vertical * camera_.aspect;
+
+            offset.x *= horizontal / (0.5f * camera_.pixelWidth);
+            offset.y *= vertical / (0.5f * camera_.pixelHeight);
+
+            float left = offset.x - horizontal;
+            float right = offset.x + horizontal;
+            float top = offset.y + vertical;
+            float bottom = offset.y - vertical;
+
+            return Matrix4x4.Ortho(left, right, bottom, top, camera_.nearClipPlane, camera_.farClipPlane);
+        }
+
         void OnEnable()
         {
 #if !UNITY_5_4_OR_NEWER
@@ -264,7 +281,11 @@ namespace UnityStandardAssets.CinematicEffects
             UnityEditor.EditorApplication.update += ForceRepaint;
 #endif
 
-            camera_.depthTextureMode |= DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
+            camera_.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
+
+#if UNITY_5_5_OR_NEWER
+            camera_.useJitteredProjectionMatrixForTransparentRendering = true;
+#endif
         }
 
         void OnDisable()
@@ -275,9 +296,6 @@ namespace UnityStandardAssets.CinematicEffects
                 m_History = null;
             }
 
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.update -= ForceRepaint;
-#endif
             camera_.depthTextureMode &= ~(DepthTextureMode.MotionVectors);
             m_SampleIndex = 0;
         }
@@ -290,7 +308,10 @@ namespace UnityStandardAssets.CinematicEffects
 #if UNITY_5_4_OR_NEWER
             camera_.nonJitteredProjectionMatrix = camera_.projectionMatrix;
 #endif
-            camera_.projectionMatrix = GetPerspectiveProjectionMatrix(jitter);
+
+            camera_.projectionMatrix = camera_.orthographic
+                ? GetOrthographicProjectionMatrix(jitter)
+                : GetPerspectiveProjectionMatrix(jitter);
 
             jitter.x /= camera_.pixelWidth;
             jitter.y /= camera_.pixelHeight;
@@ -301,12 +322,7 @@ namespace UnityStandardAssets.CinematicEffects
         [ImageEffectOpaque]
         void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (camera_.orthographic)
-            {
-                Graphics.Blit(source, destination);
-                return;
-            }
-            else if (m_History == null || (m_History.width != source.width || m_History.height != source.height))
+            if (m_History == null || (m_History.width != source.width || m_History.height != source.height))
             {
                 if (m_History)
                     RenderTexture.ReleaseTemporary(m_History);
@@ -316,7 +332,7 @@ namespace UnityStandardAssets.CinematicEffects
 
                 m_History.hideFlags = HideFlags.HideAndDontSave;
 
-                Graphics.Blit(source, m_History);
+                Graphics.Blit(source, m_History, material, 2);
             }
 
             material.SetVector("_SharpenParameters", new Vector4(settings.sharpenFilterSettings.amount, 0f, 0f, 0f));
@@ -344,7 +360,7 @@ namespace UnityStandardAssets.CinematicEffects
             renderTargets[1] = temporary.colorBuffer;
 
             Graphics.SetRenderTarget(renderTargets, effectDestination.depthBuffer);
-            RenderFullScreenQuad();
+            RenderFullScreenQuad(camera_.orthographic ? 1 : 0);
 
             RenderTexture.ReleaseTemporary(m_History);
             m_History = temporary;
